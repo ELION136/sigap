@@ -1,0 +1,12 @@
+"""
+URLs para la app core del proyecto SIGAP.
+"""
+from django.urls import path
+from . import views
+
+app_name = 'core'
+
+urlpatterns = [
+    path('', views.dashboard, name='dashboard'),
+    path('auditoria/', views.AuditoriaListView.as_view(), name='auditoria_list'),
+]

@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{% if object %}Editar{% else %}Nueva{% endif %} Planta - SIGAP{% endblock %}
+
+{% block page_title %}{% if object %}Editar{% else %}Nueva{% endif %} Planta{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="mb-4">
+    <ol class="flex items-center space-x-2 text-sm text-gray-500">
+        <li><a href="{% url 'core:dashboard' %}" class="hover:text-primary-600"><i class="fas fa-home"></i></a></li>
+        <li><i class="fas fa-chevron-right text-xs"></i></li>
+        <li><a href="{% url 'organizacion:planta_list' %}" class="hover:text-primary-600">Plantas</a></li>
+        <li><i class="fas fa-chevron-right text-xs"></i></li>
+        <li class="text-gray-700">{% if object %}Editar{% else %}Nueva{% endif %}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="text-xl font-semibold text-gray-800">
+                {% if object %}
+                <i class="fas fa-edit mr-2 text-primary-600"></i>Editar Planta
+                {% else %}
+                <i class="fas fa-plus mr-2 text-primary-600"></i>Nueva Planta
+                {% endif %}
+            </h2>
+        </div>
+        <div class="card-body">
+            {% crispy form %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Preview de imagen
+    document.getElementById('id_imagen')?.addEventListener('change', function() {
+        previewImage(this, 'imagen-preview');
+    });
+</script>
+{% endblock %}

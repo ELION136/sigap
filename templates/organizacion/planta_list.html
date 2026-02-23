@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+
+{% block title %}Plantas - SIGAP{% endblock %}
+
+{% block page_title %}Plantas{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="mb-4">
+    <ol class="flex items-center space-x-2 text-sm text-gray-500">
+        <li><a href="{% url 'core:dashboard' %}" class="hover:text-primary-600"><i class="fas fa-home"></i></a></li>
+        <li><i class="fas fa-chevron-right text-xs"></i></li>
+        <li><a href="{% url 'organizacion:planta_list' %}" class="hover:text-primary-600">Organización</a></li>
+        <li><i class="fas fa-chevron-right text-xs"></i></li>
+        <li class="text-gray-700">Plantas</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<!-- Header con acciones -->
+<div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+    <div class="mb-4 md:mb-0">
+        <h2 class="text-2xl font-bold text-gray-800">Plantas</h2>
+        <p class="text-gray-500 mt-1">Gestión de plantas industriales e instalaciones</p>
+    </div>
+    <div class="flex space-x-3">
+        {% if perms.organizacion.add_planta %}
+        <a href="{% url 'organizacion:planta_create' %}" class="btn-primary">
+            <i class="fas fa-plus mr-2"></i>Nueva Planta
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-6">
+    <div class="card-body">
+        <form method="get" class="flex flex-col md:flex-row md:items-end space-y-4 md:space-y-0 md:space-x-4">
+            <div class="flex-1">
+                <label class="form-label">Buscar</label>
+                <div class="relative">
+                    <input type="text" 
+                           name="q" 
+                           value="{{ search_query }}"
+                           placeholder="Código o nombre..."
+                           class="form-input pl-10">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-search text-gray-400"></i>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <button type="submit" class="btn-primary w-full md:w-auto">
+                    <i class="fas fa-filter mr-2"></i>Filtrar
+                </button>
+            </div>
+            {% if search_query %}
+            <div>
+                <a href="{% url 'organizacion:planta_list' %}" class="btn-secondary w-full md:w-auto">
+                    <i class="fas fa-times mr-2"></i>Limpiar
+                </a>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<!-- Tabla -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Nombre</th>
+                        <th>Ubicación</th>
+                        <th>Contacto</th>
+                        <th>Estado</th>
+                        <th class="text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for planta in plantas %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="font-medium">{{ planta.codigo }}</td>
+                        <td>
+                            <div class="flex items-center">
+                                {% if planta.imagen %}
+                                <img src="{{ planta.imagen.url }}" alt="" class="w-8 h-8 rounded-lg object-cover mr-3">
+                                {% else %}
+                                <div class="w-8 h-8 bg-gray-200 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-building text-gray-400 text-sm"></i>
+                                </div>
+                                {% endif %}
+                                <a href="{{ planta.get_absolute_url }}" class="text-primary-600 hover:text-primary-800 font-medium">
+                                    {{ planta.nombre }}
+                                </a>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="text-sm">
+                                <p>{{ planta.ciudad }}{% if planta.estado_provincia %}, {{ planta.estado_provincia }}{% endif %}</p>
+                                <p class="text-gray-500">{{ planta.pais }}</p>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="text-sm">
+                                {% if planta.telefono %}<p><i class="fas fa-phone text-gray-400 mr-1"></i>{{ planta.telefono }}</p>{% endif %}
+                                {% if planta.email %}<p><i class="fas fa-envelope text-gray-400 mr-1"></i>{{ planta.email }}</p>{% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            {% if planta.activa %}
+                            <span class="badge badge-green">Activa</span>
+                            {% else %}
+                            <span class="badge badge-gray">Inactiva</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-right">
+                            <div class="flex items-center justify-end space-x-2">
+                                <a href="{{ planta.get_absolute_url }}" 
+                                   class="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50"
+                                   title="Ver detalle">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% if perms.organizacion.change_planta %}
+                                <a href="{% url 'organizacion:planta_update' planta.pk %}" 
+                                   class="text-yellow-600 hover:text-yellow-800 p-2 rounded-lg hover:bg-yellow-50"
+                                   title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% endif %}
+                                {% if perms.organizacion.delete_planta %}
+                                <a href="{% url 'organizacion:planta_delete' planta.pk %}" 
+                                   class="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50"
+                                   title="Eliminar"
+                                   onclick="return confirm('¿Está seguro de eliminar esta planta?')">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-8">
+                            <div class="text-gray-500">
+                                <i class="fas fa-inbox text-4xl mb-3"></i>
+                                <p>No se encontraron plantas</p>
+                                {% if search_query %}
+                                <p class="text-sm mt-1">Intente con otros términos de búsqueda</p>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Paginación -->
+{% if is_paginated %}
+<div class="mt-6 flex justify-center">
+    <nav class="flex items-center space-x-2">
+        {% if page_obj.has_previous %}
+        <a href="?page=1{% if search_query %}&q={{ search_query }}{% endif %}" 
+           class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50">
+            <i class="fas fa-angle-double-left"></i>
+        </a>
+        <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}" 
+           class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50">
+            <i class="fas fa-angle-left"></i>
+        </a>
+        {% endif %}
+        
+        <span class="px-4 py-2 bg-primary-600 text-white rounded-lg">
+            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+        </span>
+        
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}" 
+           class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50">
+            <i class="fas fa-angle-right"></i>
+        </a>
+        <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&q={{ search_query }}{% endif %}" 
+           class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50">
+            <i class="fas fa-angle-double-right"></i>
+        </a>
+        {% endif %}
+    </nav>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,372 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - SIGAP{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="mb-4 text-sm">
+    <ol class="list-none p-0 inline-flex">
+        <li class="flex items-center">
+            <a href="/" class="text-primary-600 hover:text-primary-800">Inicio</a>
+            <i class="fas fa-chevron-right mx-2 text-gray-400 text-xs"></i>
+        </li>
+        <li class="text-gray-600">Dashboard</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<!-- Alertas - CORREGIDO -->
+{% if alertas %}
+<div class="mb-6 space-y-2">
+    {% for alerta in alertas %}
+        {% if alerta.tipo == 'warning' %}
+        <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r-lg">
+            <div class="flex items-center">
+                <i class="fas fa-exclamation-triangle text-yellow-500 mr-3"></i>
+                <span class="text-yellow-800">{{ alerta.mensaje }}</span>
+            </div>
+        </div>
+        {% elif alerta.tipo == 'danger' %}
+        <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg">
+            <div class="flex items-center">
+                <i class="fas fa-exclamation-circle text-red-500 mr-3"></i>
+                <span class="text-red-800">{{ alerta.mensaje }}</span>
+            </div>
+        </div>
+        {% elif alerta.tipo == 'success' %}
+        <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg">
+            <div class="flex items-center">
+                <i class="fas fa-check-circle text-green-500 mr-3"></i>
+                <span class="text-green-800">{{ alerta.mensaje }}</span>
+            </div>
+        </div>
+        {% else %}
+        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg">
+            <div class="flex items-center">
+                <i class="fas fa-info-circle text-blue-500 mr-3"></i>
+                <span class="text-blue-800">{{ alerta.mensaje }}</span>
+            </div>
+        </div>
+        {% endif %}
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Estadísticas Principales -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Total Activos -->
+    <div class="card">
+        <div class="card-body">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-box text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Total Activos</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_activos|default:"0" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Total Equipos -->
+    <div class="card">
+        <div class="card-body">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-cogs text-green-600 text-xl"></i>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Equipos Funcionales</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_equipos|default:"0" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Total Plantas -->
+    <div class="card">
+        <div class="card-body">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-building text-purple-600 text-xl"></i>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Plantas</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_plantas|default:"0" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Total Áreas -->
+    <div class="card">
+        <div class="card-body">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-map-marker-alt text-orange-600 text-xl"></i>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Áreas</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_areas|default:"0" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos y Tablas -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <!-- Activos por Estado -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="text-lg font-semibold text-gray-800">
+                <i class="fas fa-chart-pie mr-2 text-primary-600"></i>
+                Activos por Estado
+            </h3>
+        </div>
+        <div class="card-body">
+            <div class="space-y-3">
+                {% for item in activos_por_estado %}
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        {% if item.estado__color == 'green' %}
+                        <span class="w-3 h-3 rounded-full bg-green-500 mr-3"></span>
+                        {% elif item.estado__color == 'blue' %}
+                        <span class="w-3 h-3 rounded-full bg-blue-500 mr-3"></span>
+                        {% elif item.estado__color == 'yellow' %}
+                        <span class="w-3 h-3 rounded-full bg-yellow-500 mr-3"></span>
+                        {% elif item.estado__color == 'red' %}
+                        <span class="w-3 h-3 rounded-full bg-red-500 mr-3"></span>
+                        {% elif item.estado__color == 'purple' %}
+                        <span class="w-3 h-3 rounded-full bg-purple-500 mr-3"></span>
+                        {% elif item.estado__color == 'orange' %}
+                        <span class="w-3 h-3 rounded-full bg-orange-500 mr-3"></span>
+                        {% else %}
+                        <span class="w-3 h-3 rounded-full bg-gray-500 mr-3"></span>
+                        {% endif %}
+                        <span class="text-sm text-gray-700">{{ item.estado__nombre }}</span>
+                    </div>
+                    <span class="text-sm font-semibold text-gray-900">{{ item.cantidad }}</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    {% if item.estado__color == 'green' %}
+                    <div class="bg-green-500 h-2 rounded-full" style="width: {% widthratio item.cantidad total_activos 100 %}%"></div>
+                    {% elif item.estado__color == 'blue' %}
+                    <div class="bg-blue-500 h-2 rounded-full" style="width: {% widthratio item.cantidad total_activos 100 %}%"></div>
+                    {% elif item.estado__color == 'yellow' %}
+                    <div class="bg-yellow-500 h-2 rounded-full" style="width: {% widthratio item.cantidad total_activos 100 %}%"></div>
+                    {% elif item.estado__color == 'red' %}
+                    <div class="bg-red-500 h-2 rounded-full" style="width: {% widthratio item.cantidad total_activos 100 %}%"></div>
+                    {% elif item.estado__color == 'purple' %}
+                    <div class="bg-purple-500 h-2 rounded-full" style="width: {% widthratio item.cantidad total_activos 100 %}%"></div>
+                    {% elif item.estado__color == 'orange' %}
+                    <div class="bg-orange-500 h-2 rounded-full" style="width: {% widthratio item.cantidad total_activos 100 %}%"></div>
+                    {% else %}
+                    <div class="bg-gray-500 h-2 rounded-full" style="width: {% widthratio item.cantidad total_activos 100 %}%"></div>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <p class="text-gray-500 text-center py-4">No hay datos disponibles</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Activos por Tipo -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="text-lg font-semibold text-gray-800">
+                <i class="fas fa-chart-bar mr-2 text-primary-600"></i>
+                Activos por Tipo
+            </h3>
+        </div>
+        <div class="card-body">
+            <div class="space-y-3">
+                {% for item in activos_por_tipo %}
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <span class="text-sm text-gray-700">{{ item.tipo__nombre }}</span>
+                    <span class="badge badge-blue">{{ item.cantidad }}</span>
+                </div>
+                {% empty %}
+                <p class="text-gray-500 text-center py-4">No hay datos disponibles</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mantenimientos -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <!-- Mantenimientos Recientes -->
+    <div class="card">
+        <div class="card-header flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-800">
+                <i class="fas fa-wrench mr-2 text-primary-600"></i>
+                Mantenimientos Recientes
+            </h3>
+            <a href="/admin/mantenimiento/mantenimiento/" class="text-sm text-primary-600 hover:text-primary-800">
+                Ver todos
+            </a>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Activo</th>
+                            <th>Tipo</th>
+                            <th>Fecha</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for mtto in mantenimientos_recientes %}
+                        <tr>
+                            <td class="font-medium">{{ mtto.activo.nombre|truncatechars:25 }}</td>
+                            <td>{{ mtto.get_tipo_display }}</td>
+                            <td>{{ mtto.fecha|date:"d/m/Y" }}</td>
+                            <td>
+                                {% if mtto.get_estado_color == 'green' %}
+                                <span class="badge badge-green">{{ mtto.get_estado_display }}</span>
+                                {% elif mtto.get_estado_color == 'blue' %}
+                                <span class="badge badge-blue">{{ mtto.get_estado_display }}</span>
+                                {% elif mtto.get_estado_color == 'yellow' %}
+                                <span class="badge badge-yellow">{{ mtto.get_estado_display }}</span>
+                                {% elif mtto.get_estado_color == 'red' %}
+                                <span class="badge badge-red">{{ mtto.get_estado_display }}</span>
+                                {% elif mtto.get_estado_color == 'purple' %}
+                                <span class="badge badge-purple">{{ mtto.get_estado_display }}</span>
+                                {% elif mtto.get_estado_color == 'orange' %}
+                                <span class="badge badge-orange">{{ mtto.get_estado_display }}</span>
+                                {% else %}
+                                <span class="badge badge-gray">{{ mtto.get_estado_display }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-gray-500">No hay mantenimientos recientes</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Mantenimientos Próximos -->
+    <div class="card">
+        <div class="card-header flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-800">
+                <i class="fas fa-calendar-alt mr-2 text-primary-600"></i>
+                Mantenimientos Próximos
+            </h3>
+            <a href="/admin/mantenimiento/mantenimiento/" class="text-sm text-primary-600 hover:text-primary-800">
+                Ver todos
+            </a>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Activo</th>
+                            <th>Fecha</th>
+                            <th>Prioridad</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for mtto in mantenimientos_proximos %}
+                        <tr>
+                            <td class="font-medium">{{ mtto.activo.nombre|truncatechars:25 }}</td>
+                            <td>{{ mtto.fecha|date:"d/m/Y" }}</td>
+                            <td>
+                                {% if mtto.get_prioridad_color == 'red' %}
+                                <span class="badge badge-red">{{ mtto.get_prioridad_display }}</span>
+                                {% elif mtto.get_prioridad_color == 'yellow' %}
+                                <span class="badge badge-yellow">{{ mtto.get_prioridad_display }}</span>
+                                {% elif mtto.get_prioridad_color == 'green' %}
+                                <span class="badge badge-green">{{ mtto.get_prioridad_display }}</span>
+                                {% else %}
+                                <span class="badge badge-blue">{{ mtto.get_prioridad_display }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center py-4 text-gray-500">No hay mantenimientos próximos</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Últimos Cambios -->
+<div class="card">
+    <div class="card-header flex justify-between items-center">
+        <h3 class="text-lg font-semibold text-gray-800">
+            <i class="fas fa-history mr-2 text-primary-600"></i>
+            Últimos Cambios en el Sistema
+        </h3>
+        {% if perms.core.view_historialcambio %}
+        <a href="/admin/core/historialcambio/" class="text-sm text-primary-600 hover:text-primary-800">
+            Ver auditoría completa
+        </a>
+        {% endif %}
+    </div>
+    <div class="card-body p-0">
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Usuario</th>
+                        <th>Operación</th>
+                        <th>Modelo</th>
+                        <th>Descripción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cambio in ultimos_cambios %}
+                    <tr>
+                        <td>{{ cambio.fecha_hora|date:"d/m/Y H:i" }}</td>
+                        <td>{{ cambio.usuario.username|default:"Sistema" }}</td>
+                        <td>
+                            {% if cambio.tipo_operacion == 'CREAR' %}
+                            <span class="badge badge-green">{{ cambio.get_tipo_operacion_display }}</span>
+                            {% elif cambio.tipo_operacion == 'MODIFICAR' %}
+                            <span class="badge badge-blue">{{ cambio.get_tipo_operacion_display }}</span>
+                            {% elif cambio.tipo_operacion == 'ELIMINAR' %}
+                            <span class="badge badge-red">{{ cambio.get_tipo_operacion_display }}</span>
+                            {% else %}
+                            <span class="badge badge-gray">{{ cambio.get_tipo_operacion_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ cambio.modelo }}</td>
+                        <td>{{ cambio.objeto_repr|truncatechars:40 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-gray-500">No hay cambios recientes</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

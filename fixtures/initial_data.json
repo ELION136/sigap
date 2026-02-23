@@ -1,0 +1,311 @@
+[
+  {
+    "model": "auth.group",
+    "pk": 1,
+    "fields": {
+      "name": "Administrador"
+    }
+  },
+  {
+    "model": "auth.group",
+    "pk": 2,
+    "fields": {
+      "name": "Encargado de Área"
+    }
+  },
+  {
+    "model": "auth.group",
+    "pk": 3,
+    "fields": {
+      "name": "Operador"
+    }
+  },
+  {
+    "model": "auth.group",
+    "pk": 4,
+    "fields": {
+      "name": "Consulta"
+    }
+  },
+  {
+    "model": "activos.tipoactivo",
+    "pk": 1,
+    "fields": {
+      "codigo": "MAQ-001",
+      "nombre": "Maquinaria Industrial",
+      "descripcion": "Equipos y maquinaria para procesos industriales",
+      "categoria": "MAQUINARIA",
+      "vida_util_anios": 10,
+      "depreciable": true,
+      "requiere_mantenimiento": true,
+      "activo": true,
+      "creado": "2024-01-01T00:00:00Z",
+      "modificado": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "activos.tipoactivo",
+    "pk": 2,
+    "fields": {
+      "codigo": "COMP-001",
+      "nombre": "Equipo de Cómputo",
+      "descripcion": "Computadoras, laptops, servidores y periféricos",
+      "categoria": "EQUIPO_COMPUTO",
+      "vida_util_anios": 5,
+      "depreciable": true,
+      "requiere_mantenimiento": true,
+      "activo": true,
+      "creado": "2024-01-01T00:00:00Z",
+      "modificado": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "activos.tipoactivo",
+    "pk": 3,
+    "fields": {
+      "codigo": "VEH-001",
+      "nombre": "Vehículos",
+      "descripcion": "Vehículos de transporte y carga",
+      "categoria": "EQUIPO_TRANSPORTE",
+      "vida_util_anios": 7,
+      "depreciable": true,
+      "requiere_mantenimiento": true,
+      "activo": true,
+      "creado": "2024-01-01T00:00:00Z",
+      "modificado": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "activos.tipoactivo",
+    "pk": 4,
+    "fields": {
+      "codigo": "MUE-001",
+      "nombre": "Muebles y Enseres",
+      "descripcion": "Mobiliario de oficina y planta",
+      "categoria": "MUEBLES",
+      "vida_util_anios": 8,
+      "depreciable": true,
+      "requiere_mantenimiento": false,
+      "activo": true,
+      "creado": "2024-01-01T00:00:00Z",
+      "modificado": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "activos.tipoactivo",
+    "pk": 5,
+    "fields": {
+      "codigo": "HER-001",
+      "nombre": "Herramientas",
+      "descripcion": "Herramientas manuales y eléctricas",
+      "categoria": "HERRAMIENTAS",
+      "vida_util_anios": 5,
+      "depreciable": true,
+      "requiere_mantenimiento": true,
+      "activo": true,
+      "creado": "2024-01-01T00:00:00Z",
+      "modificado": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "activos.estado",
+    "pk": 1,
+    "fields": {
+      "codigo": "OP",
+      "nombre": "Operativo",
+      "descripcion": "El activo está funcionando correctamente",
+      "color": "green",
+      "operativo": true,
+      "orden": 1,
+      "activo": true,
+      "creado": "2024-01-01T00:00:00Z",
+      "modificado": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "activos.estado",
+    "pk": 2,
+    "fields": {
+      "codigo": "MT",
+      "nombre": "En Mantenimiento",
+      "descripcion": "El activo está en mantenimiento",
+      "color": "yellow",
+      "operativo": false,
+      "orden": 2,
+      "activo": true,
+      "creado": "2024-01-01T00:00:00Z",
+      "modificado": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "activos.estado",
+    "pk": 3,
+    "fields": {
+      "codigo": "FS",
+      "nombre": "Fuera de Servicio",
+      "descripcion": "El activo no está operativo",
+      "color": "red",
+      "operativo": false,
+      "orden": 3,
+      "activo": true,
+      "creado": "2024-01-01T00:00:00Z",
+      "modificado": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "activos.estado",
+    "pk": 4,
+    "fields": {
+      "codigo": "IN",
+      "nombre": "Inactivo",
+      "descripcion": "El activo está inactivo temporalmente",
+      "color": "gray",
+      "operativo": false,
+      "orden": 4,
+      "activo": true,
+      "creado": "2024-01-01T00:00:00Z",
+      "modificado": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "activos.estado",
+    "pk": 5,
+    "fields": {
+      "codigo": "RE",
+      "nombre": "Reserva",
+      "descripcion": "El activo está en reserva",
+      "color": "blue",
+      "operativo": true,
+      "orden": 5,
+      "activo": true,
+      "creado": "2024-01-01T00:00:00Z",
+      "modificado": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "activos.tipopropiedad",
+    "pk": 1,
+    "fields": {
+      "codigo": "PRO",
+      "nombre": "Propio",
+      "descripcion": "Activo propiedad de la empresa",
+      "activo": true,
+      "creado": "2024-01-01T00:00:00Z",
+      "modificado": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "activos.tipopropiedad",
+    "pk": 2,
+    "fields": {
+      "codigo": "ARRE",
+      "nombre": "Arrendado",
+      "descripcion": "Activo en arrendamiento",
+      "activo": true,
+      "creado": "2024-01-01T00:00:00Z",
+      "modificado": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "activos.tipopropiedad",
+    "pk": 3,
+    "fields": {
+      "codigo": "COMO",
+      "nombre": "Comodato",
+      "descripcion": "Activo en comodato",
+      "activo": true,
+      "creado": "2024-01-01T00:00:00Z",
+      "modificado": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "activos.tipopropiedad",
+    "pk": 4,
+    "fields": {
+      "codigo": "LEAS",
+      "nombre": "Leasing",
+      "descripcion": "Activo en leasing",
+      "activo": true,
+      "creado": "2024-01-01T00:00:00Z",
+      "modificado": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "mantenimiento.tipomantenimiento",
+    "pk": 1,
+    "fields": {
+      "codigo": "PREV",
+      "nombre": "Preventivo",
+      "descripcion": "Mantenimiento preventivo programado",
+      "color": "green",
+      "activo": true,
+      "creado": "2024-01-01T00:00:00Z",
+      "modificado": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "mantenimiento.tipomantenimiento",
+    "pk": 2,
+    "fields": {
+      "codigo": "CORR",
+      "nombre": "Correctivo",
+      "descripcion": "Mantenimiento correctivo por falla",
+      "color": "red",
+      "activo": true,
+      "creado": "2024-01-01T00:00:00Z",
+      "modificado": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "mantenimiento.tipomantenimiento",
+    "pk": 3,
+    "fields": {
+      "codigo": "PRED",
+      "nombre": "Predictivo",
+      "descripcion": "Mantenimiento predictivo basado en condición",
+      "color": "blue",
+      "activo": true,
+      "creado": "2024-01-01T00:00:00Z",
+      "modificado": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "mantenimiento.tipomantenimiento",
+    "pk": 4,
+    "fields": {
+      "codigo": "CALI",
+      "nombre": "Calibración",
+      "descripcion": "Calibración de equipos de medición",
+      "color": "purple",
+      "activo": true,
+      "creado": "2024-01-01T00:00:00Z",
+      "modificado": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "core.configuracionsistema",
+    "pk": 1,
+    "fields": {
+      "clave": "NOMBRE_EMPRESA",
+      "valor": "Mi Empresa S.A. de C.V.",
+      "descripcion": "Nombre de la empresa que utiliza el sistema",
+      "tipo": "string",
+      "editable": true,
+      "creado": "2024-01-01T00:00:00Z",
+      "modificado": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "core.configuracionsistema",
+    "pk": 2,
+    "fields": {
+      "clave": "MONEDA_DEFAULT",
+      "valor": "MXN",
+      "descripcion": "Moneda por defecto para costos",
+      "tipo": "string",
+      "editable": true,
+      "creado": "2024-01-01T00:00:00Z",
+      "modificado": "2024-01-01T00:00:00Z"
+    }
+  }
+]

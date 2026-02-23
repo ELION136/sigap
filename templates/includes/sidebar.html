@@ -1,0 +1,85 @@
+<!-- sidebar.html - Versión sin fixed para flexbox -->
+<aside id="sidebar" class="w-64 flex-shrink-0 bg-sidebar-900 text-white flex flex-col h-screen overflow-hidden">
+    <!-- Logo -->
+    <div class="flex items-center justify-center h-16 bg-sidebar-800 border-b border-gray-700 flex-shrink-0">
+        <a href="{% url 'core:dashboard' %}" class="flex items-center space-x-2">
+            <div class="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center">
+                <i class="fas fa-industry text-white text-lg"></i>
+            </div>
+            <span class="text-xl font-bold">SIGAP</span>
+        </a>
+    </div>
+    
+    <!-- User Info -->
+    <div class="px-4 py-4 border-b border-gray-700 flex-shrink-0">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-user text-white"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-white truncate">
+                    {{ request.user.get_full_name|default:request.user.username }}
+                </p>
+                <p class="text-xs text-gray-400 truncate">
+                    {% if request.user.groups.first %}
+                        {{ request.user.groups.first.name }}
+                    {% else %}
+                        Usuario
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Navigation - scrollable -->
+    <nav class="flex-1 overflow-y-auto px-2 py-4 space-y-1">
+        {% for item in menu_items %}
+            {% if item.submenu %}
+                <!-- Menu con submenu -->
+                <div x-data="{ open: {{ item.active|yesno:'true,false' }} }" class="space-y-1">
+                    <button @click="open = !open" 
+                            class="sidebar-link w-full justify-between {% if item.active %}active{% endif %}">
+                        <div class="flex items-center">
+                            <i class="fas fa-{{ item.icon }}"></i>
+                            <span>{{ item.name }}</span>
+                        </div>
+                        <i class="fas fa-chevron-down text-xs transition-transform" :class="{ 'rotate-180': open }"></i>
+                    </button>
+                    <div x-show="open" 
+                         x-transition:enter="transition ease-out duration-100"
+                         x-transition:enter-start="transform opacity-0 scale-95"
+                         x-transition:enter-end="transform opacity-100 scale-100"
+                         x-transition:leave="transition ease-in duration-75"
+                         x-transition:leave-start="transform opacity-100 scale-100"
+                         x-transition:leave-end="transform opacity-0 scale-95"
+                         class="pl-4 space-y-1">
+                        {% for subitem in item.submenu %}
+                            <a href="{{ subitem.url }}" 
+                               class="sidebar-link text-sm {% if subitem.active %}active{% endif %}">
+                                <i class="fas fa-circle text-xs"></i>
+                                <span>{{ subitem.name }}</span>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% else %}
+                <!-- Menu simple -->
+                <a href="{{ item.url }}" class="sidebar-link {% if item.active %}active{% endif %}">
+                    <i class="fas fa-{{ item.icon }}"></i>
+                    <span>{{ item.name }}</span>
+                </a>
+            {% endif %}
+        {% endfor %}
+    </nav>
+    
+    <!-- Logout - al final -->
+    <div class="p-4 border-t border-gray-700 flex-shrink-0">
+        <form method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="sidebar-link w-full text-red-400 hover:text-red-300 hover:bg-red-900/20">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Cerrar Sesión</span>
+            </button>
+        </form>
+    </div>
+</aside>

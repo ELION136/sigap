@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block title %}Niveles - SIGAP{% endblock %}
+
+{% block page_title %}Niveles{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="mb-4 text-sm">
+    <ol class="list-none p-0 inline-flex">
+        <li class="flex items-center">
+            <a href="/" class="text-primary-600 hover:text-primary-800">Inicio</a>
+            <i class="fas fa-chevron-right mx-2 text-gray-400 text-xs"></i>
+        </li>
+        <li class="flex items-center">
+            <a href="#" class="text-primary-600 hover:text-primary-800">Organización</a>
+            <i class="fas fa-chevron-right mx-2 text-gray-400 text-xs"></i>
+        </li>
+        <li class="text-gray-600">Niveles</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex justify-between items-center">
+    <h2 class="text-xl font-semibold text-gray-800">Lista de Niveles</h2>
+    <a href="#" class="btn-primary">
+        <i class="fas fa-plus mr-2"></i>Nuevo Nivel
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Nombre</th>
+                        <th>Planta</th>
+                        <th>Número</th>
+                        <th>Activo</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for nivel in object_list %}
+                    <tr>
+                        <td class="font-medium">{{ nivel.codigo }}</td>
+                        <td>{{ nivel.nombre }}</td>
+                        <td>{{ nivel.planta.nombre }}</td>
+                        <td>{{ nivel.numero_nivel }}</td>
+                        <td>
+                            {% if nivel.activo %}
+                            <span class="badge badge-green">Sí</span>
+                            {% else %}
+                            <span class="badge badge-gray">No</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="#" class="text-blue-600 hover:text-blue-800 mr-2">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="#" class="text-red-600 hover:text-red-800">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-gray-500">No hay niveles disponibles</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
