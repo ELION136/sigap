@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% block title %}Estados - SIGAP{% endblock %}
+{% block page_title %}Estados de Activo{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb">
+    <a href="/"><i class="fas fa-house"></i> Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <span>Estados</span>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .toolbar { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; margin-bottom:1.25rem; }
+    .toolbar-left  { flex:1; display:flex; gap:.5rem; }
+    .toolbar-right { display:flex; gap:.5rem; }
+    .search-wrap { position:relative; min-width:200px; max-width:280px; flex:1; }
+    .search-wrap input {
+        width:100%; background:var(--surface); border:1px solid var(--border); border-radius:9px;
+        padding:.55rem 1rem .55rem 2.4rem; color:var(--text); font-family:'DM Sans',sans-serif;
+        font-size:.875rem; outline:none; transition:border-color .2s,background .2s;
+    }
+    .search-wrap input::placeholder { color:var(--text-muted); }
+    .search-wrap input:focus { border-color:var(--accent); background:rgba(37,99,235,.06); }
+    .search-wrap i { position:absolute; left:.8rem; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:.8rem; pointer-events:none; }
+
+    .estados-list { display:flex; flex-direction:column; gap:.5rem; margin-bottom:1.5rem; }
+
+    .estado-row {
+        background:var(--surface); border:1px solid var(--border); border-radius:12px;
+        display:flex; align-items:center; gap:1rem; padding:.875rem 1.25rem;
+        transition:border-color .2s,transform .15s; animation:fadeUp .3s ease both;
+    }
+    .estado-row:hover { border-color:rgba(37,99,235,.4); transform:translateX(3px); }
+
+    .color-block {
+        width:44px; height:44px; border-radius:10px; flex-shrink:0;
+        display:flex; align-items:center; justify-content:center;
+        font-weight:800; font-size:.65rem; letter-spacing:.06em;
+        color:rgba(255,255,255,.95); text-shadow:0 1px 3px rgba(0,0,0,.3);
+        text-transform:uppercase;
+    }
+
+    .estado-info { flex:1; min-width:0; }
+    .estado-code { font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--accent2); margin-bottom:.15rem; }
+    .estado-name { font-family:'Syne',sans-serif; font-size:.95rem; font-weight:600; color:var(--text); }
+    .estado-desc { font-size:.78rem; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:300px; margin-top:.1rem; }
+
+    .estado-meta { display:flex; gap:.5rem; align-items:center; flex-shrink:0; flex-wrap:wrap; }
+
+    .live-badge {
+        display:inline-flex; align-items:center; gap:.35rem;
+        padding:.22rem .7rem; border-radius:9999px; font-size:.72rem; font-weight:600;
+    }
+    .lb-dot { width:6px; height:6px; border-radius:50%; }
+
+    .meta-chip { display:flex; align-items:center; gap:.3rem; padding:.22rem .6rem; border-radius:9999px; font-size:.7rem; font-weight:600; }
+    .mc-on    { background:rgba(34,197,94,.12);  color:#4ade80; border:1px solid rgba(34,197,94,.2); }
+    .mc-off   { background:rgba(107,114,128,.1); color:#6b7280; border:1px solid rgba(107,114,128,.15); }
+    .mc-order { background:rgba(37,99,235,.12);  color:#60a5fa; border:1px solid rgba(37,99,235,.2); }
+
+    .estado-actions { display:flex; gap:.4rem; flex-shrink:0; }
+    .act-btn-sm {
+        width:30px; height:30px; border-radius:7px;
+        background:rgba(255,255,255,.04); border:1px solid var(--border);
+        display:flex; align-items:center; justify-content:center;
+        color:var(--text-muted); font-size:.8rem; text-decoration:none;
+        transition:background .15s,color .15s,border-color .15s;
+    }
+    .act-btn-sm:hover { background:rgba(255,255,255,.08); color:var(--text); border-color:var(--border2); }
+    .act-btn-sm.danger:hover { background:rgba(239,68,68,.1); color:#f87171; border-color:rgba(239,68,68,.3); }
+
+    .empty-state { text-align:center; padding:3.5rem 2rem; color:var(--text-muted); background:var(--surface); border:1px solid var(--border); border-radius:14px; }
+    .empty-state i { font-size:2.5rem; opacity:.2; display:block; margin-bottom:1rem; }
+
+    @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="toolbar">
+    <div class="toolbar-left">
+        <form method="get" id="filterForm" style="display:contents;">
+            <div class="search-wrap">
+                <i class="fas fa-search"></i>
+                <input type="text" name="q" value="{{ search_query }}"
+                       placeholder="Código o nombre…"
+                       onchange="document.getElementById('filterForm').submit()">
+            </div>
+        </form>
+    </div>
+    <div class="toolbar-right">
+        {% if perms.activos.add_estado %}
+        <a href="{% url 'activos:estado_create' %}" class="btn-primary">
+            <i class="fas fa-plus"></i> Nuevo Estado
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="estados-list">
+    {% for estado in estados %}
+    {% with c=estado.color %}
+    <div class="estado-row" style="animation-delay:{{ forloop.counter0 }}0ms;">
+        <div class="color-block" style="background:
+            {% if c == 'green' %}#16a34a{% elif c == 'blue' %}#2563eb{% elif c == 'yellow' %}#ca8a04
+            {% elif c == 'orange' %}#ea580c{% elif c == 'red' %}#dc2626{% elif c == 'purple' %}#7c3aed
+            {% else %}#4b5563{% endif %};">{{ c|slice:":3"|upper }}</div>
+
+        <div class="estado-info">
+            <div class="estado-code">{{ estado.codigo }}</div>
+            <div class="estado-name">{{ estado.nombre }}</div>
+            {% if estado.descripcion %}<div class="estado-desc">{{ estado.descripcion }}</div>{% endif %}
+        </div>
+
+        <div class="estado-meta">
+            <span class="live-badge" style="
+                background:{% if c == 'green' %}rgba(34,197,94,.15){% elif c == 'blue' %}rgba(37,99,235,.15){% elif c == 'yellow' %}rgba(245,158,11,.15){% elif c == 'orange' %}rgba(249,115,22,.15){% elif c == 'red' %}rgba(239,68,68,.15){% elif c == 'purple' %}rgba(139,92,246,.15){% else %}rgba(107,114,128,.15){% endif %};
+                color:{% if c == 'green' %}#4ade80{% elif c == 'blue' %}#60a5fa{% elif c == 'yellow' %}#fcd34d{% elif c == 'orange' %}#fb923c{% elif c == 'red' %}#f87171{% elif c == 'purple' %}#c4b5fd{% else %}#9ca3af{% endif %};
+                border:1px solid {% if c == 'green' %}rgba(34,197,94,.25){% elif c == 'blue' %}rgba(37,99,235,.25){% elif c == 'yellow' %}rgba(245,158,11,.25){% elif c == 'orange' %}rgba(249,115,22,.25){% elif c == 'red' %}rgba(239,68,68,.25){% elif c == 'purple' %}rgba(139,92,246,.25){% else %}rgba(107,114,128,.2){% endif %};">
+                <span class="lb-dot" style="background:currentColor;"></span>{{ estado.nombre }}
+            </span>
+            <span class="meta-chip mc-order"><i class="fas fa-sort"></i> #{{ estado.orden }}</span>
+            <span class="meta-chip {% if estado.operativo %}mc-on{% else %}mc-off{% endif %}">
+                <i class="fas {% if estado.operativo %}fa-bolt{% else %}fa-ban{% endif %}"></i>
+                {% if estado.operativo %}Operativo{% else %}No operativo{% endif %}
+            </span>
+            <span class="meta-chip {% if estado.activo %}mc-on{% else %}mc-off{% endif %}">
+                <i class="fas {% if estado.activo %}fa-circle-check{% else %}fa-circle-xmark{% endif %}"></i>
+                {% if estado.activo %}Activo{% else %}Inactivo{% endif %}
+            </span>
+        </div>
+
+        <div class="estado-actions">
+            <a href="{% url 'activos:estado_detail' estado.pk %}" class="act-btn-sm" title="Ver"><i class="fas fa-eye"></i></a>
+            {% if perms.activos.change_estado %}
+            <a href="{% url 'activos:estado_update' estado.pk %}" class="act-btn-sm" title="Editar"><i class="fas fa-pen"></i></a>
+            {% endif %}
+            {% if perms.activos.delete_estado %}
+            <a href="{% url 'activos:estado_delete' estado.pk %}" class="act-btn-sm danger" title="Eliminar"><i class="fas fa-trash"></i></a>
+            {% endif %}
+        </div>
+    </div>
+    {% endwith %}
+    {% empty %}
+    <div class="empty-state">
+        <i class="fas fa-circle-half-stroke"></i>
+        <p>No hay estados registrados.</p>
+        {% if perms.activos.add_estado %}
+        <a href="{% url 'activos:estado_create' %}" class="btn-primary" style="display:inline-flex;margin-top:1rem;">
+            <i class="fas fa-plus"></i> Crear primer estado
+        </a>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

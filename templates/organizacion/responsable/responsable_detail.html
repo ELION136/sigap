@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ responsable.nombre_completo }} - SIGAP{% endblock %}
+
+{% block page_title %}{{ responsable.nombre_completo }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="mb-4 text-sm">
+    <ol class="list-none p-0 inline-flex">
+        <li class="flex items-center">
+            <a href="/" class="text-primary-600 hover:text-primary-800">Inicio</a>
+            <i class="fas fa-chevron-right mx-2 text-gray-400 text-xs"></i>
+        </li>
+        <li class="flex items-center">
+            <a href="{% url 'organizacion:responsable_list' %}" class="text-primary-600 hover:text-primary-800">Responsables</a>
+            <i class="fas fa-chevron-right mx-2 text-gray-400 text-xs"></i>
+        </li>
+        <li class="text-gray-600">Detalle</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex justify-end space-x-2">
+    <a href="{% url 'organizacion:responsable_update' responsable.pk %}" class="btn-primary">
+        <i class="fas fa-edit mr-2"></i>Editar
+    </a>
+    <a href="{% url 'organizacion:responsable_delete' responsable.pk %}" class="btn-danger">
+        <i class="fas fa-trash mr-2"></i>Eliminar
+    </a>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Información personal -->
+    <div class="lg:col-span-2">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="text-lg font-semibold">
+                    <i class="fas fa-user-circle mr-2 text-primary-600"></i>
+                    Información Personal
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Código</dt>
+                        <dd class="text-base font-semibold">{{ responsable.codigo }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Tipo</dt>
+                        <dd>
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium
+                                {% if responsable.tipo == 'INTERNO' %}bg-blue-100 text-blue-800
+                                {% elif responsable.tipo == 'EXTERNO' %}bg-purple-100 text-purple-800
+                                {% elif responsable.tipo == 'CONTRATISTA' %}bg-orange-100 text-orange-800
+                                {% endif %}">
+                                {{ responsable.get_tipo_display }}
+                            </span>
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Nombres</dt>
+                        <dd>{{ responsable.nombres }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Apellidos</dt>
+                        <dd>{{ responsable.apellidos }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Puesto</dt>
+                        <dd>{{ responsable.puesto|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Departamento</dt>
+                        <dd>{{ responsable.departamento|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Fecha de Ingreso</dt>
+                        <dd>{{ responsable.fecha_ingreso|date:"d/m/Y"|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Estado</dt>
+                        <dd>
+                            {% if responsable.activo %}
+                            <span class="badge badge-green">Activo</span>
+                            {% else %}
+                            <span class="badge badge-gray">Inactivo</span>
+                            {% endif %}
+                        </dd>
+                    </div>
+                </div>
+                
+                {% if responsable.notas %}
+                <div class="mt-4">
+                    <dt class="text-sm font-medium text-gray-500">Notas</dt>
+                    <dd class="mt-1 text-gray-700">{{ responsable.notas }}</dd>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Información de contacto -->
+        <div class="card mt-6">
+            <div class="card-header">
+                <h3 class="text-lg font-semibold">
+                    <i class="fas fa-address-card mr-2 text-primary-600"></i>
+                    Contacto
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Email</dt>
+                        <dd>
+                            {% if responsable.email %}
+                            <a href="mailto:{{ responsable.email }}" class="text-primary-600 hover:text-primary-800">
+                                {{ responsable.email }}
+                            </a>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Teléfono</dt>
+                        <dd>{{ responsable.telefono|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Teléfono Móvil</dt>
+                        <dd>{{ responsable.telefono_movil|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Dirección</dt>
+                        <dd>{{ responsable.direccion|default:"-" }}</dd>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Estadísticas y foto -->
+    <div class="lg:col-span-1">
+        <!-- Foto -->
+        <div class="card mb-6">
+            <div class="card-header">
+                <h3 class="text-lg font-semibold">
+                    <i class="fas fa-camera mr-2 text-primary-600"></i>
+                    Foto
+                </h3>
+            </div>
+            <div class="card-body flex justify-center">
+                {% if responsable.foto %}
+                <img src="{{ responsable.foto.url }}" alt="{{ responsable.nombre_completo }}" 
+                     class="w-48 h-48 rounded-xl object-cover shadow-lg border-4 border-white">
+                {% else %}
+                <div class="w-48 h-48 bg-gray-100 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-user-tie text-gray-400 text-6xl"></i>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Estadísticas -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="text-lg font-semibold">
+                    <i class="fas fa-chart-pie mr-2 text-primary-600"></i>
+                    Estadísticas
+                </h3>
+            </div>
+            <div class="card-body space-y-4">
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-600">Activos asignados</span>
+                    <span class="font-bold text-xl">{{ activos_asignados }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-600">Equipos funcionales</span>
+                    <span class="font-bold text-xl">{{ equipos_asignados }}</span>
+                </div>
+                {% if responsable.usuario %}
+                <div class="pt-4 border-t border-gray-200">
+                    <span class="text-sm text-gray-500 block mb-1">Vinculado a usuario:</span>
+                    <span class="font-medium text-primary-600">{{ responsable.usuario.username }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

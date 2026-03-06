@@ -1,0 +1,277 @@
+{% extends 'base.html' %}
+{% block title %}{% if object %}Editar {{ object.codigo }}{% else %}Nuevo Equipo Funcional{% endif %} - SIGAP{% endblock %}
+{% block page_title %}{% if object %}Editar Equipo{% else %}Nuevo Equipo Funcional{% endif %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb">
+    <a href="/"><i class="fas fa-house"></i> Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'activos:equipofuncional_list' %}">Equipos Funcionales</a>
+    <i class="fas fa-chevron-right"></i>
+    {% if object %}<a href="{% url 'activos:equipofuncional_detail' object.pk %}">{{ object.codigo }}</a>
+    <i class="fas fa-chevron-right"></i><span>Editar</span>
+    {% else %}<span>Nuevo</span>{% endif %}
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-wrap { max-width:860px; }
+
+    .form-section { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; margin-bottom:1rem; }
+    .form-section-header {
+        padding:1rem 1.5rem; border-bottom:1px solid var(--border); background:var(--surface2);
+        display:flex; align-items:center; gap:.6rem;
+    }
+    .form-section-header .s-num {
+        width:26px; height:26px; border-radius:50%;
+        background:rgba(37,99,235,.2); display:flex; align-items:center; justify-content:center;
+        font-size:.72rem; font-weight:700; color:#60a5fa; flex-shrink:0;
+    }
+    .form-section-header h3 { font-family:'Syne',sans-serif; font-size:.9rem; font-weight:600; color:var(--text); }
+    .form-section-body { padding:1.5rem; }
+
+    .fg-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; }
+    .fg-2 { display:grid; grid-template-columns:repeat(2,1fr); gap:1rem; }
+    .fg-1-2 { display:grid; grid-template-columns:1fr 2fr; gap:1rem; }
+    .gap-b { margin-bottom:1rem; }
+
+    .field-group { display:flex; flex-direction:column; gap:.35rem; }
+    .field-group label { font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--text-muted); }
+    .field-group label .req { color:#f87171; margin-left:2px; }
+
+    .f-input,.f-select,.f-textarea {
+        background:rgba(255,255,255,.04); border:1px solid var(--border);
+        border-radius:9px; padding:.6rem .875rem; color:var(--text);
+        font-family:'DM Sans',sans-serif; font-size:.875rem; outline:none; width:100%;
+        transition:border-color .2s,background .2s,box-shadow .2s;
+    }
+    .f-input::placeholder,.f-textarea::placeholder { color:rgba(107,114,128,.5); }
+    .f-input:focus,.f-select:focus,.f-textarea:focus { border-color:var(--accent); background:rgba(37,99,235,.05); box-shadow:0 0 0 3px rgba(37,99,235,.12); }
+    .f-select {
+        appearance:none; cursor:pointer;
+        background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7280'/%3E%3C/svg%3E");
+        background-repeat:no-repeat; background-position:right .875rem center;
+        background-color:rgba(255,255,255,.04); padding-right:2.25rem;
+    }
+    .f-select option { background:#1a2236; color:var(--text); }
+    .f-textarea { resize:vertical; min-height:80px; }
+    .f-file {
+        width:100%; background:rgba(255,255,255,.04); border:1px dashed rgba(255,255,255,.12);
+        border-radius:9px; padding:.75rem .875rem; color:var(--text-muted);
+        font-size:.82rem; cursor:pointer; transition:border-color .2s,background .2s;
+    }
+    .f-file:hover { border-color:var(--accent); background:rgba(37,99,235,.04); }
+
+    /* Multi-select activos */
+    .activos-select {
+        background:rgba(255,255,255,.04); border:1px solid var(--border);
+        border-radius:9px; color:var(--text); font-family:'DM Sans',sans-serif;
+        font-size:.875rem; outline:none; width:100%; min-height:160px; padding:.4rem;
+    }
+    .activos-select option { padding:.4rem .6rem; border-radius:5px; cursor:pointer; }
+    .activos-select option:checked { background:rgba(37,99,235,.3); color:#60a5fa; }
+    .activos-select:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(37,99,235,.12); }
+
+    .select-hint { font-size:.72rem; color:var(--text-muted); margin-top:.3rem; }
+    .select-hint i { color:var(--accent2); margin-right:.2rem; }
+
+    /* Criticidad visual selector */
+    .crit-options { display:grid; grid-template-columns:repeat(4,1fr); gap:.6rem; }
+    .crit-opt { position:relative; }
+    .crit-opt input { position:absolute; opacity:0; width:0; height:0; }
+    .crit-opt label {
+        display:flex; flex-direction:column; align-items:center; gap:.4rem;
+        padding:.75rem .5rem; background:rgba(255,255,255,.03);
+        border:1.5px solid var(--border); border-radius:9px; cursor:pointer;
+        font-size:.78rem; color:var(--text-subtle); text-align:center;
+        transition:background .15s,border-color .2s,transform .15s; user-select:none;
+    }
+    .crit-opt label:hover { background:rgba(255,255,255,.06); border-color:var(--border2); transform:translateY(-1px); }
+    .crit-opt input:checked + label { border-color:var(--accent); background:rgba(37,99,235,.1); color:var(--text); }
+    .crit-dot { width:14px; height:14px; border-radius:50%; }
+
+    /* Submit bar */
+    .submit-bar {
+        display:flex; align-items:center; justify-content:space-between;
+        padding:1.1rem 1.5rem; background:var(--surface); border:1px solid var(--border);
+        border-radius:14px; position:sticky; bottom:1rem; margin-top:1.25rem; z-index:10;
+    }
+    .submit-bar .left { display:flex; align-items:center; gap:.5rem; color:var(--text-muted); font-size:.82rem; }
+    .submit-bar .right { display:flex; gap:.6rem; }
+    .btn-cancel { display:inline-flex; align-items:center; gap:.4rem; padding:.55rem 1.1rem; border-radius:8px; border:1px solid var(--border); background:rgba(255,255,255,.04); color:var(--text-subtle); font-size:.875rem; text-decoration:none; transition:background .15s,color .15s; }
+    .btn-cancel:hover { background:rgba(255,255,255,.08); color:var(--text); }
+
+    .img-preview { margin-top:.5rem; max-height:140px; border-radius:8px; border:1px solid var(--border); object-fit:cover; display:block; }
+    .field-error { font-size:.75rem; color:#f87171; margin-top:.2rem; }
+
+    @media(max-width:760px) { .fg-3,.crit-options{grid-template-columns:repeat(2,1fr)} .fg-2,.fg-1-2{grid-template-columns:1fr} }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-wrap">
+<form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+
+    <!-- § 1 · Identificación -->
+    <div class="form-section">
+        <div class="form-section-header">
+            <div class="s-num">1</div>
+            <h3>Identificación</h3>
+        </div>
+        <div class="form-section-body">
+            <div class="fg-1-2 gap-b">
+                <div class="field-group">
+                    <label>Código <span class="req">*</span></label>
+                    {{ form.codigo }}
+                    {% if form.codigo.errors %}<p class="field-error">{{ form.codigo.errors.0 }}</p>{% endif %}
+                </div>
+                <div class="field-group">
+                    <label>Nombre <span class="req">*</span></label>
+                    {{ form.nombre }}
+                    {% if form.nombre.errors %}<p class="field-error">{{ form.nombre.errors.0 }}</p>{% endif %}
+                </div>
+            </div>
+            <div class="field-group">
+                <label>Descripción</label>
+                {{ form.descripcion }}
+            </div>
+        </div>
+    </div>
+
+    <!-- § 2 · Clasificación -->
+    <div class="form-section">
+        <div class="form-section-header">
+            <div class="s-num">2</div>
+            <h3>Clasificación & Operación</h3>
+        </div>
+        <div class="form-section-body">
+            <div class="fg-2 gap-b">
+                <div class="field-group">
+                    <label>Estado Operativo</label>
+                    {{ form.estado_operativo }}
+                </div>
+                <div class="field-group">
+                    <label>Fecha de Instalación</label>
+                    {{ form.fecha_instalacion }}
+                </div>
+            </div>
+
+            <!-- Criticidad visual -->
+            <div class="field-group">
+                <label>Criticidad</label>
+                <div class="crit-options" id="critOptions">
+                    {% for val, lbl in form.criticidad.field.choices %}
+                    {% if val %}
+                    <div class="crit-opt">
+                        <input type="radio" name="criticidad" id="crit_{{ val }}" value="{{ val }}"
+                               {% if form.criticidad.value == val %}checked{% endif %}>
+                        <label for="crit_{{ val }}">
+                            <span class="crit-dot" style="background:{% if val == 'alta' %}#f87171{% elif val == 'media' %}#fcd34d{% elif val == 'baja' %}#4ade80{% elif val == 'critica' %}#c4b5fd{% else %}#9ca3af{% endif %};"></span>
+                            {{ lbl }}
+                        </label>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- § 3 · Ubicación & Responsable -->
+    <div class="form-section">
+        <div class="form-section-header">
+            <div class="s-num">3</div>
+            <h3>Ubicación & Responsable</h3>
+        </div>
+        <div class="form-section-body">
+            <div class="fg-2">
+                <div class="field-group">
+                    <label>Área</label>
+                    {{ form.area }}
+                </div>
+                <div class="field-group">
+                    <label>Responsable</label>
+                    {{ form.responsable }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- § 4 · Activos -->
+    <div class="form-section">
+        <div class="form-section-header">
+            <div class="s-num">4</div>
+            <h3>Activos Asociados</h3>
+        </div>
+        <div class="form-section-body">
+            <div class="field-group">
+                <label>Seleccionar Activos</label>
+                {{ form.activos }}
+                <p class="select-hint"><i class="fas fa-circle-info"></i> Mantén Ctrl (o Cmd) para seleccionar múltiples activos.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- § 5 · Archivos & Notas -->
+    <div class="form-section">
+        <div class="form-section-header">
+            <div class="s-num">5</div>
+            <h3>Archivos & Notas</h3>
+        </div>
+        <div class="form-section-body">
+            <div class="fg-2 gap-b">
+                <div class="field-group">
+                    <label>Imagen</label>
+                    {{ form.imagen }}
+                    {% if object.imagen %}<img src="{{ object.imagen.url }}" class="img-preview" alt="Imagen actual">{% endif %}
+                </div>
+                <div class="field-group">
+                    <label>Documentación</label>
+                    {{ form.documentacion }}
+                </div>
+            </div>
+            <div class="field-group gap-b">
+                <label>Notas</label>
+                {{ form.notas }}
+            </div>
+            <div class="field-group" style="flex-direction:row;align-items:center;gap:.75rem;">
+                {{ form.activo }}
+                <label for="{{ form.activo.id_for_label }}" style="font-size:.875rem;color:var(--text-subtle);text-transform:none;letter-spacing:0;cursor:pointer;">
+                    Activo en sistema
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submit bar -->
+    <div class="submit-bar">
+        <div class="left">
+            <i class="fas fa-circle-info"></i>
+            {% if object %}Editando <strong>{{ object.codigo }}</strong>{% else %}Nuevo equipo funcional{% endif %}
+        </div>
+        <div class="right">
+            <a href="{% if object %}{% url 'activos:equipofuncional_detail' object.pk %}{% else %}{% url 'activos:equipofuncional_list' %}{% endif %}" class="btn-cancel">
+                <i class="fas fa-xmark"></i> Cancelar
+            </a>
+            <button type="submit" class="btn-primary">
+                <i class="fas fa-floppy-disk"></i> {% if object %}Guardar cambios{% else %}Crear equipo{% endif %}
+            </button>
+        </div>
+    </div>
+</form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('input[type=text],input[type=number],input[type=date],input[type=email]').forEach(el => el.classList.add('f-input'));
+document.querySelectorAll('input[type=file]').forEach(el => el.classList.add('f-file'));
+document.querySelectorAll('select').forEach(el => {
+    if (el.multiple) el.classList.add('activos-select');
+    else el.classList.add('f-select');
+});
+document.querySelectorAll('textarea').forEach(el => el.classList.add('f-textarea'));
+</script>
+{% endblock %}

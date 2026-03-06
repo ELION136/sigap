@@ -1,93 +1,238 @@
-<!-- Header -->
-<header class="bg-white shadow-sm border-b border-gray-200">
-    <div class="flex items-center justify-between px-6 py-3">
-        <!-- Left side -->
-        <div class="flex items-center">
-            <!-- Mobile menu button -->
-            <button id="sidebarToggle" class="md:hidden mr-4 text-gray-500 hover:text-gray-700 focus:outline-none">
-                <i class="fas fa-bars text-xl"></i>
-            </button>
-            
-            <!-- Page title -->
-            <h1 class="text-xl font-semibold text-gray-800">
-                {% block page_title %}{% endblock %}
-            </h1>
+<!-- header.html -->
+<header style="height:60px; background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 1.75rem; flex-shrink:0; gap:1rem;">
+
+    <style>
+        .hdr-search-wrap {
+            position: relative;
+        }
+        .hdr-search-wrap input {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.45rem 1rem 0.45rem 2.4rem;
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.85rem;
+            width: 220px;
+            outline: none;
+            transition: border-color 0.2s, background 0.2s, width 0.3s;
+        }
+        .hdr-search-wrap input::placeholder { color: var(--text-muted); }
+        .hdr-search-wrap input:focus {
+            border-color: var(--accent);
+            background: rgba(37,99,235,0.06);
+            width: 280px;
+        }
+        .hdr-search-wrap .search-icon {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            pointer-events: none;
+        }
+
+        .hdr-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px; height: 36px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            color: var(--text-subtle);
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+            text-decoration: none;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+        .hdr-btn:hover {
+            background: rgba(255,255,255,0.08);
+            color: var(--text);
+            border-color: var(--border2);
+        }
+
+        .notif-badge {
+            position: absolute;
+            top: -3px; right: -3px;
+            width: 16px; height: 16px;
+            background: #ef4444;
+            color: #fff;
+            font-size: 0.6rem;
+            font-weight: 700;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            border: 2px solid var(--surface);
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            min-width: 190px;
+            background: var(--surface2);
+            border: 1px solid var(--border2);
+            border-radius: 10px;
+            padding: 0.4rem;
+            z-index: 100;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.55rem 0.75rem;
+            border-radius: 7px;
+            font-size: 0.85rem;
+            color: var(--text-subtle);
+            text-decoration: none;
+            transition: background 0.15s, color 0.15s;
+            cursor: pointer;
+            width: 100%;
+            background: none;
+            border: none;
+            text-align: left;
+            font-family: 'DM Sans', sans-serif;
+        }
+        .dropdown-item:hover {
+            background: rgba(255,255,255,0.06);
+            color: var(--text);
+        }
+        .dropdown-item.danger { color: #f87171; }
+        .dropdown-item.danger:hover { background: rgba(239,68,68,0.1); color: #fca5a5; }
+        .dropdown-item i { width: 14px; text-align: center; font-size: 0.8rem; flex-shrink: 0; }
+
+        .dropdown-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 0.35rem 0;
+        }
+
+        .user-pill {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.3rem 0.5rem 0.3rem 0.3rem;
+            border-radius: 9px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .user-pill:hover {
+            background: rgba(255,255,255,0.07);
+            border-color: var(--border2);
+        }
+        .user-avatar {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #2563eb, #38bdf8);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.7rem;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .user-name {
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: var(--text);
+            white-space: nowrap;
+        }
+
+        .page-heading {
+            font-family: 'Syne', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text);
+            white-space: nowrap;
+        }
+    </style>
+
+    <!-- Left -->
+    <div style="display:flex; align-items:center; gap:0.75rem;">
+        <!-- Mobile toggle -->
+        <button id="sidebarToggle" class="hdr-btn" style="display:none;" aria-label="Menu">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <span class="page-heading">{% block page_title %}{% endblock %}</span>
+    </div>
+
+    <!-- Right -->
+    <div style="display:flex; align-items:center; gap:0.6rem;">
+
+        <!-- Search -->
+        <div class="hdr-search-wrap hidden md:block">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" placeholder="Buscar activo, equipo…">
         </div>
-        
-        <!-- Right side -->
-        <div class="flex items-center space-x-4">
-            <!-- Search (global) -->
-            <div class="hidden md:flex items-center">
-                <div class="relative">
-                    <input type="text" 
-                           placeholder="Buscar..." 
-                           class="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fas fa-search text-gray-400"></i>
-                    </div>
-                </div>
+
+        <!-- Notifications -->
+        <div style="position:relative;" x-data="{ open: false }">
+            <button @click="open = !open" class="hdr-btn" style="position:relative;" aria-label="Notificaciones">
+                <i class="fas fa-bell"></i>
+                <span class="notif-badge">3</span>
+            </button>
+            <div x-show="open" @click.away="open = false" x-transition class="dropdown-menu" style="min-width:240px;">
+                <p style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-muted); padding:0.4rem 0.75rem 0.5rem;">Notificaciones</p>
+                <a href="#" class="dropdown-item"><i class="fas fa-wrench" style="color:#f59e0b;"></i> Mantenimiento pendiente</a>
+                <a href="#" class="dropdown-item"><i class="fas fa-triangle-exclamation" style="color:#ef4444;"></i> Activo sin revisión</a>
+                <a href="#" class="dropdown-item"><i class="fas fa-calendar-check" style="color:#38bdf8;"></i> Tarea programada hoy</a>
             </div>
-            
-            <!-- Notifications -->
-            <div class="relative">
-                <button class="relative p-2 text-gray-500 hover:text-gray-700 focus:outline-none">
-                    <i class="fas fa-bell text-lg"></i>
-                    <span class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-600 rounded-full">
-                        3
-                    </span>
-                </button>
+        </div>
+
+        <!-- Quick create -->
+        <div style="position:relative;" x-data="{ open: false }">
+            <button @click="open = !open" class="hdr-btn" aria-label="Crear">
+                <i class="fas fa-plus"></i>
+            </button>
+            <div x-show="open" @click.away="open = false" x-transition class="dropdown-menu">
+                <p style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-muted); padding:0.4rem 0.75rem 0.5rem;">Acción rápida</p>
+                <a href="{% url 'activos:activo_create' %}" class="dropdown-item">
+                    <i class="fas fa-box"></i> Nuevo Activo
+                </a>
+                <a href="{% url 'mantenimiento:mantenimiento_quick_create' %}" class="dropdown-item">
+                    <i class="fas fa-tools"></i> Nuevo Mantenimiento
+                </a>
+                <a href="{% url 'activos:equipofuncional_create' %}" class="dropdown-item">
+                    <i class="fas fa-cogs"></i> Nuevo Equipo
+                </a>
             </div>
-            
-            <!-- Quick actions -->
-            <div class="relative" x-data="{ open: false }">
-                <button @click="open = !open" 
-                        class="p-2 text-gray-500 hover:text-gray-700 focus:outline-none">
-                    <i class="fas fa-plus-circle text-lg"></i>
-                </button>
-                <div x-show="open" 
-                     @click.away="open = false"
-                     x-transition
-                     class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                    <a href="{% url 'activos:activo_create' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                        <i class="fas fa-box mr-2"></i>Nuevo Activo
-                    </a>
-                    <a href="{% url 'mantenimiento:mantenimiento_quick_create' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                        <i class="fas fa-tools mr-2"></i>Nuevo Mantenimiento
-                    </a>
-                    <a href="{% url 'activos:equipofuncional_create' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                        <i class="fas fa-cogs mr-2"></i>Nuevo Equipo
-                    </a>
-                </div>
+        </div>
+
+        <!-- User menu -->
+        <div style="position:relative;" x-data="{ open: false }">
+            <div @click="open = !open" class="user-pill">
+                <div class="user-avatar"><i class="fas fa-user"></i></div>
+                <span class="user-name hidden md:block">{{ request.user.username }}</span>
+                <i class="fas fa-chevron-down" style="font-size:0.6rem; color:var(--text-muted);"></i>
             </div>
-            
-            <!-- User menu -->
-            <div class="relative" x-data="{ open: false }">
-                <button @click="open = !open" 
-                        class="flex items-center space-x-2 focus:outline-none">
-                    <div class="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center">
-                        <i class="fas fa-user text-white text-sm"></i>
-                    </div>
-                    <span class="hidden md:block text-sm font-medium text-gray-700">
-                        {{ request.user.username }}
-                    </span>
-                    <i class="fas fa-chevron-down text-xs text-gray-500"></i>
-                </button>
-                <div x-show="open" 
-                     @click.away="open = false"
-                     x-transition
-                     class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                    <a href="{% url 'password_change' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                        <i class="fas fa-key mr-2"></i>Cambiar Contraseña
-                    </a>
-                    <div class="border-t border-gray-200 my-1"></div>
-                    <form method="post" action="{% url 'logout' %}">
-                        {% csrf_token %}
-                        <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
-                            <i class="fas fa-sign-out-alt mr-2"></i>Cerrar Sesión
-                        </button>
-                    </form>
+            <div x-show="open" @click.away="open = false" x-transition class="dropdown-menu">
+                <div style="padding:0.5rem 0.75rem 0.6rem;">
+                    <p style="font-size:0.85rem; font-weight:500; color:var(--text);">{{ request.user.get_full_name|default:request.user.username }}</p>
+                    <p style="font-size:0.72rem; color:var(--text-muted);">{{ request.user.email|default:"sin correo" }}</p>
                 </div>
+                <div class="dropdown-divider"></div>
+                <a href="{% url 'password_change' %}" class="dropdown-item">
+                    <i class="fas fa-key"></i> Cambiar Contraseña
+                </a>
+                <div class="dropdown-divider"></div>
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="dropdown-item danger">
+                        <i class="fas fa-arrow-right-from-bracket"></i> Cerrar Sesión
+                    </button>
+                </form>
             </div>
         </div>
     </div>
 </header>
+
+<style>
+    @media (max-width: 768px) {
+        #sidebarToggle { display:flex !important; }
+    }
+</style>

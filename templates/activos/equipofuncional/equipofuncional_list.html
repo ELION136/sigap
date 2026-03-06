@@ -1,0 +1,364 @@
+{% extends 'base.html' %}
+{% block title %}Equipos Funcionales - SIGAP{% endblock %}
+{% block page_title %}Equipos Funcionales{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb">
+    <a href="/"><i class="fas fa-house"></i> Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <span>Equipos Funcionales</span>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ── Toolbar ── */
+    .toolbar { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; margin-bottom:1.25rem; }
+    .toolbar-left  { flex:1; display:flex; gap:.5rem; flex-wrap:wrap; min-width:0; }
+    .toolbar-right { display:flex; gap:.5rem; flex-shrink:0; }
+
+    .search-wrap { position:relative; flex:1; min-width:200px; max-width:320px; }
+    .search-wrap input {
+        width:100%; background:var(--surface); border:1px solid var(--border);
+        border-radius:9px; padding:.55rem 1rem .55rem 2.4rem;
+        color:var(--text); font-family:'DM Sans',sans-serif; font-size:.875rem;
+        outline:none; transition:border-color .2s,background .2s;
+    }
+    .search-wrap input::placeholder { color:var(--text-muted); }
+    .search-wrap input:focus { border-color:var(--accent); background:rgba(37,99,235,.06); }
+    .search-wrap i { position:absolute; left:.8rem; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:.8rem; pointer-events:none; }
+
+    .filter-select {
+        background:var(--surface); border:1px solid var(--border); border-radius:9px;
+        padding:.55rem 2rem .55rem .875rem; color:var(--text-subtle);
+        font-family:'DM Sans',sans-serif; font-size:.82rem; outline:none; cursor:pointer;
+        appearance:none;
+        background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7280'/%3E%3C/svg%3E");
+        background-repeat:no-repeat; background-position:right .7rem center;
+        transition:border-color .2s;
+    }
+    .filter-select:focus { border-color:var(--accent); outline:none; }
+    .filter-active { border-color:rgba(56,189,248,.5); color:var(--accent2); }
+
+    /* ── Equipo Cards ── */
+    .equipos-grid {
+        display:grid;
+        grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+        gap:1rem;
+        margin-bottom:1.5rem;
+    }
+
+    .equipo-card {
+        background:var(--surface);
+        border:1px solid var(--border);
+        border-radius:14px;
+        overflow:hidden;
+        display:flex;
+        flex-direction:column;
+        transition:border-color .2s,transform .18s,box-shadow .2s;
+        animation:fadeUp .4s ease both;
+    }
+    .equipo-card:hover {
+        border-color:rgba(37,99,235,.45);
+        transform:translateY(-3px);
+        box-shadow:0 10px 32px rgba(0,0,0,.4);
+    }
+
+    /* Criticidad accent line */
+    .equipo-card::before {
+        content:''; height:3px; display:block;
+        transition:background .3s;
+    }
+    .equipo-card.crit-alta::before    { background:linear-gradient(90deg,#ef4444,#f97316); }
+    .equipo-card.crit-media::before   { background:linear-gradient(90deg,#f59e0b,#fcd34d); }
+    .equipo-card.crit-baja::before    { background:linear-gradient(90deg,#22c55e,#4ade80); }
+    .equipo-card.crit-critica::before { background:linear-gradient(90deg,#7c3aed,#c4b5fd); }
+    .equipo-card.crit-default::before { background:var(--border); }
+
+    .eq-header {
+        padding:1.1rem 1.25rem .75rem;
+        display:flex; align-items:flex-start; gap:.875rem;
+    }
+    .eq-thumb {
+        width:50px; height:50px; border-radius:10px; flex-shrink:0;
+        background:rgba(37,99,235,.1); border:1px solid rgba(37,99,235,.2);
+        display:flex; align-items:center; justify-content:center; overflow:hidden;
+    }
+    .eq-thumb img  { width:100%; height:100%; object-fit:cover; }
+    .eq-thumb i    { font-size:1.3rem; color:#60a5fa; }
+
+    .eq-meta { flex:1; min-width:0; }
+    .eq-code { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--accent2); margin-bottom:.2rem; }
+    .eq-name { font-family:'Syne',sans-serif; font-size:.95rem; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .eq-area { font-size:.78rem; color:var(--text-muted); margin-top:.15rem; }
+
+    .eq-body {
+        padding:0 1.25rem .875rem;
+        flex:1;
+        display:flex; flex-direction:column; gap:.5rem;
+    }
+
+    /* Stat pills row */
+    .eq-stats {
+        display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:.25rem;
+    }
+    .eq-stat {
+        display:flex; align-items:center; gap:.35rem;
+        background:rgba(255,255,255,.04); border:1px solid var(--border);
+        border-radius:9999px; padding:.2rem .65rem;
+        font-size:.72rem; color:var(--text-muted);
+    }
+    .eq-stat strong { color:var(--text); font-weight:600; }
+    .eq-stat i { font-size:.65rem; color:var(--accent2); }
+
+    .eq-desc {
+        font-size:.78rem; color:var(--text-muted);
+        line-height:1.55;
+        display:-webkit-box;
+        -webkit-line-clamp:2;
+        -webkit-box-orient:vertical;
+        overflow:hidden;
+    }
+
+    .eq-footer {
+        padding:.6rem 1.25rem;
+        border-top:1px solid var(--border);
+        background:var(--surface2);
+        display:flex; align-items:center; justify-content:space-between;
+    }
+
+    /* Criticidad badge */
+    .badge-critica { background:rgba(124,58,237,.15); color:#c4b5fd; border:1px solid rgba(124,58,237,.25); }
+    .badge-alta    { background:rgba(239,68,68,.15);  color:#f87171; border:1px solid rgba(239,68,68,.25); }
+    .badge-media   { background:rgba(245,158,11,.15); color:#fcd34d; border:1px solid rgba(245,158,11,.25); }
+    .badge-baja    { background:rgba(34,197,94,.15);  color:#4ade80; border:1px solid rgba(34,197,94,.25); }
+
+    /* Actions */
+    .actions-btn {
+        width:28px; height:28px; background:rgba(255,255,255,.04);
+        border:1px solid var(--border); border-radius:7px;
+        display:flex; align-items:center; justify-content:center;
+        color:var(--text-muted); cursor:pointer; font-size:.75rem;
+        transition:background .15s,color .15s; text-decoration:none;
+    }
+    .actions-btn:hover { background:rgba(255,255,255,.08); color:var(--text); border-color:var(--border2); }
+
+    .dropdown-menu {
+        position:absolute; bottom:calc(100% + 6px); right:0;
+        min-width:160px; background:var(--surface2);
+        border:1px solid var(--border2); border-radius:10px;
+        padding:.35rem; z-index:50; box-shadow:0 8px 30px rgba(0,0,0,.5);
+    }
+    .dropdown-item {
+        display:flex; align-items:center; gap:.6rem;
+        padding:.5rem .7rem; border-radius:7px;
+        font-size:.82rem; color:var(--text-subtle); text-decoration:none;
+        transition:background .15s,color .15s; cursor:pointer;
+    }
+    .dropdown-item:hover { background:rgba(255,255,255,.06); color:var(--text); }
+    .dropdown-item.danger { color:#f87171; }
+    .dropdown-item.danger:hover { background:rgba(239,68,68,.1); }
+    .dropdown-item i { width:14px; text-align:center; font-size:.78rem; }
+
+    /* Stat strip */
+    .stat-strip { display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:1.25rem; }
+    .strip-chip {
+        display:flex; align-items:center; gap:.4rem;
+        padding:.3rem .75rem; background:var(--surface);
+        border:1px solid var(--border); border-radius:9999px;
+        font-size:.75rem; color:var(--text-subtle);
+    }
+    .strip-chip strong { color:var(--text); font-weight:600; }
+    .strip-chip .dot   { width:6px; height:6px; border-radius:50%; }
+
+    /* Empty */
+    .empty-state { grid-column:1/-1; text-align:center; padding:4rem 2rem; color:var(--text-muted); }
+    .empty-state i { font-size:3rem; opacity:.2; display:block; margin-bottom:1rem; }
+
+    /* Pagination */
+    .pagination { display:flex; align-items:center; gap:.35rem; justify-content:center; }
+    .page-btn {
+        display:flex; align-items:center; justify-content:center;
+        min-width:34px; height:34px; padding:0 .5rem;
+        background:var(--surface); border:1px solid var(--border);
+        border-radius:8px; color:var(--text-subtle); text-decoration:none;
+        font-size:.82rem; transition:background .15s,color .15s,border-color .15s;
+    }
+    .page-btn:hover { background:rgba(255,255,255,.06); color:var(--text); }
+    .page-btn.active { background:rgba(37,99,235,.2); border-color:rgba(37,99,235,.4); color:#60a5fa; font-weight:600; }
+    .page-btn.disabled { opacity:.35; pointer-events:none; }
+
+    @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+    @media(max-width:640px){ .equipos-grid{grid-template-columns:1fr} }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Toolbar -->
+<div class="toolbar">
+    <div class="toolbar-left">
+        <form method="get" id="filterForm" style="display:contents;">
+            <div class="search-wrap">
+                <i class="fas fa-search"></i>
+                <input type="text" name="q" value="{{ request.GET.q }}"
+                       placeholder="Código o nombre del equipo…"
+                       onchange="document.getElementById('filterForm').submit()">
+            </div>
+
+            <select name="estado" class="filter-select {% if request.GET.estado %}filter-active{% endif %}"
+                    onchange="document.getElementById('filterForm').submit()">
+                <option value="">Todos los estados</option>
+                {% for val, label in estados %}
+                <option value="{{ val }}" {% if request.GET.estado == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+
+            <select name="criticidad" class="filter-select {% if request.GET.criticidad %}filter-active{% endif %}"
+                    onchange="document.getElementById('filterForm').submit()">
+                <option value="">Todas las criticidades</option>
+                {% for val, label in criticidades %}
+                <option value="{{ val }}" {% if request.GET.criticidad == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+
+            {% if request.GET.q or request.GET.estado or request.GET.criticidad %}
+            <a href="{% url 'activos:equipofuncional_list' %}" style="font-size:.8rem;color:#f87171;display:flex;align-items:center;gap:.3rem;text-decoration:none;padding:.5rem;">
+                <i class="fas fa-xmark"></i> Limpiar
+            </a>
+            {% endif %}
+        </form>
+    </div>
+    <div class="toolbar-right">
+        {% if perms.activos.add_equipofuncional %}
+        <a href="{% url 'activos:equipofuncional_create' %}" class="btn-primary">
+            <i class="fas fa-plus"></i> Nuevo Equipo
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Stat strip -->
+<div class="stat-strip">
+    <div class="strip-chip">
+        <span class="dot" style="background:#60a5fa;"></span>
+        Total: <strong>{{ page_obj.paginator.count }}</strong>
+    </div>
+    {% if request.GET.q or request.GET.estado or request.GET.criticidad %}
+    <div class="strip-chip" style="border-color:rgba(56,189,248,.3);color:var(--accent2);">
+        <i class="fas fa-filter" style="font-size:.65rem;"></i> Filtros activos
+    </div>
+    {% endif %}
+</div>
+
+<!-- Grid -->
+<div class="equipos-grid">
+    {% for equipo in equipos %}
+    <div class="equipo-card crit-{% if equipo.criticidad %}{{ equipo.criticidad|lower }}{% else %}default{% endif %}"
+         style="animation-delay:{{ forloop.counter0 }}0ms">
+
+        <a href="{% url 'activos:equipofuncional_detail' equipo.pk %}" style="text-decoration:none;display:contents;">
+            <div class="eq-header">
+                <div class="eq-thumb">
+                    {% if equipo.imagen %}<img src="{{ equipo.imagen.url }}" alt="">
+                    {% else %}<i class="fas fa-cogs"></i>{% endif %}
+                </div>
+                <div class="eq-meta">
+                    <div class="eq-code">{{ equipo.codigo }}</div>
+                    <div class="eq-name">{{ equipo.nombre }}</div>
+                    <div class="eq-area">{% if equipo.area %}{{ equipo.area }}{% else %}Sin área{% endif %}</div>
+                </div>
+            </div>
+            <div class="eq-body">
+                <div class="eq-stats">
+                    <div class="eq-stat"><i class="fas fa-box"></i><span><strong>{{ equipo.activos_count }}</strong> activos</span></div>
+                    {% if equipo.responsable %}
+                    <div class="eq-stat"><i class="fas fa-user"></i><span>{{ equipo.responsable }}</span></div>
+                    {% endif %}
+                    {% if equipo.fecha_instalacion %}
+                    <div class="eq-stat"><i class="fas fa-calendar"></i><span>{{ equipo.fecha_instalacion|date:"Y" }}</span></div>
+                    {% endif %}
+                </div>
+                {% if equipo.descripcion %}
+                <p class="eq-desc">{{ equipo.descripcion }}</p>
+                {% endif %}
+            </div>
+        </a>
+
+        <div class="eq-footer">
+            <div style="display:flex;gap:.4rem;align-items:center;">
+                <!-- Estado operativo badge -->
+                {% if equipo.estado_operativo == 'operativo' %}
+                <span class="badge badge-green">{{ equipo.get_estado_operativo_display }}</span>
+                {% elif equipo.estado_operativo == 'mantenimiento' %}
+                <span class="badge badge-yellow">{{ equipo.get_estado_operativo_display }}</span>
+                {% elif equipo.estado_operativo == 'fuera_servicio' %}
+                <span class="badge badge-red">{{ equipo.get_estado_operativo_display }}</span>
+                {% else %}
+                <span class="badge badge-gray">{{ equipo.get_estado_operativo_display|default:"—" }}</span>
+                {% endif %}
+                <!-- Criticidad -->
+                {% if equipo.criticidad %}
+                <span class="badge badge-{{ equipo.criticidad|lower }}">{{ equipo.get_criticidad_display }}</span>
+                {% endif %}
+            </div>
+
+            <div style="position:relative;" x-data="{ open: false }">
+                <button @click.prevent="open=!open" class="actions-btn"><i class="fas fa-ellipsis"></i></button>
+                <div x-show="open" @click.away="open=false" x-transition class="dropdown-menu">
+                    <a href="{% url 'activos:equipofuncional_detail' equipo.pk %}" class="dropdown-item">
+                        <i class="fas fa-eye"></i> Ver detalle
+                    </a>
+                    {% if perms.activos.change_equipofuncional %}
+                    <a href="{% url 'activos:equipofuncional_update' equipo.pk %}" class="dropdown-item">
+                        <i class="fas fa-pen"></i> Editar
+                    </a>
+                    {% endif %}
+                    {% if perms.activos.delete_equipofuncional %}
+                    <div style="height:1px;background:var(--border);margin:.3rem 0;"></div>
+                    <a href="{% url 'activos:equipofuncional_delete' equipo.pk %}" class="dropdown-item danger">
+                        <i class="fas fa-trash"></i> Eliminar
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="empty-state">
+        <i class="fas fa-cogs"></i>
+        <p>No se encontraron equipos funcionales{% if request.GET.q %} para "<strong>{{ request.GET.q }}</strong>"{% endif %}.</p>
+        {% if perms.activos.add_equipofuncional %}
+        <a href="{% url 'activos:equipofuncional_create' %}" class="btn-primary" style="display:inline-flex;margin-top:1rem;">
+            <i class="fas fa-plus"></i> Registrar primer equipo
+        </a>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<div style="margin-top:1.5rem;">
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+        <a href="?page=1" class="page-btn"><i class="fas fa-angles-left"></i></a>
+        <a href="?page={{ page_obj.previous_page_number }}" class="page-btn"><i class="fas fa-angle-left"></i></a>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}<span class="page-btn active">{{ num }}</span>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <a href="?page={{ num }}" class="page-btn">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" class="page-btn"><i class="fas fa-angle-right"></i></a>
+        <a href="?page={{ page_obj.paginator.num_pages }}" class="page-btn"><i class="fas fa-angles-right"></i></a>
+        {% endif %}
+    </div>
+    <p style="text-align:center;font-size:.75rem;color:var(--text-muted);margin-top:.75rem;">
+        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }} · {{ page_obj.paginator.count }} equipos
+    </p>
+</div>
+{% endif %}
+{% endblock %}

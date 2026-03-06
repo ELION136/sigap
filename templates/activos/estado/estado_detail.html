@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% block title %}{{ estado.codigo }} - SIGAP{% endblock %}
+{% block page_title %}Estado{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb">
+    <a href="/"><i class="fas fa-house"></i> Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'activos:estado_list' %}">Estados</a>
+    <i class="fas fa-chevron-right"></i>
+    <span>{{ estado.codigo }}</span>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detail-wrap { max-width:720px; }
+
+    .estado-hero {
+        border-radius:16px; overflow:hidden;
+        border:1px solid var(--border); margin-bottom:1.25rem;
+        background:var(--surface);
+    }
+    /* Full-color band header */
+    .hero-band {
+        height:80px; position:relative;
+        display:flex; align-items:center; padding:0 2rem; gap:1.25rem;
+    }
+    .hero-band::after { content:''; position:absolute; inset:0; background:linear-gradient(90deg,rgba(0,0,0,.3),transparent); }
+    .hero-band-icon {
+        width:48px; height:48px; border-radius:11px; flex-shrink:0;
+        background:rgba(255,255,255,.2); backdrop-filter:blur(6px);
+        border:2px solid rgba(255,255,255,.3);
+        display:flex; align-items:center; justify-content:center;
+        font-size:1.3rem; color:#fff; position:relative; z-index:1;
+    }
+    .hero-band-text { position:relative; z-index:1; }
+    .hero-band-code { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:rgba(255,255,255,.7); }
+    .hero-band-name { font-family:'Syne',sans-serif; font-size:1.5rem; font-weight:700; color:#fff; line-height:1.2; }
+
+    .hero-body { padding:1.25rem 2rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
+
+    /* Live preview badge */
+    .live-badge { display:inline-flex; align-items:center; gap:.4rem; padding:.3rem .8rem; border-radius:9999px; font-size:.82rem; font-weight:600; }
+
+    .toggle-chip { display:inline-flex; align-items:center; gap:.4rem; padding:.25rem .75rem; border-radius:9999px; font-size:.78rem; font-weight:600; }
+    .tc-on  { background:rgba(34,197,94,.12);  color:#4ade80; border:1px solid rgba(34,197,94,.25); }
+    .tc-off { background:rgba(107,114,128,.1); color:#6b7280; border:1px solid rgba(107,114,128,.2); }
+
+    .hero-chips { display:flex; gap:.5rem; flex-wrap:wrap; }
+    .hero-actions { display:flex; gap:.5rem; }
+    .act-btn {
+        display:inline-flex; align-items:center; gap:.4rem; padding:.5rem .9rem;
+        border-radius:8px; font-size:.82rem; font-weight:500; text-decoration:none;
+        border:1px solid var(--border); background:rgba(255,255,255,.04); color:var(--text-subtle);
+        transition:background .15s,color .15s,border-color .15s; cursor:pointer; white-space:nowrap;
+    }
+    .act-btn:hover { background:rgba(255,255,255,.08); color:var(--text); border-color:var(--border2); }
+    .act-btn.primary { background:linear-gradient(135deg,var(--accent),#1d4ed8); border-color:transparent; color:#fff; box-shadow:0 3px 14px rgba(37,99,235,.35); }
+    .act-btn.danger  { color:#f87171; border-color:rgba(239,68,68,.25); }
+    .act-btn.danger:hover { background:rgba(239,68,68,.1); }
+
+    /* Detail card */
+    .detail-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; margin-bottom:1rem; }
+    .dc-header { padding:.875rem 1.25rem; border-bottom:1px solid var(--border); background:var(--surface2); display:flex; align-items:center; justify-content:space-between; gap:.5rem; font-family:'Syne',sans-serif; font-size:.875rem; font-weight:600; color:var(--text); }
+    .dc-header-left { display:flex; align-items:center; gap:.5rem; }
+    .dc-header i  { color:var(--accent2); font-size:.8rem; }
+    .dc-body { padding:1.1rem 1.25rem; }
+
+    .field-row { display:flex; justify-content:space-between; align-items:center; padding:.5rem 0; border-bottom:1px solid rgba(255,255,255,.04); gap:1rem; }
+    .field-row:last-child { border-bottom:none; padding-bottom:0; }
+    .fl { font-size:.73rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; flex-shrink:0; }
+    .fv { font-size:.875rem; color:var(--text); text-align:right; }
+    .fv.empty { color:var(--text-muted); font-style:italic; }
+
+    /* Activos list */
+    .activo-mini { display:flex; align-items:center; gap:.75rem; padding:.6rem 0; border-bottom:1px solid rgba(255,255,255,.04); text-decoration:none; transition:padding-left .15s; }
+    .activo-mini:last-child { border-bottom:none; }
+    .activo-mini:hover { padding-left:.4rem; }
+    .am-code { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--accent2); flex-shrink:0; width:80px; }
+    .am-name { font-size:.85rem; color:var(--text); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .am-tipo { font-size:.75rem; color:var(--text-muted); flex-shrink:0; }
+</style>
+{% endblock %}
+
+{% block content %}
+{% with c=estado.color %}
+<div class="detail-wrap">
+
+    <div class="estado-hero">
+        <!-- Colored band -->
+        <div class="hero-band" style="background:{% if c == 'green' %}#16a34a{% elif c == 'blue' %}#2563eb{% elif c == 'yellow' %}#ca8a04{% elif c == 'orange' %}#ea580c{% elif c == 'red' %}#dc2626{% elif c == 'purple' %}#7c3aed{% else %}#4b5563{% endif %};">
+            <div class="hero-band-icon"><i class="fas fa-circle-dot"></i></div>
+            <div class="hero-band-text">
+                <div class="hero-band-code">{{ estado.codigo }}</div>
+                <div class="hero-band-name">{{ estado.nombre }}</div>
+            </div>
+        </div>
+        <!-- Chips + actions -->
+        <div class="hero-body">
+            <div class="hero-chips">
+                <span class="live-badge" style="
+                    background:{% if c == 'green' %}rgba(34,197,94,.15){% elif c == 'blue' %}rgba(37,99,235,.15){% elif c == 'yellow' %}rgba(245,158,11,.15){% elif c == 'orange' %}rgba(249,115,22,.15){% elif c == 'red' %}rgba(239,68,68,.15){% elif c == 'purple' %}rgba(139,92,246,.15){% else %}rgba(107,114,128,.15){% endif %};
+                    color:{% if c == 'green' %}#4ade80{% elif c == 'blue' %}#60a5fa{% elif c == 'yellow' %}#fcd34d{% elif c == 'orange' %}#fb923c{% elif c == 'red' %}#f87171{% elif c == 'purple' %}#c4b5fd{% else %}#9ca3af{% endif %};
+                    border:1px solid {% if c == 'green' %}rgba(34,197,94,.25){% elif c == 'blue' %}rgba(37,99,235,.25){% elif c == 'yellow' %}rgba(245,158,11,.25){% elif c == 'orange' %}rgba(249,115,22,.25){% elif c == 'red' %}rgba(239,68,68,.25){% elif c == 'purple' %}rgba(139,92,246,.25){% else %}rgba(107,114,128,.2){% endif %};">
+                    <i class="fas fa-circle" style="font-size:.45rem;"></i>
+                    Vista previa: {{ estado.nombre }}
+                </span>
+                <span class="toggle-chip {% if estado.operativo %}tc-on{% else %}tc-off{% endif %}">
+                    <i class="fas {% if estado.operativo %}fa-bolt{% else %}fa-ban{% endif %}"></i>
+                    {% if estado.operativo %}Operativo{% else %}No operativo{% endif %}
+                </span>
+                <span class="toggle-chip {% if estado.activo %}tc-on{% else %}tc-off{% endif %}">
+                    <i class="fas {% if estado.activo %}fa-circle-check{% else %}fa-circle-xmark{% endif %}"></i>
+                    {% if estado.activo %}Activo{% else %}Inactivo{% endif %}
+                </span>
+            </div>
+            <div class="hero-actions">
+                {% if perms.activos.change_estado %}
+                <a href="{% url 'activos:estado_update' estado.pk %}" class="act-btn primary">
+                    <i class="fas fa-pen"></i> Editar
+                </a>
+                {% endif %}
+                {% if perms.activos.delete_estado %}
+                <a href="{% url 'activos:estado_delete' estado.pk %}" class="act-btn danger">
+                    <i class="fas fa-trash"></i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Properties -->
+    <div class="detail-card">
+        <div class="dc-header"><div class="dc-header-left"><i class="fas fa-circle-info"></i> Propiedades</div></div>
+        <div class="dc-body">
+            <div class="field-row"><span class="fl">Color</span><span class="fv">{{ estado.get_color_display }}</span></div>
+            <div class="field-row"><span class="fl">Orden</span><span class="fv">#{{ estado.orden }}</span></div>
+            <div class="field-row"><span class="fl">Operativo</span><span class="fv"><span class="toggle-chip {% if estado.operativo %}tc-on{% else %}tc-off{% endif %}">{% if estado.operativo %}Sí{% else %}No{% endif %}</span></span></div>
+            <div class="field-row"><span class="fl">Activo en sistema</span><span class="fv"><span class="toggle-chip {% if estado.activo %}tc-on{% else %}tc-off{% endif %}">{% if estado.activo %}Sí{% else %}No{% endif %}</span></span></div>
+            {% if estado.descripcion %}
+            <div class="field-row" style="flex-direction:column;align-items:flex-start;gap:.4rem;border-bottom:none;padding-top:.75rem;">
+                <span class="fl">Descripción</span>
+                <p style="font-size:.875rem;color:var(--text-subtle);line-height:1.65;margin:0;">{{ estado.descripcion }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Activos con este estado -->
+    {% with activos=estado.activos.all|slice:":10" total=estado.activos.count %}
+    {% if total > 0 %}
+    <div class="detail-card">
+        <div class="dc-header">
+            <div class="dc-header-left"><i class="fas fa-boxes-stacked"></i> Activos con este estado</div>
+            <span style="font-size:.75rem;color:var(--text-muted);">{{ total }} en total</span>
+        </div>
+        <div class="dc-body">
+            {% for activo in activos %}
+            <a href="{% url 'activos:activo_detail' activo.pk %}" class="activo-mini">
+                <span class="am-code">{{ activo.codigo }}</span>
+                <span class="am-name">{{ activo.nombre }}</span>
+                <span class="am-tipo">{{ activo.tipo.nombre }}</span>
+            </a>
+            {% endfor %}
+            {% if total > 10 %}
+            <a href="{% url 'activos:activo_list' %}?estado={{ estado.pk }}"
+               style="display:block;text-align:center;padding:.75rem;font-size:.8rem;color:var(--accent2);text-decoration:none;margin-top:.5rem;">
+                Ver los {{ total|add:"-10" }} restantes →
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    {% endwith %}
+
+</div>
+{% endwith %}
+{% endblock %}

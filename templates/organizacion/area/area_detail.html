@@ -1,8 +1,8 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ nivel.nombre }} - SIGAP{% endblock %}
+{% block title %}{{ area.nombre }} - SIGAP{% endblock %}
 
-{% block page_title %}Detalle de Nivel{% endblock %}
+{% block page_title %}Detalle de Área{% endblock %}
 
 {% block breadcrumbs %}
 <nav class="mb-4">
@@ -11,9 +11,9 @@
         <li><i class="fas fa-chevron-right text-xs"></i></li>
         <li><a href="{% url 'organizacion:planta_list' %}" class="hover:text-primary-600">Organización</a></li>
         <li><i class="fas fa-chevron-right text-xs"></i></li>
-        <li><a href="{% url 'organizacion:nivel_list' %}" class="hover:text-primary-600">Niveles</a></li>
+        <li><a href="{% url 'organizacion:area_list' %}" class="hover:text-primary-600">Áreas</a></li>
         <li><i class="fas fa-chevron-right text-xs"></i></li>
-        <li class="text-gray-700">{{ nivel.nombre }}</li>
+        <li class="text-gray-700">{{ area.nombre }}</li>
     </ol>
 </nav>
 {% endblock %}
@@ -22,17 +22,17 @@
 <!-- Header con acciones -->
 <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
     <div class="mb-4 md:mb-0">
-        <h2 class="text-2xl font-bold text-gray-800">{{ nivel.nombre }}</h2>
-        <p class="text-gray-500 mt-1">Código: {{ nivel.codigo }}</p>
+        <h2 class="text-2xl font-bold text-gray-800">{{ area.nombre }}</h2>
+        <p class="text-gray-500 mt-1">Código: {{ area.codigo }}</p>
     </div>
     <div class="flex space-x-3">
-        {% if perms.organizacion.change_nivel %}
-        <a href="{% url 'organizacion:nivel_update' nivel.pk %}" class="btn-primary">
+        {% if perms.organizacion.change_area %}
+        <a href="{% url 'organizacion:area_update' area.pk %}" class="btn-primary">
             <i class="fas fa-edit mr-2"></i>Editar
         </a>
         {% endif %}
-        {% if perms.organizacion.delete_nivel %}
-        <a href="{% url 'organizacion:nivel_delete' nivel.pk %}" class="btn-danger">
+        {% if perms.organizacion.delete_area %}
+        <a href="{% url 'organizacion:area_delete' area.pk %}" class="btn-danger">
             <i class="fas fa-trash mr-2"></i>Eliminar
         </a>
         {% endif %}
@@ -54,72 +54,84 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <p class="text-sm text-gray-500 mb-1">Descripción</p>
-                        <p class="text-gray-800">{{ nivel.descripcion|default:"Sin descripción" }}</p>
+                        <p class="text-gray-800">{{ area.descripcion|default:"Sin descripción" }}</p>
                     </div>
                     <div>
                         <p class="text-sm text-gray-500 mb-1">Estado</p>
-                        {% if nivel.activo %}
-                        <span class="badge badge-green">Activo</span>
+                        {% if area.activa %}
+                        <span class="badge badge-green">Activa</span>
                         {% else %}
-                        <span class="badge badge-gray">Inactivo</span>
+                        <span class="badge badge-gray">Inactiva</span>
                         {% endif %}
                     </div>
                     <div>
-                        <p class="text-sm text-gray-500 mb-1">Número de Nivel</p>
-                        <p class="text-gray-800">{{ nivel.numero_nivel }}</p>
+                        <p class="text-sm text-gray-500 mb-1">Tipo de Área</p>
+                        <p class="text-gray-800">{{ area.get_tipo_area_display|default:"No especificado" }}</p>
                     </div>
                     <div>
-                        <p class="text-sm text-gray-500 mb-1">Altura (metros)</p>
-                        <p class="text-gray-800">{{ nivel.altura|default:"-" }}</p>
+                        <p class="text-sm text-gray-500 mb-1">Supervisor</p>
+                        {% if area.supervisor %}
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-user-circle text-primary-600"></i>
+                            <span class="text-gray-800">{{ area.supervisor.nombre_completo }}</span>
+                            <span class="text-xs text-gray-500">({{ area.supervisor.codigo }})</span>
+                        </div>
+                        {% else %}
+                        <p class="text-gray-400">No asignado</p>
+                        {% endif %}
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Planta Asociada -->
+        <!-- Ubicación (Planta/Nivel) -->
         <div class="card">
             <div class="card-header">
                 <h3 class="text-lg font-semibold text-gray-800">
-                    <i class="fas fa-building mr-2 text-primary-600"></i>
-                    Planta
+                    <i class="fas fa-map-marker-alt mr-2 text-primary-600"></i>
+                    Ubicación
                 </h3>
             </div>
             <div class="card-body">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <p class="text-sm text-gray-500 mb-1">Nombre</p>
+                        <p class="text-sm text-gray-500 mb-1">Planta</p>
                         <p class="text-gray-800">
-                            <a href="{{ nivel.planta.get_absolute_url }}" class="text-primary-600 hover:text-primary-800">
-                                {{ nivel.planta.nombre }}
+                            <a href="{{ area.nivel.planta.get_absolute_url }}" class="text-primary-600 hover:text-primary-800">
+                                {{ area.nivel.planta.nombre }}
                             </a>
                         </p>
                     </div>
                     <div>
-                        <p class="text-sm text-gray-500 mb-1">Código</p>
-                        <p class="text-gray-800">{{ nivel.planta.codigo }}</p>
+                        <p class="text-sm text-gray-500 mb-1">Nivel</p>
+                        <p class="text-gray-800">
+                            <a href="{{ area.nivel.get_absolute_url }}" class="text-primary-600 hover:text-primary-800">
+                                {{ area.nivel.nombre }} (Nivel {{ area.nivel.numero_nivel }})
+                            </a>
+                        </p>
                     </div>
                     <div>
-                        <p class="text-sm text-gray-500 mb-1">Dirección</p>
-                        <p class="text-gray-800">{{ nivel.planta.direccion|default:"No especificada" }}</p>
+                        <p class="text-sm text-gray-500 mb-1">Dirección de Planta</p>
+                        <p class="text-gray-800">{{ area.nivel.planta.direccion|default:"No especificada" }}</p>
                     </div>
                     <div>
                         <p class="text-sm text-gray-500 mb-1">Ciudad / País</p>
-                        <p class="text-gray-800">{{ nivel.planta.ciudad|default:"-" }}, {{ nivel.planta.pais }}</p>
+                        <p class="text-gray-800">{{ area.nivel.planta.ciudad|default:"-" }}, {{ area.nivel.planta.pais }}</p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Áreas -->
+        <!-- Subáreas (si existen) -->
         <div class="card">
             <div class="card-header flex justify-between items-center">
                 <h3 class="text-lg font-semibold text-gray-800">
-                    <i class="fas fa-map-signs mr-2 text-primary-600"></i>
-                    Áreas
+                    <i class="fas fa-sitemap mr-2 text-primary-600"></i>
+                    Subáreas
                 </h3>
-                {% if perms.organizacion.add_area %}
-                <a href="{% url 'organizacion:area_create' %}?nivel={{ nivel.pk }}" class="text-sm text-primary-600 hover:text-primary-800">
-                    <i class="fas fa-plus mr-1"></i>Agregar área
+                {% if perms.organizacion.add_subarea %}
+                <a href="{% url 'organizacion:subarea_create' %}?area={{ area.pk }}" class="text-sm text-primary-600 hover:text-primary-800">
+                    <i class="fas fa-plus mr-1"></i>Agregar subárea
                 </a>
                 {% endif %}
             </div>
@@ -130,25 +142,26 @@
                             <tr>
                                 <th>Código</th>
                                 <th>Nombre</th>
-                                <th>Tipo</th>
-                                <th>Subáreas</th>
+                                <th>Responsable</th>
                                 <th>Estado</th>
                                 <th class="text-right">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for area in nivel.areas.all %}
+                            {% for subarea in area.subareas.all %}
                             <tr>
-                                <td class="font-medium">{{ area.codigo }}</td>
+                                <td class="font-medium">{{ subarea.codigo }}</td>
+                                <td>{{ subarea.nombre }}</td>
                                 <td>
-                                    <a href="{{ area.get_absolute_url }}" class="text-primary-600 hover:text-primary-800">
-                                        {{ area.nombre }}
-                                    </a>
+                                    {% if subarea.responsable %}
+                                        {{ subarea.responsable.nombre_completo }}
+                                        <span class="text-xs text-gray-500 block">{{ subarea.responsable.codigo }}</span>
+                                    {% else %}
+                                        <span class="text-gray-400">-</span>
+                                    {% endif %}
                                 </td>
-                                <td>{{ area.tipo|default:"-" }}</td>
-                                <td>{{ area.subareas.count }}</td>
                                 <td>
-                                    {% if area.activa %}
+                                    {% if subarea.activa %}
                                     <span class="badge badge-green">Activa</span>
                                     {% else %}
                                     <span class="badge badge-gray">Inactiva</span>
@@ -156,13 +169,13 @@
                                 </td>
                                 <td class="text-right">
                                     <div class="flex items-center justify-end space-x-2">
-                                        <a href="{{ area.get_absolute_url }}" 
+                                        <a href="{% url 'organizacion:subarea_detail' subarea.pk %}" 
                                            class="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50"
                                            title="Ver detalle">
                                             <i class="fas fa-eye"></i>
                                         </a>
-                                        {% if perms.organizacion.change_area %}
-                                        <a href="{% url 'organizacion:area_update' area.pk %}" 
+                                        {% if perms.organizacion.change_subarea %}
+                                        <a href="{% url 'organizacion:subarea_update' subarea.pk %}" 
                                            class="text-yellow-600 hover:text-yellow-800 p-2 rounded-lg hover:bg-yellow-50"
                                            title="Editar">
                                             <i class="fas fa-edit"></i>
@@ -173,7 +186,7 @@
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="6" class="text-center py-4 text-gray-500">No hay áreas registradas en este nivel</td>
+                                <td colspan="5" class="text-center py-4 text-gray-500">No hay subáreas registradas en esta área</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -186,10 +199,10 @@
     <!-- Sidebar -->
     <div class="space-y-6">
         <!-- Plano -->
-        {% if nivel.plano %}
+        {% if area.plano %}
         <div class="card">
             <div class="card-body p-0">
-                <img src="{{ nivel.plano.url }}" alt="Plano de {{ nivel.nombre }}" class="w-full h-48 object-cover rounded-t-lg">
+                <img src="{{ area.plano.url }}" alt="Plano de {{ area.nombre }}" class="w-full h-48 object-cover rounded-t-lg">
             </div>
         </div>
         {% endif %}
@@ -205,24 +218,33 @@
             <div class="card-body">
                 <div class="grid grid-cols-2 gap-4">
                     <div class="text-center p-4 bg-blue-50 rounded-lg">
-                        <p class="text-2xl font-bold text-blue-600">{{ nivel.areas.count }}</p>
-                        <p class="text-sm text-gray-600">Total Áreas</p>
+                        <p class="text-2xl font-bold text-blue-600">{{ area.subareas.count }}</p>
+                        <p class="text-sm text-gray-600">Total Subáreas</p>
                     </div>
                     <div class="text-center p-4 bg-green-50 rounded-lg">
-                        <p class="text-2xl font-bold text-green-600">{{ nivel.areas.activas.count|default:"0" }}</p>
+                        <p class="text-2xl font-bold text-green-600">{{ area.subareas.activas.count|default:"0" }}</p>
                         <p class="text-sm text-gray-600">Activas</p>
                     </div>
                 </div>
-                {% if nivel.altura %}
-                <div class="mt-4 p-3 bg-gray-50 rounded-lg text-center">
-                    <p class="text-sm text-gray-500">Altura del nivel</p>
-                    <p class="text-xl font-semibold text-gray-800">{{ nivel.altura }} m</p>
+                {% if area.supervisor %}
+                <div class="mt-4 p-3 bg-gray-50 rounded-lg">
+                    <p class="text-sm text-gray-500">Supervisor</p>
+                    <div class="flex items-center gap-2 mt-1">
+                        <i class="fas fa-user-circle text-primary-600"></i>
+                        <div>
+                            <p class="font-medium">{{ area.supervisor.nombre_completo }}</p>
+                            <p class="text-xs text-gray-500">{{ area.supervisor.codigo }}</p>
+                            {% if area.supervisor.email %}
+                            <p class="text-xs text-gray-400">{{ area.supervisor.email }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
                 {% endif %}
             </div>
         </div>
 
-        <!-- Contacto de la Planta (opcional, para contexto) -->
+        <!-- Contacto de la Planta (opcional) -->
         <div class="card">
             <div class="card-header">
                 <h3 class="text-lg font-semibold text-gray-800">
@@ -232,19 +254,19 @@
             </div>
             <div class="card-body">
                 <div class="space-y-3">
-                    {% if nivel.planta.telefono %}
+                    {% if area.nivel.planta.telefono %}
                     <div class="flex items-center">
                         <i class="fas fa-phone text-gray-400 w-6"></i>
-                        <span>{{ nivel.planta.telefono }}</span>
+                        <span>{{ area.nivel.planta.telefono }}</span>
                     </div>
                     {% endif %}
-                    {% if nivel.planta.email %}
+                    {% if area.nivel.planta.email %}
                     <div class="flex items-center">
                         <i class="fas fa-envelope text-gray-400 w-6"></i>
-                        <span>{{ nivel.planta.email }}</span>
+                        <span>{{ area.nivel.planta.email }}</span>
                     </div>
                     {% endif %}
-                    {% if not nivel.planta.telefono and not nivel.planta.email %}
+                    {% if not area.nivel.planta.telefono and not area.nivel.planta.email %}
                     <p class="text-gray-500">No hay información de contacto</p>
                     {% endif %}
                 </div>
@@ -261,10 +283,10 @@
             </div>
             <div class="card-body">
                 <div class="space-y-2 text-sm">
-                    <p><span class="text-gray-500">Creado:</span> {{ nivel.creado|date:"d/m/Y H:i" }}</p>
-                    <p><span class="text-gray-500">Por:</span> {{ nivel.creado_por|default:"Sistema" }}</p>
-                    <p><span class="text-gray-500">Modificado:</span> {{ nivel.modificado|date:"d/m/Y H:i" }}</p>
-                    <p><span class="text-gray-500">Por:</span> {{ nivel.modificado_por|default:"Sistema" }}</p>
+                    <p><span class="text-gray-500">Creado:</span> {{ area.creado|date:"d/m/Y H:i" }}</p>
+                    <p><span class="text-gray-500">Por:</span> {{ area.creado_por|default:"Sistema" }}</p>
+                    <p><span class="text-gray-500">Modificado:</span> {{ area.modificado|date:"d/m/Y H:i" }}</p>
+                    <p><span class="text-gray-500">Por:</span> {{ area.modificado_por|default:"Sistema" }}</p>
                 </div>
             </div>
         </div>

@@ -1,0 +1,311 @@
+{% extends 'base.html' %}
+{% block title %}Cambiar Estado - {{ activo.codigo }} - SIGAP{% endblock %}
+{% block page_title %}Cambiar Estado{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb">
+    <a href="/"><i class="fas fa-house"></i> Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'activos:activo_list' %}">Activos</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'activos:activo_detail' activo.pk %}">{{ activo.codigo }}</a>
+    <i class="fas fa-chevron-right"></i>
+    <span>Cambiar Estado</span>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .estado-wrap {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    /* Asset banner */
+    .asset-banner {
+        display: flex;
+        align-items: center;
+        gap: 1.1rem;
+        padding: 1.25rem 1.5rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        margin-bottom: 1.25rem;
+    }
+    .banner-thumb {
+        width: 54px; height: 54px;
+        border-radius: 10px;
+        background: rgba(37,99,235,0.1);
+        border: 1px solid rgba(37,99,235,0.2);
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+        overflow: hidden;
+    }
+    .banner-thumb img { width:100%; height:100%; object-fit:cover; }
+    .banner-thumb i { font-size:1.4rem; color:#60a5fa; }
+    .banner-info { flex: 1; }
+    .banner-code { font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:var(--accent2); }
+    .banner-name { font-family:'Syne',sans-serif; font-size:1rem; font-weight:600; color:var(--text); }
+    .banner-meta { font-size:0.78rem; color:var(--text-muted); margin-top:0.1rem; }
+    .banner-badge { flex-shrink:0; }
+
+    /* Estado selector card */
+    .estado-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        overflow: hidden;
+    }
+    .estado-card-header {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface2);
+        display: flex; align-items: center; gap: 0.6rem;
+        font-family: 'Syne', sans-serif;
+        font-size: 0.9rem; font-weight: 600; color: var(--text);
+    }
+    .estado-card-header i { color: var(--accent2); font-size:0.8rem; }
+
+    .estado-card-body { padding: 1.5rem; }
+
+    /* Estado options grid */
+    .estado-options {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+    .estado-option {
+        position: relative;
+    }
+    .estado-option input[type=radio] {
+        position: absolute;
+        opacity: 0;
+        width: 0; height: 0;
+    }
+    .estado-option label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 1rem 0.75rem;
+        background: rgba(255,255,255,0.03);
+        border: 1.5px solid var(--border);
+        border-radius: 10px;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.2s, transform 0.15s;
+        text-align: center;
+        user-select: none;
+    }
+    .estado-option label:hover {
+        background: rgba(255,255,255,0.06);
+        border-color: var(--border2);
+        transform: translateY(-1px);
+    }
+    .estado-option input:checked + label {
+        border-color: var(--accent);
+        background: rgba(37,99,235,0.1);
+        box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+    }
+    .estado-dot {
+        width: 18px; height: 18px;
+        border-radius: 50%;
+        transition: box-shadow 0.2s;
+    }
+    .estado-option input:checked + label .estado-dot {
+        box-shadow: 0 0 12px currentColor;
+    }
+    .estado-name { font-size: 0.82rem; font-weight: 500; color: var(--text-subtle); }
+    .estado-option input:checked + label .estado-name { color: var(--text); }
+    .estado-check {
+        position: absolute;
+        top: 0.4rem; right: 0.4rem;
+        width: 18px; height: 18px;
+        background: var(--accent);
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.6rem; color: #fff;
+        opacity: 0;
+        transition: opacity 0.15s;
+    }
+    .estado-option input:checked ~ .estado-check { opacity: 1; }
+
+    /* Arrow indicator: current → new */
+    .change-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.875rem 1.1rem;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        margin-bottom: 1.5rem;
+        font-size: 0.82rem;
+        color: var(--text-muted);
+    }
+    .change-indicator .arrow { color: var(--accent2); }
+
+    .field-group { margin-bottom: 1.25rem; }
+    .field-group label {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: var(--text-muted);
+        margin-bottom: 0.4rem;
+    }
+    .f-textarea {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        padding: 0.6rem 0.875rem;
+        color: var(--text);
+        font-family: 'DM Sans', sans-serif;
+        font-size: 0.875rem;
+        outline: none;
+        width: 100%;
+        resize: vertical;
+        min-height: 80px;
+        transition: border-color 0.2s, background 0.2s;
+    }
+    .f-textarea:focus { border-color: var(--accent); background: rgba(37,99,235,0.05); box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+
+    .form-footer { display: flex; gap: 0.75rem; justify-content: flex-end; }
+    .btn-save {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        padding: 0.65rem 1.35rem;
+        background: linear-gradient(135deg, var(--accent), #1d4ed8);
+        color: #fff;
+        font-family: 'Syne', sans-serif;
+        font-size: 0.9rem; font-weight: 600;
+        border-radius: 9px; border: none;
+        cursor: pointer;
+        box-shadow: 0 4px 16px rgba(37,99,235,0.35);
+        transition: transform 0.15s, box-shadow 0.2s;
+    }
+    .btn-save:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(37,99,235,0.5); }
+    .btn-back {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        padding: 0.65rem 1.1rem;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        color: var(--text-subtle);
+        font-size: 0.9rem;
+        text-decoration: none;
+        transition: background 0.15s, color 0.15s;
+    }
+    .btn-back:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+
+    /* Color map helper */
+    .c-green  { background: #4ade80; }
+    .c-blue   { background: #60a5fa; }
+    .c-yellow { background: #fcd34d; }
+    .c-red    { background: #f87171; }
+    .c-purple { background: #c4b5fd; }
+    .c-orange { background: #fb923c; }
+    .c-gray   { background: #9ca3af; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="estado-wrap">
+
+    <!-- Asset banner -->
+    <div class="asset-banner">
+        <div class="banner-thumb">
+            {% if activo.imagen %}<img src="{{ activo.imagen.url }}" alt="">{% else %}<i class="fas fa-box"></i>{% endif %}
+        </div>
+        <div class="banner-info">
+            <div class="banner-code">{{ activo.codigo }}</div>
+            <div class="banner-name">{{ activo.nombre }}</div>
+            <div class="banner-meta">{{ activo.tipo.nombre }}</div>
+        </div>
+        <div class="banner-badge">
+            <span class="badge badge-{{ activo.estado.color|default:'gray' }}">{{ activo.estado.nombre }}</span>
+        </div>
+    </div>
+
+    <!-- Form card -->
+    <div class="estado-card">
+        <div class="estado-card-header">
+            <i class="fas fa-sliders"></i>
+            Seleccionar nuevo estado
+        </div>
+        <div class="estado-card-body">
+
+            <div class="change-indicator">
+                <span>Estado actual:</span>
+                <span class="badge badge-{{ activo.estado.color|default:'gray' }}">{{ activo.estado.nombre }}</span>
+                <i class="fas fa-arrow-right arrow"></i>
+                <span id="newStateLabel" style="color:var(--text-subtle); font-style:italic;">Selecciona un estado</span>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+
+                <!-- Estado options -->
+                <div class="estado-options" id="estadoOptions">
+                    {% for estado in form.estado.field.queryset %}
+                    <div class="estado-option">
+                        <input type="radio"
+                               name="estado"
+                               id="estado_{{ estado.pk }}"
+                               value="{{ estado.pk }}"
+                               {% if form.estado.value == estado.pk|stringformat:'s' or activo.estado.pk == estado.pk %}checked{% endif %}
+                               onchange="updateLabel('{{ estado.nombre }}', '{{ estado.color|default:'gray' }}')">
+                        <label for="estado_{{ estado.pk }}">
+                            <div class="estado-dot c-{{ estado.color|default:'gray' }}"></div>
+                            <span class="estado-name">{{ estado.nombre }}</span>
+                        </label>
+                        <div class="estado-check"><i class="fas fa-check"></i></div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Observaciones -->
+                <div class="field-group">
+                    <label>Observaciones (opcional)</label>
+                    <textarea name="observaciones" class="f-textarea" rows="3"
+                              placeholder="Motivo del cambio de estado…">{{ form.observaciones.value|default:'' }}</textarea>
+                </div>
+
+                <div class="form-footer">
+                    <a href="{% url 'activos:activo_detail' activo.pk %}" class="btn-back">
+                        <i class="fas fa-arrow-left"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn-save">
+                        <i class="fas fa-check"></i> Guardar cambio
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateLabel(name, color) {
+    const lbl = document.getElementById('newStateLabel');
+    const colorMap = {
+        green:'#4ade80', blue:'#60a5fa', yellow:'#fcd34d',
+        red:'#f87171', purple:'#c4b5fd', orange:'#fb923c', gray:'#9ca3af'
+    };
+    lbl.innerHTML = `<span style="display:inline-flex;align-items:center;gap:6px;">
+        <span style="width:8px;height:8px;border-radius:50%;background:${colorMap[color]||'#9ca3af'};display:inline-block;"></span>
+        <strong style="color:var(--text);">${name}</strong>
+    </span>`;
+}
+
+// Init label from current selection
+const checked = document.querySelector('#estadoOptions input:checked');
+if (checked) {
+    const lbl = checked.closest('.estado-option').querySelector('.estado-name');
+    const dot = checked.closest('.estado-option').querySelector('.estado-dot');
+    const color = [...dot.classList].find(c => c.startsWith('c-'))?.replace('c-','') || 'gray';
+    updateLabel(lbl.textContent.trim(), color);
+}
+</script>
+{% endblock %}

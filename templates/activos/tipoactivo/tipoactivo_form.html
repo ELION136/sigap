@@ -1,0 +1,258 @@
+{% extends 'base.html' %}
+{% block title %}{% if object %}Editar {{ object.codigo }}{% else %}Nuevo Tipo de Activo{% endif %} - SIGAP{% endblock %}
+{% block page_title %}{% if object %}Editar Tipo{% else %}Nuevo Tipo de Activo{% endif %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb">
+    <a href="/"><i class="fas fa-house"></i> Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'activos:tipoactivo_list' %}">Tipos de Activo</a>
+    <i class="fas fa-chevron-right"></i>
+    {% if object %}<a href="{% url 'activos:tipoactivo_detail' object.pk %}">{{ object.codigo }}</a>
+    <i class="fas fa-chevron-right"></i><span>Editar</span>
+    {% else %}<span>Nuevo</span>{% endif %}
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-wrap { max-width:680px; }
+
+    .form-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; margin-bottom:1rem; }
+    .form-card-header { padding:1rem 1.5rem; border-bottom:1px solid var(--border); background:var(--surface2); display:flex; align-items:center; gap:.6rem; }
+    .form-card-header .s-num { width:26px; height:26px; border-radius:50%; background:rgba(37,99,235,.2); display:flex; align-items:center; justify-content:center; font-size:.72rem; font-weight:700; color:#60a5fa; flex-shrink:0; }
+    .form-card-header h3 { font-family:'Syne',sans-serif; font-size:.9rem; font-weight:600; color:var(--text); }
+    .form-card-body { padding:1.5rem; }
+
+    .fg-1-2 { display:grid; grid-template-columns:1fr 2fr; gap:1rem; }
+    .fg-2   { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+    .gap-b  { margin-bottom:1rem; }
+
+    .field-group { display:flex; flex-direction:column; gap:.35rem; }
+    .field-group label { font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--text-muted); }
+    .field-group label .req { color:#f87171; }
+
+    .f-input,.f-select,.f-textarea {
+        background:rgba(255,255,255,.04); border:1px solid var(--border);
+        border-radius:9px; padding:.6rem .875rem; color:var(--text);
+        font-family:'DM Sans',sans-serif; font-size:.875rem; outline:none; width:100%;
+        transition:border-color .2s,background .2s,box-shadow .2s;
+    }
+    .f-input::placeholder,.f-textarea::placeholder { color:rgba(107,114,128,.5); }
+    .f-input:focus,.f-select:focus,.f-textarea:focus { border-color:var(--accent); background:rgba(37,99,235,.05); box-shadow:0 0 0 3px rgba(37,99,235,.12); }
+    .f-select {
+        appearance:none; cursor:pointer;
+        background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7280'/%3E%3C/svg%3E");
+        background-repeat:no-repeat; background-position:right .875rem center;
+        background-color:rgba(255,255,255,.04); padding-right:2.25rem;
+    }
+    .f-select option { background:#1a2236; }
+    .f-textarea { resize:vertical; min-height:80px; }
+
+    /* Category visual selector */
+    .cat-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:.6rem; }
+    .cat-opt { position:relative; }
+    .cat-opt input { position:absolute; opacity:0; width:0; height:0; }
+    .cat-opt label {
+        display:flex; flex-direction:column; align-items:center; gap:.45rem;
+        padding:.875rem .5rem; background:rgba(255,255,255,.03);
+        border:1.5px solid var(--border); border-radius:10px; cursor:pointer;
+        font-size:.72rem; color:var(--text-subtle); text-align:center;
+        transition:background .15s,border-color .2s,transform .15s; user-select:none;
+        line-height:1.3;
+    }
+    .cat-opt label:hover { background:rgba(255,255,255,.06); border-color:var(--border2); transform:translateY(-1px); }
+    .cat-opt input:checked + label { border-color:var(--accent); background:rgba(37,99,235,.1); color:var(--text); }
+    .cat-icon {
+        width:32px; height:32px; border-radius:8px;
+        display:flex; align-items:center; justify-content:center; font-size:.9rem;
+    }
+
+    /* Toggle switches */
+    .toggles-row { display:grid; grid-template-columns:repeat(3,1fr); gap:.75rem; }
+    .toggle-item {
+        display:flex; flex-direction:column; gap:.5rem;
+        padding:1rem; background:rgba(255,255,255,.03);
+        border:1px solid var(--border); border-radius:10px;
+        transition:border-color .2s,background .2s;
+    }
+    .toggle-item:has(input:checked) { border-color:rgba(37,99,235,.35); background:rgba(37,99,235,.06); }
+    .toggle-label { font-size:.78rem; color:var(--text-subtle); font-weight:500; line-height:1.35; }
+    .toggle-sub { font-size:.68rem; color:var(--text-muted); }
+
+    /* Custom checkbox toggle */
+    .toggle-switch { display:flex; align-items:center; gap:.5rem; cursor:pointer; }
+    .toggle-switch input { display:none; }
+    .ts-track {
+        width:36px; height:20px; background:rgba(107,114,128,.25);
+        border-radius:10px; position:relative; transition:background .2s; flex-shrink:0;
+    }
+    .ts-thumb {
+        width:14px; height:14px; background:#fff; border-radius:50%;
+        position:absolute; top:3px; left:3px; transition:left .2s;
+        box-shadow:0 1px 4px rgba(0,0,0,.3);
+    }
+    .toggle-switch input:checked ~ .ts-track { background:var(--accent); }
+    .toggle-switch input:checked ~ .ts-track .ts-thumb { left:19px; }
+
+    .field-error { font-size:.75rem; color:#f87171; margin-top:.2rem; }
+
+    /* Submit */
+    .submit-bar {
+        display:flex; align-items:center; justify-content:space-between;
+        padding:1.1rem 1.5rem; background:var(--surface); border:1px solid var(--border);
+        border-radius:14px; position:sticky; bottom:1rem; z-index:10;
+    }
+    .submit-bar .left { font-size:.82rem; color:var(--text-muted); display:flex; align-items:center; gap:.4rem; }
+    .submit-bar .right { display:flex; gap:.6rem; }
+    .btn-cancel { display:inline-flex; align-items:center; gap:.4rem; padding:.55rem 1.1rem; border-radius:8px; border:1px solid var(--border); background:rgba(255,255,255,.04); color:var(--text-subtle); font-size:.875rem; text-decoration:none; transition:background .15s,color .15s; }
+    .btn-cancel:hover { background:rgba(255,255,255,.08); color:var(--text); }
+
+    @media(max-width:640px){ .cat-grid{grid-template-columns:repeat(2,1fr)} .toggles-row{grid-template-columns:1fr} .fg-1-2,.fg-2{grid-template-columns:1fr} }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-wrap">
+<form method="post" novalidate>
+    {% csrf_token %}
+
+    <!-- § 1 · Identificación -->
+    <div class="form-card">
+        <div class="form-card-header">
+            <div class="s-num">1</div>
+            <h3>Identificación</h3>
+        </div>
+        <div class="form-card-body">
+            <div class="fg-1-2 gap-b">
+                <div class="field-group">
+                    <label>Código <span class="req">*</span></label>
+                    {{ form.codigo }}
+                    {% if form.codigo.errors %}<p class="field-error">{{ form.codigo.errors.0 }}</p>{% endif %}
+                </div>
+                <div class="field-group">
+                    <label>Nombre <span class="req">*</span></label>
+                    {{ form.nombre }}
+                    {% if form.nombre.errors %}<p class="field-error">{{ form.nombre.errors.0 }}</p>{% endif %}
+                </div>
+            </div>
+            <div class="field-group">
+                <label>Descripción</label>
+                {{ form.descripcion }}
+            </div>
+        </div>
+    </div>
+
+    <!-- § 2 · Categoría -->
+    <div class="form-card">
+        <div class="form-card-header">
+            <div class="s-num">2</div>
+            <h3>Categoría</h3>
+        </div>
+        <div class="form-card-body">
+            <div class="cat-grid" id="catGrid">
+                {% for val, lbl in form.categoria.field.choices %}
+                <div class="cat-opt">
+                    <input type="radio" name="categoria" id="cat_{{ val }}" value="{{ val }}"
+                           {% if form.categoria.value == val or not form.categoria.value and val == 'MAQUINARIA' %}checked{% endif %}>
+                    <label for="cat_{{ val }}">
+                        <div class="cat-icon" style="
+                            background:{% if val == 'MAQUINARIA' %}rgba(96,165,250,.15){% elif val == 'EQUIPO_COMPUTO' %}rgba(167,139,250,.15){% elif val == 'MUEBLES' %}rgba(251,146,60,.15){% elif val == 'EQUIPO_TRANSPORTE' %}rgba(52,211,153,.15){% elif val == 'EQUIPO_COMUNICACION' %}rgba(244,114,182,.15){% elif val == 'HERRAMIENTAS' %}rgba(251,191,36,.15){% elif val == 'INSTALACIONES' %}rgba(56,189,248,.15){% elif val == 'EDIFICIOS' %}rgba(110,231,183,.15){% else %}rgba(156,163,175,.15){% endif %};
+                            color:{% if val == 'MAQUINARIA' %}#60a5fa{% elif val == 'EQUIPO_COMPUTO' %}#a78bfa{% elif val == 'MUEBLES' %}#fb923c{% elif val == 'EQUIPO_TRANSPORTE' %}#34d399{% elif val == 'EQUIPO_COMUNICACION' %}#f472b6{% elif val == 'HERRAMIENTAS' %}#fbbf24{% elif val == 'INSTALACIONES' %}#38bdf8{% elif val == 'EDIFICIOS' %}#6ee7b7{% else %}#9ca3af{% endif %};">
+                            <i class="fas {% if val == 'MAQUINARIA' %}fa-gear{% elif val == 'EQUIPO_COMPUTO' %}fa-computer{% elif val == 'MUEBLES' %}fa-couch{% elif val == 'EQUIPO_TRANSPORTE' %}fa-truck{% elif val == 'EQUIPO_COMUNICACION' %}fa-radio{% elif val == 'HERRAMIENTAS' %}fa-screwdriver-wrench{% elif val == 'INSTALACIONES' %}fa-plug{% elif val == 'EDIFICIOS' %}fa-building{% else %}fa-tag{% endif %}"></i>
+                        </div>
+                        {{ lbl }}
+                    </label>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- § 3 · Propiedades -->
+    <div class="form-card">
+        <div class="form-card-header">
+            <div class="s-num">3</div>
+            <h3>Propiedades</h3>
+        </div>
+        <div class="form-card-body">
+            <div class="field-group gap-b">
+                <label>Vida Útil (años)</label>
+                {{ form.vida_util_anios }}
+            </div>
+
+            <div class="toggles-row">
+                <!-- Depreciable -->
+                <div class="toggle-item">
+                    <label class="toggle-switch" for="{{ form.depreciable.id_for_label }}">
+                        {{ form.depreciable }}
+                        <div class="ts-track"><div class="ts-thumb"></div></div>
+                    </label>
+                    <div class="toggle-label">Depreciable</div>
+                    <div class="toggle-sub">El activo pierde valor con el tiempo</div>
+                </div>
+                <!-- Requiere mantenimiento -->
+                <div class="toggle-item">
+                    <label class="toggle-switch" for="{{ form.requiere_mantenimiento.id_for_label }}">
+                        {{ form.requiere_mantenimiento }}
+                        <div class="ts-track"><div class="ts-thumb"></div></div>
+                    </label>
+                    <div class="toggle-label">Requiere mantenimiento</div>
+                    <div class="toggle-sub">Se programarán mantenimientos periódicos</div>
+                </div>
+                <!-- Activo -->
+                <div class="toggle-item">
+                    <label class="toggle-switch" for="{{ form.activo.id_for_label }}">
+                        {{ form.activo }}
+                        <div class="ts-track"><div class="ts-thumb"></div></div>
+                    </label>
+                    <div class="toggle-label">Activo en sistema</div>
+                    <div class="toggle-sub">Disponible para asignar a activos</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submit -->
+    <div class="submit-bar">
+        <div class="left"><i class="fas fa-circle-info"></i>{% if object %}Editando <strong>{{ object.codigo }}</strong>{% else %}Nuevo tipo de activo{% endif %}</div>
+        <div class="right">
+            <a href="{% if object %}{% url 'activos:tipoactivo_detail' object.pk %}{% else %}{% url 'activos:tipoactivo_list' %}{% endif %}" class="btn-cancel">
+                <i class="fas fa-xmark"></i> Cancelar
+            </a>
+            <button type="submit" class="btn-primary">
+                <i class="fas fa-floppy-disk"></i> {% if object %}Guardar cambios{% else %}Crear tipo{% endif %}
+            </button>
+        </div>
+    </div>
+</form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('input[type=text],input[type=number]').forEach(el => el.classList.add('f-input'));
+document.querySelectorAll('select').forEach(el => el.classList.add('f-select'));
+document.querySelectorAll('textarea').forEach(el => el.classList.add('f-textarea'));
+
+// Hide the checkboxes (we're using custom toggle UI)
+document.querySelectorAll('input[type=checkbox]').forEach(cb => {
+    cb.style.position = 'absolute';
+    cb.style.opacity  = '0';
+    cb.style.width    = '0';
+    cb.style.height   = '0';
+    // Sync track state on load
+    const track = cb.closest('.toggle-switch')?.querySelector('.ts-track');
+    if (track && cb.checked) track.style.background = 'var(--accent)';
+    const thumb = track?.querySelector('.ts-thumb');
+    if (thumb && cb.checked) thumb.style.left = '19px';
+
+    cb.addEventListener('change', () => {
+        if (track) track.style.background = cb.checked ? 'var(--accent)' : 'rgba(107,114,128,.25)';
+        if (thumb) thumb.style.left = cb.checked ? '19px' : '3px';
+        cb.closest('.toggle-item')?.style.setProperty('border-color', cb.checked ? 'rgba(37,99,235,.35)' : '');
+        cb.closest('.toggle-item')?.style.setProperty('background', cb.checked ? 'rgba(37,99,235,.06)' : '');
+    });
+});
+</script>
+{% endblock %}

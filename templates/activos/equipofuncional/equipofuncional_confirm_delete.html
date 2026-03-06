@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+{% block title %}Eliminar {{ equipo.codigo }} - SIGAP{% endblock %}
+{% block page_title %}Eliminar Equipo{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb">
+    <a href="/"><i class="fas fa-house"></i> Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'activos:equipofuncional_list' %}">Equipos Funcionales</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'activos:equipofuncional_detail' equipo.pk %}">{{ equipo.codigo }}</a>
+    <i class="fas fa-chevron-right"></i>
+    <span style="color:#f87171;">Eliminar</span>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .delete-wrap { max-width:540px; margin:2rem auto; }
+    .delete-card { background:var(--surface); border:1px solid rgba(239,68,68,.3); border-radius:16px; overflow:hidden; }
+    .delete-top { padding:2rem; text-align:center; border-bottom:1px solid var(--border); }
+    .delete-icon {
+        width:72px; height:72px; border-radius:50%;
+        background:rgba(239,68,68,.1); border:2px solid rgba(239,68,68,.25);
+        display:flex; align-items:center; justify-content:center;
+        margin:0 auto 1.25rem; animation:shake .5s ease;
+    }
+    .delete-icon i { font-size:1.75rem; color:#f87171; }
+    .delete-title { font-family:'Syne',sans-serif; font-size:1.3rem; font-weight:700; color:var(--text); margin-bottom:.5rem; }
+    .delete-msg { font-size:.875rem; color:var(--text-muted); line-height:1.6; }
+
+    .delete-asset-info {
+        background:rgba(239,68,68,.05); border:1px solid rgba(239,68,68,.15);
+        border-radius:10px; padding:.875rem 1.1rem;
+        margin:1.25rem auto 0; max-width:360px; text-align:left;
+    }
+    .dai-code { font-size:.7rem; text-transform:uppercase; letter-spacing:.1em; color:#f87171; margin-bottom:.25rem; }
+    .dai-name { font-family:'Syne',sans-serif; font-size:1rem; font-weight:600; color:var(--text); }
+    .dai-meta { font-size:.8rem; color:var(--text-muted); margin-top:.2rem; }
+
+    .delete-body { padding:1.5rem 2rem; }
+    .warn-box {
+        display:flex; gap:.75rem; padding:.875rem 1rem;
+        background:rgba(245,158,11,.08); border:1px solid rgba(245,158,11,.2);
+        border-radius:9px; margin-bottom:1.5rem;
+        font-size:.82rem; color:#fcd34d; line-height:1.55;
+    }
+    .warn-box i { flex-shrink:0; margin-top:2px; }
+
+    .activos-list {
+        display:flex; flex-wrap:wrap; gap:.4rem;
+        margin-bottom:1.25rem;
+    }
+
+    .delete-actions { display:flex; gap:.75rem; justify-content:flex-end; }
+    .btn-danger {
+        display:inline-flex; align-items:center; gap:.4rem;
+        padding:.65rem 1.25rem; background:linear-gradient(135deg,#dc2626,#b91c1c);
+        color:#fff; font-family:'Syne',sans-serif; font-size:.9rem; font-weight:600;
+        border-radius:9px; border:none; cursor:pointer;
+        box-shadow:0 4px 16px rgba(220,38,38,.35);
+        transition:transform .15s,box-shadow .2s;
+    }
+    .btn-danger:hover { transform:translateY(-1px); box-shadow:0 6px 22px rgba(220,38,38,.5); }
+    .btn-cancel-del {
+        display:inline-flex; align-items:center; gap:.4rem;
+        padding:.65rem 1.25rem; background:rgba(255,255,255,.04);
+        border:1px solid var(--border); border-radius:9px;
+        color:var(--text-subtle); font-size:.9rem; text-decoration:none;
+        transition:background .15s,color .15s;
+    }
+    .btn-cancel-del:hover { background:rgba(255,255,255,.08); color:var(--text); }
+
+    @keyframes shake {
+        0%,100%{transform:rotate(0)} 20%{transform:rotate(-8deg)}
+        40%{transform:rotate(8deg)} 60%{transform:rotate(-4deg)} 80%{transform:rotate(4deg)}
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="delete-wrap">
+    <div class="delete-card">
+        <div class="delete-top">
+            <div class="delete-icon"><i class="fas fa-trash-can"></i></div>
+            <h2 class="delete-title">¿Eliminar este equipo?</h2>
+            <p class="delete-msg">Esta acción no se puede deshacer. El equipo funcional será eliminado permanentemente junto con sus relaciones.</p>
+            <div class="delete-asset-info">
+                <div class="dai-code">{{ equipo.codigo }}</div>
+                <div class="dai-name">{{ equipo.nombre }}</div>
+                <div class="dai-meta">
+                    {{ equipo.get_estado_operativo_display|default:"—" }} ·
+                    {{ equipo.activos.count }} activos asociados
+                </div>
+            </div>
+        </div>
+        <div class="delete-body">
+            {% if equipo.activos.exists %}
+            <div class="warn-box">
+                <i class="fas fa-triangle-exclamation"></i>
+                <span>Este equipo tiene <strong>{{ equipo.activos.count }} activos asociados</strong>. Se eliminarán las relaciones pero los activos se mantendrán en el sistema.</span>
+            </div>
+            <div class="activos-list">
+                {% for activo in equipo.activos.all|slice:":8" %}
+                <span class="badge badge-blue">{{ activo.codigo }}</span>
+                {% endfor %}
+                {% if equipo.activos.count > 8 %}
+                <span class="badge badge-gray">+{{ equipo.activos.count|add:"-8" }} más</span>
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="warn-box">
+                <i class="fas fa-triangle-exclamation"></i>
+                <span>El equipo y todos sus datos relacionados serán eliminados permanentemente.</span>
+            </div>
+            {% endif %}
+
+            <div class="delete-actions">
+                <a href="{% url 'activos:equipofuncional_detail' equipo.pk %}" class="btn-cancel-del">
+                    <i class="fas fa-arrow-left"></i> Cancelar
+                </a>
+                <form method="post" style="display:contents;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-danger">
+                        <i class="fas fa-trash-can"></i> Sí, eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

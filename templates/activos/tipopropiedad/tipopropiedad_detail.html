@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% block title %}{{ tipo_propiedad.codigo }} - SIGAP{% endblock %}
+{% block page_title %}Tipo de Propiedad{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb">
+    <a href="/"><i class="fas fa-house"></i> Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'activos:tipopropiedad_list' %}">Tipos de Propiedad</a>
+    <i class="fas fa-chevron-right"></i>
+    <span>{{ tipo_propiedad.codigo }}</span>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detail-wrap { max-width:680px; }
+
+    .tp-hero {
+        background:var(--surface); border:1px solid var(--border);
+        border-radius:16px; overflow:hidden; margin-bottom:1.25rem;
+    }
+    .tp-hero::before { content:''; display:block; height:3px; background:linear-gradient(90deg,var(--accent),var(--accent2)); }
+    .tp-hero-inner { padding:1.75rem 2rem; display:flex; align-items:center; gap:1.25rem; }
+
+    .tp-hero-icon {
+        width:72px; height:72px; border-radius:14px; flex-shrink:0;
+        background:rgba(37,99,235,.1); border:1px solid rgba(37,99,235,.2);
+        display:flex; align-items:center; justify-content:center;
+        font-size:1.75rem; color:#60a5fa;
+    }
+    .tp-hero-text { flex:1; min-width:0; }
+    .tp-hero-code { font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:var(--accent2); margin-bottom:.3rem; }
+    .tp-hero-name { font-family:'Syne',sans-serif; font-size:1.5rem; font-weight:700; color:var(--text); margin-bottom:.5rem; }
+    .tp-hero-chips { display:flex; gap:.5rem; flex-wrap:wrap; }
+
+    .toggle-chip { display:inline-flex; align-items:center; gap:.4rem; padding:.25rem .75rem; border-radius:9999px; font-size:.78rem; font-weight:600; }
+    .tc-on  { background:rgba(34,197,94,.12);  color:#4ade80; border:1px solid rgba(34,197,94,.25); }
+    .tc-off { background:rgba(107,114,128,.1); color:#6b7280; border:1px solid rgba(107,114,128,.2); }
+
+    .tp-hero-actions { display:flex; gap:.5rem; flex-shrink:0; }
+    .act-btn {
+        display:inline-flex; align-items:center; gap:.4rem; padding:.5rem .9rem;
+        border-radius:8px; font-size:.82rem; font-weight:500; text-decoration:none;
+        border:1px solid var(--border); background:rgba(255,255,255,.04); color:var(--text-subtle);
+        transition:background .15s,color .15s,border-color .15s; cursor:pointer; white-space:nowrap;
+    }
+    .act-btn:hover { background:rgba(255,255,255,.08); color:var(--text); border-color:var(--border2); }
+    .act-btn.primary { background:linear-gradient(135deg,var(--accent),#1d4ed8); border-color:transparent; color:#fff; box-shadow:0 3px 14px rgba(37,99,235,.35); }
+    .act-btn.danger  { color:#f87171; border-color:rgba(239,68,68,.25); }
+    .act-btn.danger:hover { background:rgba(239,68,68,.1); }
+
+    /* Stats row */
+    .stats-row { display:grid; grid-template-columns:repeat(2,1fr); gap:.75rem; margin-bottom:1.25rem; }
+    .stat-mini { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1rem 1.25rem; display:flex; align-items:center; gap:.875rem; }
+    .stat-mini-val { font-family:'Syne',sans-serif; font-size:1.4rem; font-weight:700; color:var(--text); }
+    .stat-mini-label { font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; color:var(--text-muted); margin-top:.15rem; }
+    .stat-mini-icon { width:38px; height:38px; border-radius:9px; background:rgba(37,99,235,.1); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:.9rem; color:#60a5fa; }
+
+    /* Info section */
+    .info-section { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; margin-bottom:1rem; }
+    .is-header { padding:.875rem 1.25rem; border-bottom:1px solid var(--border); background:var(--surface2); display:flex; align-items:center; gap:.5rem; font-family:'Syne',sans-serif; font-size:.875rem; font-weight:600; color:var(--text); }
+    .is-header i { color:var(--accent2); font-size:.8rem; }
+    .is-body { padding:1.1rem 1.25rem; }
+
+    /* Activos list */
+    .activo-mini { display:flex; align-items:center; gap:.75rem; padding:.6rem 0; border-bottom:1px solid rgba(255,255,255,.04); text-decoration:none; transition:padding-left .15s; }
+    .activo-mini:last-child { border-bottom:none; }
+    .activo-mini:hover { padding-left:.4rem; }
+    .am-code { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--accent2); flex-shrink:0; width:80px; }
+    .am-name { font-size:.85rem; color:var(--text); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    @media(max-width:600px){ .tp-hero-inner{flex-direction:column} .tp-hero-actions{width:100%} }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="detail-wrap">
+
+    <!-- Hero -->
+    <div class="tp-hero">
+        <div class="tp-hero-inner">
+            <div class="tp-hero-icon"><i class="fas fa-file-contract"></i></div>
+            <div class="tp-hero-text">
+                <div class="tp-hero-code">{{ tipo_propiedad.codigo }}</div>
+                <div class="tp-hero-name">{{ tipo_propiedad.nombre }}</div>
+                <div class="tp-hero-chips">
+                    <span class="toggle-chip {% if tipo_propiedad.activo %}tc-on{% else %}tc-off{% endif %}">
+                        <i class="fas {% if tipo_propiedad.activo %}fa-circle-check{% else %}fa-circle-xmark{% endif %}"></i>
+                        {% if tipo_propiedad.activo %}Activo{% else %}Inactivo{% endif %}
+                    </span>
+                </div>
+            </div>
+            <div class="tp-hero-actions">
+                {% if perms.activos.change_tipopropiedad %}
+                <a href="{% url 'activos:tipopropiedad_update' tipo_propiedad.pk %}" class="act-btn primary">
+                    <i class="fas fa-pen"></i> Editar
+                </a>
+                {% endif %}
+                {% if perms.activos.delete_tipopropiedad %}
+                <a href="{% url 'activos:tipopropiedad_delete' tipo_propiedad.pk %}" class="act-btn danger">
+                    <i class="fas fa-trash"></i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+        <div class="stat-mini">
+            <div class="stat-mini-icon"><i class="fas fa-boxes-stacked"></i></div>
+            <div>
+                <div class="stat-mini-val">{{ tipo_propiedad.activos.count }}</div>
+                <div class="stat-mini-label">Activos asignados</div>
+            </div>
+        </div>
+        <div class="stat-mini">
+            <div class="stat-mini-icon"><i class="fas fa-calendar-plus"></i></div>
+            <div>
+                <div class="stat-mini-val">{{ tipo_propiedad.created|date:"Y" }}</div>
+                <div class="stat-mini-label">Año de creación</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Description -->
+    {% if tipo_propiedad.descripcion %}
+    <div class="info-section">
+        <div class="is-header"><i class="fas fa-align-left"></i> Descripción</div>
+        <div class="is-body">
+            <p style="font-size:.875rem;color:var(--text-subtle);line-height:1.65;margin:0;">{{ tipo_propiedad.descripcion }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Activos -->
+    {% with activos=tipo_propiedad.activos.all|slice:":10" total=tipo_propiedad.activos.count %}
+    {% if total > 0 %}
+    <div class="info-section">
+        <div class="is-header" style="justify-content:space-between;">
+            <span><i class="fas fa-boxes-stacked"></i> Activos con este tipo de propiedad</span>
+            <span style="font-size:.75rem;color:var(--text-muted);">{{ total }} en total</span>
+        </div>
+        <div class="is-body">
+            {% for activo in activos %}
+            <a href="{% url 'activos:activo_detail' activo.pk %}" class="activo-mini">
+                <span class="am-code">{{ activo.codigo }}</span>
+                <span class="am-name">{{ activo.nombre }}</span>
+                <span class="badge badge-{{ activo.estado.color|default:'gray' }}">{{ activo.estado.nombre }}</span>
+            </a>
+            {% endfor %}
+            {% if total > 10 %}
+            <a href="{% url 'activos:activo_list' %}" style="display:block;text-align:center;padding:.75rem;font-size:.8rem;color:var(--accent2);text-decoration:none;">
+                Ver los {{ total|add:"-10" }} restantes →
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    {% endwith %}
+
+</div>
+{% endblock %}

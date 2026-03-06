@@ -1,18 +1,18 @@
 {% extends 'base.html' %}
 {% load crispy_forms_tags %}
 
-{% block title %}{% if object %}Editar{% else %}Nueva{% endif %} Nivel - SIGAP{% endblock %}
+{% block title %}{% if object %}Editar{% else %}Nueva{% endif %} Área - SIGAP{% endblock %}
 
-{% block page_title %}{% if object %}Editar{% else %}Nueva{% endif %} Nivel{% endblock %}
+{% block page_title %}{% if object %}Editar{% else %}Nueva{% endif %} Área{% endblock %}
 
 {% block breadcrumbs %}
 <nav class="mb-4">
     <ol class="flex items-center space-x-2 text-sm text-gray-500">
         <li><a href="{% url 'core:dashboard' %}" class="hover:text-primary-600"><i class="fas fa-home"></i></a></li>
         <li><i class="fas fa-chevron-right text-xs"></i></li>
-        <li><a href="{% url 'organizacion:nivel_list' %}" class="hover:text-primary-600">Niveles</a></li>
+        <li><a href="{% url 'organizacion:area_list' %}" class="hover:text-primary-600">Áreas</a></li>
         <li><i class="fas fa-chevron-right text-xs"></i></li>
-        <li class="text-gray-700">{% if object %}Editar{% else %}Nuevo{% endif %}</li>
+        <li class="text-gray-700">{% if object %}Editar{% else %}Nueva{% endif %}</li>
     </ol>
 </nav>
 {% endblock %}
@@ -23,9 +23,9 @@
         <div class="card-header">
             <h2 class="text-xl font-semibold text-gray-800">
                 {% if object %}
-                <i class="fas fa-edit mr-2 text-primary-600"></i>Editar Nivel
+                <i class="fas fa-edit mr-2 text-primary-600"></i>Editar Área
                 {% else %}
-                <i class="fas fa-plus mr-2 text-primary-600"></i>Nuevo Nivel
+                <i class="fas fa-plus mr-2 text-primary-600"></i>Nueva Área
                 {% endif %}
             </h2>
         </div>

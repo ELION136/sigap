@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+{% block title %}Tipos de Activo - SIGAP{% endblock %}
+{% block page_title %}Tipos de Activo{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb">
+    <a href="/"><i class="fas fa-house"></i> Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <span>Tipos de Activo</span>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ── Toolbar ── */
+    .toolbar { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; margin-bottom:1.25rem; }
+    .toolbar-left  { flex:1; display:flex; gap:.5rem; flex-wrap:wrap; }
+    .toolbar-right { display:flex; gap:.5rem; flex-shrink:0; }
+
+    .search-wrap { position:relative; min-width:200px; max-width:300px; flex:1; }
+    .search-wrap input {
+        width:100%; background:var(--surface); border:1px solid var(--border);
+        border-radius:9px; padding:.55rem 1rem .55rem 2.4rem;
+        color:var(--text); font-family:'DM Sans',sans-serif; font-size:.875rem; outline:none;
+        transition:border-color .2s,background .2s;
+    }
+    .search-wrap input::placeholder { color:var(--text-muted); }
+    .search-wrap input:focus { border-color:var(--accent); background:rgba(37,99,235,.06); }
+    .search-wrap i { position:absolute; left:.8rem; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:.8rem; pointer-events:none; }
+
+    /* ── Category icons ── */
+    .cat-icon-map {
+        --c-maq:  #60a5fa;
+        --c-com:  #a78bfa;
+        --c-mue:  #fb923c;
+        --c-tra:  #34d399;
+        --c-tco:  #f472b6;
+        --c-her:  #fbbf24;
+        --c-ins:  #38bdf8;
+        --c-edi:  #6ee7b7;
+        --c-otr:  #9ca3af;
+    }
+
+    /* ── List layout ── */
+    .tipos-list { display:flex; flex-direction:column; gap:.6rem; margin-bottom:1.5rem; }
+
+    .tipo-row {
+        background:var(--surface); border:1px solid var(--border); border-radius:12px;
+        display:flex; align-items:center; gap:1rem; padding:.875rem 1.25rem;
+        transition:border-color .2s,transform .15s,box-shadow .18s;
+        animation:fadeUp .35s ease both;
+        text-decoration:none; color:inherit;
+    }
+    .tipo-row:hover {
+        border-color:rgba(37,99,235,.4); transform:translateX(3px);
+        box-shadow:4px 0 20px rgba(0,0,0,.35);
+    }
+
+    .tipo-icon {
+        width:44px; height:44px; border-radius:10px; flex-shrink:0;
+        display:flex; align-items:center; justify-content:center; font-size:1.1rem;
+    }
+
+    .tipo-main { flex:1; min-width:0; }
+    .tipo-code { font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--accent2); margin-bottom:.15rem; }
+    .tipo-name { font-family:'Syne',sans-serif; font-size:.95rem; font-weight:600; color:var(--text); }
+    .tipo-desc { font-size:.78rem; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:360px; margin-top:.1rem; }
+
+    .tipo-meta { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; flex-shrink:0; }
+
+    .meta-chip {
+        display:flex; align-items:center; gap:.3rem;
+        padding:.22rem .6rem; border-radius:9999px;
+        font-size:.7rem; font-weight:600; white-space:nowrap;
+    }
+    .meta-chip i { font-size:.6rem; }
+    .mc-on  { background:rgba(34,197,94,.12);  color:#4ade80; border:1px solid rgba(34,197,94,.2); }
+    .mc-off { background:rgba(107,114,128,.1); color:#6b7280; border:1px solid rgba(107,114,128,.15); }
+    .mc-cat { background:rgba(37,99,235,.12);  color:#60a5fa; border:1px solid rgba(37,99,235,.2); }
+    .mc-vida{ background:rgba(245,158,11,.12); color:#fcd34d; border:1px solid rgba(245,158,11,.2); }
+
+    .tipo-actions { display:flex; gap:.4rem; flex-shrink:0; }
+    .act-btn-sm {
+        width:30px; height:30px; border-radius:7px;
+        background:rgba(255,255,255,.04); border:1px solid var(--border);
+        display:flex; align-items:center; justify-content:center;
+        color:var(--text-muted); cursor:pointer; font-size:.8rem;
+        text-decoration:none; transition:background .15s,color .15s,border-color .15s;
+    }
+    .act-btn-sm:hover { background:rgba(255,255,255,.08); color:var(--text); border-color:var(--border2); }
+    .act-btn-sm.danger:hover { background:rgba(239,68,68,.1); color:#f87171; border-color:rgba(239,68,68,.3); }
+
+    /* Empty */
+    .empty-state { text-align:center; padding:4rem 2rem; color:var(--text-muted); background:var(--surface); border:1px solid var(--border); border-radius:14px; }
+    .empty-state i { font-size:3rem; opacity:.2; display:block; margin-bottom:1rem; }
+
+    /* Summary strip */
+    .summary-strip {
+        display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+        gap:.75rem; margin-bottom:1.25rem;
+    }
+    .sum-card {
+        background:var(--surface); border:1px solid var(--border); border-radius:10px;
+        padding:.875rem 1rem; display:flex; flex-direction:column; gap:.3rem;
+    }
+    .sum-val { font-family:'Syne',sans-serif; font-size:1.4rem; font-weight:700; color:var(--text); }
+    .sum-label { font-size:.7rem; text-transform:uppercase; letter-spacing:.08em; color:var(--text-muted); }
+
+    @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Toolbar -->
+<div class="toolbar">
+    <div class="toolbar-left">
+        <form method="get" id="filterForm" style="display:contents;">
+            <div class="search-wrap">
+                <i class="fas fa-search"></i>
+                <input type="text" name="q" value="{{ request.GET.q }}"
+                       placeholder="Código o nombre…"
+                       onchange="document.getElementById('filterForm').submit()">
+            </div>
+        </form>
+    </div>
+    <div class="toolbar-right">
+        {% if perms.activos.add_tipoactivo %}
+        <a href="{% url 'activos:tipoactivo_create' %}" class="btn-primary">
+            <i class="fas fa-plus"></i> Nuevo Tipo
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Summary strip -->
+<div class="summary-strip">
+    <div class="sum-card">
+        <span class="sum-val">{{ tipos|length }}</span>
+        <span class="sum-label">Total tipos</span>
+    </div>
+    <div class="sum-card">
+        <span class="sum-val" style="color:#4ade80;">{{ tipos|length }}</span>
+        <span class="sum-label">Activos</span>
+    </div>
+    <div class="sum-card">
+        <span class="sum-val" style="color:#60a5fa;">{{ tipos|length }}</span>
+        <span class="sum-label">Con mant.</span>
+    </div>
+    <div class="sum-card">
+        <span class="sum-val" style="color:#fcd34d;">{{ tipos|length }}</span>
+        <span class="sum-label">Depreciables</span>
+    </div>
+</div>
+
+<!-- List -->
+<div class="tipos-list">
+    {% for tipo in tipos %}
+    {% with cat=tipo.categoria|lower %}
+    <div class="tipo-row" style="animation-delay:{{ forloop.counter0 }}0ms;">
+
+        <!-- Category icon -->
+        <div class="tipo-icon" style="
+            background:{% if tipo.categoria == 'MAQUINARIA' %}rgba(96,165,250,.12){% elif tipo.categoria == 'EQUIPO_COMPUTO' %}rgba(167,139,250,.12){% elif tipo.categoria == 'MUEBLES' %}rgba(251,146,60,.12){% elif tipo.categoria == 'EQUIPO_TRANSPORTE' %}rgba(52,211,153,.12){% elif tipo.categoria == 'EQUIPO_COMUNICACION' %}rgba(244,114,182,.12){% elif tipo.categoria == 'HERRAMIENTAS' %}rgba(251,191,36,.12){% elif tipo.categoria == 'INSTALACIONES' %}rgba(56,189,248,.12){% elif tipo.categoria == 'EDIFICIOS' %}rgba(110,231,183,.12){% else %}rgba(156,163,175,.12){% endif %};
+            color:{% if tipo.categoria == 'MAQUINARIA' %}#60a5fa{% elif tipo.categoria == 'EQUIPO_COMPUTO' %}#a78bfa{% elif tipo.categoria == 'MUEBLES' %}#fb923c{% elif tipo.categoria == 'EQUIPO_TRANSPORTE' %}#34d399{% elif tipo.categoria == 'EQUIPO_COMUNICACION' %}#f472b6{% elif tipo.categoria == 'HERRAMIENTAS' %}#fbbf24{% elif tipo.categoria == 'INSTALACIONES' %}#38bdf8{% elif tipo.categoria == 'EDIFICIOS' %}#6ee7b7{% else %}#9ca3af{% endif %};">
+            <i class="fas {% if tipo.categoria == 'MAQUINARIA' %}fa-gear{% elif tipo.categoria == 'EQUIPO_COMPUTO' %}fa-computer{% elif tipo.categoria == 'MUEBLES' %}fa-couch{% elif tipo.categoria == 'EQUIPO_TRANSPORTE' %}fa-truck{% elif tipo.categoria == 'EQUIPO_COMUNICACION' %}fa-radio{% elif tipo.categoria == 'HERRAMIENTAS' %}fa-screwdriver-wrench{% elif tipo.categoria == 'INSTALACIONES' %}fa-plug{% elif tipo.categoria == 'EDIFICIOS' %}fa-building{% else %}fa-tag{% endif %}"></i>
+        </div>
+
+        <!-- Info -->
+        <div class="tipo-main">
+            <div class="tipo-code">{{ tipo.codigo }}</div>
+            <div class="tipo-name">{{ tipo.nombre }}</div>
+            {% if tipo.descripcion %}<div class="tipo-desc">{{ tipo.descripcion }}</div>{% endif %}
+        </div>
+
+        <!-- Meta chips -->
+        <div class="tipo-meta">
+            <span class="meta-chip mc-cat">{{ tipo.get_categoria_display }}</span>
+            {% if tipo.vida_util_anios %}
+            <span class="meta-chip mc-vida"><i class="fas fa-clock"></i>{{ tipo.vida_util_anios }} años</span>
+            {% endif %}
+            <span class="meta-chip {% if tipo.depreciable %}mc-on{% else %}mc-off{% endif %}">
+                <i class="fas {% if tipo.depreciable %}fa-chart-line{% else %}fa-minus{% endif %}"></i>
+                {% if tipo.depreciable %}Deprecia{% else %}No deprecia{% endif %}
+            </span>
+            <span class="meta-chip {% if tipo.requiere_mantenimiento %}mc-on{% else %}mc-off{% endif %}">
+                <i class="fas {% if tipo.requiere_mantenimiento %}fa-wrench{% else %}fa-minus{% endif %}"></i>
+                {% if tipo.requiere_mantenimiento %}Mant.{% else %}Sin mant.{% endif %}
+            </span>
+            <span class="meta-chip {% if tipo.activo %}mc-on{% else %}mc-off{% endif %}">
+                <i class="fas {% if tipo.activo %}fa-circle-check{% else %}fa-circle-xmark{% endif %}"></i>
+                {% if tipo.activo %}Activo{% else %}Inactivo{% endif %}
+            </span>
+        </div>
+
+        <!-- Actions -->
+        <div class="tipo-actions">
+            <a href="{% url 'activos:tipoactivo_detail' tipo.pk %}" class="act-btn-sm" title="Ver"><i class="fas fa-eye"></i></a>
+            {% if perms.activos.change_tipoactivo %}
+            <a href="{% url 'activos:tipoactivo_update' tipo.pk %}" class="act-btn-sm" title="Editar"><i class="fas fa-pen"></i></a>
+            {% endif %}
+            {% if perms.activos.delete_tipoactivo %}
+            <a href="{% url 'activos:tipoactivo_delete' tipo.pk %}" class="act-btn-sm danger" title="Eliminar"><i class="fas fa-trash"></i></a>
+            {% endif %}
+        </div>
+    </div>
+    {% endwith %}
+    {% empty %}
+    <div class="empty-state">
+        <i class="fas fa-tags"></i>
+        <p>No hay tipos de activo registrados.</p>
+        {% if perms.activos.add_tipoactivo %}
+        <a href="{% url 'activos:tipoactivo_create' %}" class="btn-primary" style="display:inline-flex;margin-top:1rem;">
+            <i class="fas fa-plus"></i> Crear primer tipo
+        </a>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}

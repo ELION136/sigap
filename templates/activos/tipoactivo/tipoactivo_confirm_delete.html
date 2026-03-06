@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% block title %}Eliminar {{ tipo.codigo }} - SIGAP{% endblock %}
+{% block page_title %}Eliminar Tipo de Activo{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb">
+    <a href="/"><i class="fas fa-house"></i> Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'activos:tipoactivo_list' %}">Tipos de Activo</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'activos:tipoactivo_detail' tipo.pk %}">{{ tipo.codigo }}</a>
+    <i class="fas fa-chevron-right"></i>
+    <span style="color:#f87171;">Eliminar</span>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .delete-wrap { max-width:540px; margin:2rem auto; }
+    .delete-card { background:var(--surface); border:1px solid rgba(239,68,68,.3); border-radius:16px; overflow:hidden; }
+    .delete-top  { padding:2rem; text-align:center; border-bottom:1px solid var(--border); }
+
+    .delete-icon-wrap {
+        width:72px; height:72px; border-radius:50%;
+        background:rgba(239,68,68,.1); border:2px solid rgba(239,68,68,.25);
+        display:flex; align-items:center; justify-content:center;
+        margin:0 auto 1.25rem; animation:shake .5s ease;
+    }
+    .delete-icon-wrap i { font-size:1.75rem; color:#f87171; }
+
+    /* Category icon inside delete card */
+    .tipo-preview {
+        background:rgba(239,68,68,.05); border:1px solid rgba(239,68,68,.15);
+        border-radius:10px; padding:.875rem 1.1rem;
+        margin:1.25rem auto 0; max-width:380px; text-align:left;
+        display:flex; align-items:center; gap:.875rem;
+    }
+    .tp-icon { width:40px; height:40px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:1rem; }
+    .tp-code { font-size:.7rem; text-transform:uppercase; letter-spacing:.1em; color:#f87171; }
+    .tp-name { font-family:'Syne',sans-serif; font-size:1rem; font-weight:600; color:var(--text); }
+    .tp-cat  { font-size:.78rem; color:var(--text-muted); margin-top:.1rem; }
+
+    .delete-title { font-family:'Syne',sans-serif; font-size:1.3rem; font-weight:700; color:var(--text); margin-bottom:.5rem; }
+    .delete-msg   { font-size:.875rem; color:var(--text-muted); line-height:1.6; }
+
+    .delete-body { padding:1.5rem 2rem; }
+
+    .warn-box {
+        display:flex; gap:.75rem; padding:.875rem 1rem;
+        border-radius:9px; margin-bottom:1.25rem;
+        font-size:.82rem; line-height:1.55;
+    }
+    .warn-box i { flex-shrink:0; margin-top:2px; }
+    .warn-danger { background:rgba(239,68,68,.08); border:1px solid rgba(239,68,68,.2); color:#fca5a5; }
+    .warn-alert  { background:rgba(245,158,11,.08); border:1px solid rgba(245,158,11,.2); color:#fcd34d; }
+
+    .count-row { display:flex; align-items:center; gap:.5rem; margin-bottom:1.25rem; }
+    .count-badge { display:flex; align-items:center; gap:.4rem; padding:.3rem .75rem; border-radius:9999px; font-size:.78rem; font-weight:600; }
+    .cb-has   { background:rgba(239,68,68,.12); color:#f87171; border:1px solid rgba(239,68,68,.25); }
+    .cb-empty { background:rgba(34,197,94,.12);  color:#4ade80; border:1px solid rgba(34,197,94,.25); }
+
+    .delete-actions { display:flex; gap:.75rem; justify-content:flex-end; }
+    .btn-danger {
+        display:inline-flex; align-items:center; gap:.4rem;
+        padding:.65rem 1.25rem; background:linear-gradient(135deg,#dc2626,#b91c1c);
+        color:#fff; font-family:'Syne',sans-serif; font-size:.9rem; font-weight:600;
+        border-radius:9px; border:none; cursor:pointer;
+        box-shadow:0 4px 16px rgba(220,38,38,.35); transition:transform .15s,box-shadow .2s;
+    }
+    .btn-danger:hover { transform:translateY(-1px); box-shadow:0 6px 22px rgba(220,38,38,.5); }
+    .btn-cancel-del {
+        display:inline-flex; align-items:center; gap:.4rem;
+        padding:.65rem 1.25rem; background:rgba(255,255,255,.04);
+        border:1px solid var(--border); border-radius:9px;
+        color:var(--text-subtle); font-size:.9rem; text-decoration:none;
+        transition:background .15s,color .15s;
+    }
+    .btn-cancel-del:hover { background:rgba(255,255,255,.08); color:var(--text); }
+
+    @keyframes shake { 0%,100%{transform:rotate(0)} 20%{transform:rotate(-8deg)} 40%{transform:rotate(8deg)} 60%{transform:rotate(-4deg)} 80%{transform:rotate(4deg)} }
+</style>
+{% endblock %}
+
+{% block content %}
+{% with activos_count=tipo.activos.count %}
+<div class="delete-wrap">
+    <div class="delete-card">
+        <div class="delete-top">
+            <div class="delete-icon-wrap"><i class="fas fa-trash-can"></i></div>
+            <h2 class="delete-title">¿Eliminar este tipo?</h2>
+            <p class="delete-msg">Se eliminará el tipo de activo <strong>{{ tipo.codigo }}</strong> de forma permanente.</p>
+
+            <div class="tipo-preview">
+                <div class="tp-icon" style="
+                    background:{% if tipo.categoria == 'MAQUINARIA' %}rgba(96,165,250,.15){% elif tipo.categoria == 'EQUIPO_COMPUTO' %}rgba(167,139,250,.15){% elif tipo.categoria == 'MUEBLES' %}rgba(251,146,60,.15){% elif tipo.categoria == 'EQUIPO_TRANSPORTE' %}rgba(52,211,153,.15){% elif tipo.categoria == 'EQUIPO_COMUNICACION' %}rgba(244,114,182,.15){% elif tipo.categoria == 'HERRAMIENTAS' %}rgba(251,191,36,.15){% elif tipo.categoria == 'INSTALACIONES' %}rgba(56,189,248,.15){% elif tipo.categoria == 'EDIFICIOS' %}rgba(110,231,183,.15){% else %}rgba(156,163,175,.15){% endif %};
+                    color:{% if tipo.categoria == 'MAQUINARIA' %}#60a5fa{% elif tipo.categoria == 'EQUIPO_COMPUTO' %}#a78bfa{% elif tipo.categoria == 'MUEBLES' %}#fb923c{% elif tipo.categoria == 'EQUIPO_TRANSPORTE' %}#34d399{% elif tipo.categoria == 'EQUIPO_COMUNICACION' %}#f472b6{% elif tipo.categoria == 'HERRAMIENTAS' %}#fbbf24{% elif tipo.categoria == 'INSTALACIONES' %}#38bdf8{% elif tipo.categoria == 'EDIFICIOS' %}#6ee7b7{% else %}#9ca3af{% endif %};">
+                    <i class="fas {% if tipo.categoria == 'MAQUINARIA' %}fa-gear{% elif tipo.categoria == 'EQUIPO_COMPUTO' %}fa-computer{% elif tipo.categoria == 'MUEBLES' %}fa-couch{% elif tipo.categoria == 'EQUIPO_TRANSPORTE' %}fa-truck{% elif tipo.categoria == 'EQUIPO_COMUNICACION' %}fa-radio{% elif tipo.categoria == 'HERRAMIENTAS' %}fa-screwdriver-wrench{% elif tipo.categoria == 'INSTALACIONES' %}fa-plug{% elif tipo.categoria == 'EDIFICIOS' %}fa-building{% else %}fa-tag{% endif %}"></i>
+                </div>
+                <div>
+                    <div class="tp-code">{{ tipo.codigo }}</div>
+                    <div class="tp-name">{{ tipo.nombre }}</div>
+                    <div class="tp-cat">{{ tipo.get_categoria_display }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="delete-body">
+            <!-- Activos count warning -->
+            <div class="count-row">
+                <span style="font-size:.82rem;color:var(--text-muted);">Activos con este tipo:</span>
+                <span class="count-badge {% if activos_count > 0 %}cb-has{% else %}cb-empty{% endif %}">
+                    <i class="fas {% if activos_count > 0 %}fa-triangle-exclamation{% else %}fa-circle-check{% endif %}"></i>
+                    {{ activos_count }} activo{% if activos_count != 1 %}s{% endif %}
+                </span>
+            </div>
+
+            {% if activos_count > 0 %}
+            <div class="warn-box warn-danger">
+                <i class="fas fa-circle-xmark"></i>
+                <span>No puedes eliminar este tipo porque tiene <strong>{{ activos_count }} activo{{ activos_count|pluralize }}</strong> asociado{{ activos_count|pluralize }}. Primero reasigna o elimina esos activos.</span>
+            </div>
+            <div class="delete-actions">
+                <a href="{% url 'activos:tipoactivo_detail' tipo.pk %}" class="btn-cancel-del">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+                <a href="{% url 'activos:activo_list' %}?tipo={{ tipo.pk }}" class="btn-primary">
+                    <i class="fas fa-boxes-stacked"></i> Ver activos afectados
+                </a>
+            </div>
+            {% else %}
+            <div class="warn-box warn-alert">
+                <i class="fas fa-triangle-exclamation"></i>
+                <span>Esta acción es irreversible. El tipo de activo y sus configuraciones serán eliminados permanentemente.</span>
+            </div>
+            <div class="delete-actions">
+                <a href="{% url 'activos:tipoactivo_detail' tipo.pk %}" class="btn-cancel-del">
+                    <i class="fas fa-arrow-left"></i> Cancelar
+                </a>
+                <form method="post" style="display:contents;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-danger">
+                        <i class="fas fa-trash-can"></i> Sí, eliminar
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endwith %}
+{% endblock %}

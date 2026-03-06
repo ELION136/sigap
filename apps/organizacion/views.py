@@ -181,7 +181,7 @@ class NivelDeleteView(BaseDeleteView):
 class AreaListView(BaseListView):
     """Vista de lista para Áreas."""
     model = Area
-    template_name = 'organizacion/area_list.html'
+    template_name = 'organizacion/area/area_list.html'
     context_object_name = 'areas'
     permission_required = 'organizacion.view_area'
     
@@ -205,7 +205,7 @@ class AreaListView(BaseListView):
 class AreaDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     """Vista de detalle para Área."""
     model = Area
-    template_name = 'organizacion/area_detail.html'
+    template_name = 'organizacion/area/area_detail.html'
     context_object_name = 'area'
     permission_required = 'organizacion.view_area'
 
@@ -214,7 +214,7 @@ class AreaCreateView(BaseCreateView):
     """Vista para crear Área."""
     model = Area
     form_class = AreaForm
-    template_name = 'organizacion/area_form.html'
+    template_name = 'organizacion/area/area_form.html'
     permission_required = 'organizacion.add_area'
     success_url = reverse_lazy('organizacion:area_list')
 
@@ -223,7 +223,7 @@ class AreaUpdateView(BaseUpdateView):
     """Vista para actualizar Área."""
     model = Area
     form_class = AreaForm
-    template_name = 'organizacion/area_form.html'
+    template_name = 'organizacion/area/area_form.html'
     permission_required = 'organizacion.change_area'
     success_url = reverse_lazy('organizacion:area_list')
 
@@ -231,7 +231,7 @@ class AreaUpdateView(BaseUpdateView):
 class AreaDeleteView(BaseDeleteView):
     """Vista para eliminar Área."""
     model = Area
-    template_name = 'organizacion/area_confirm_delete.html'
+    template_name = 'organizacion/area/area_confirm_delete.html'
     permission_required = 'organizacion.delete_area'
     success_url = reverse_lazy('organizacion:area_list')
 
@@ -243,7 +243,7 @@ class AreaDeleteView(BaseDeleteView):
 class SubAreaListView(BaseListView):
     """Vista de lista para Subáreas."""
     model = SubArea
-    template_name = 'organizacion/subarea_list.html'
+    template_name = 'organizacion/subarea/subarea_list.html'
     context_object_name = 'subareas'
     permission_required = 'organizacion.view_subarea'
     
@@ -263,7 +263,7 @@ class SubAreaListView(BaseListView):
 class SubAreaDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     """Vista de detalle para Subárea."""
     model = SubArea
-    template_name = 'organizacion/subarea_detail.html'
+    template_name = 'organizacion/subarea/subarea_detail.html'
     context_object_name = 'subarea'
     permission_required = 'organizacion.view_subarea'
 
@@ -272,7 +272,7 @@ class SubAreaCreateView(BaseCreateView):
     """Vista para crear Subárea."""
     model = SubArea
     form_class = SubAreaForm
-    template_name = 'organizacion/subarea_form.html'
+    template_name = 'organizacion/subarea/subarea_form.html'
     permission_required = 'organizacion.add_subarea'
     success_url = reverse_lazy('organizacion:subarea_list')
 
@@ -281,7 +281,7 @@ class SubAreaUpdateView(BaseUpdateView):
     """Vista para actualizar Subárea."""
     model = SubArea
     form_class = SubAreaForm
-    template_name = 'organizacion/subarea_form.html'
+    template_name = 'organizacion/subarea/subarea_form.html'
     permission_required = 'organizacion.change_subarea'
     success_url = reverse_lazy('organizacion:subarea_list')
 
@@ -289,7 +289,7 @@ class SubAreaUpdateView(BaseUpdateView):
 class SubAreaDeleteView(BaseDeleteView):
     """Vista para eliminar Subárea."""
     model = SubArea
-    template_name = 'organizacion/subarea_confirm_delete.html'
+    template_name = 'organizacion/subarea/subarea_confirm_delete.html'
     permission_required = 'organizacion.delete_subarea'
     success_url = reverse_lazy('organizacion:subarea_list')
 
@@ -301,7 +301,7 @@ class SubAreaDeleteView(BaseDeleteView):
 class ResponsableListView(BaseListView):
     """Vista de lista para Responsables."""
     model = Responsable
-    template_name = 'organizacion/responsable_list.html'
+    template_name = 'organizacion/responsable/responsable_list.html'
     context_object_name = 'responsables'
     permission_required = 'organizacion.view_responsable'
     
@@ -326,7 +326,7 @@ class ResponsableListView(BaseListView):
 class ResponsableDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     """Vista de detalle para Responsable."""
     model = Responsable
-    template_name = 'organizacion/responsable_detail.html'
+    template_name = 'organizacion/responsable/responsable_detail.html'
     context_object_name = 'responsable'
     permission_required = 'organizacion.view_responsable'
 
@@ -335,7 +335,7 @@ class ResponsableCreateView(BaseCreateView):
     """Vista para crear Responsable."""
     model = Responsable
     form_class = ResponsableForm
-    template_name = 'organizacion/responsable_form.html'
+    template_name = 'organizacion/responsable/responsable_form.html'
     permission_required = 'organizacion.add_responsable'
     success_url = reverse_lazy('organizacion:responsable_list')
 
@@ -344,7 +344,7 @@ class ResponsableUpdateView(BaseUpdateView):
     """Vista para actualizar Responsable."""
     model = Responsable
     form_class = ResponsableForm
-    template_name = 'organizacion/responsable_form.html'
+    template_name = 'organizacion/responsable/responsable_form.html'
     permission_required = 'organizacion.change_responsable'
     success_url = reverse_lazy('organizacion:responsable_list')
 
@@ -352,6 +352,6 @@ class ResponsableUpdateView(BaseUpdateView):
 class ResponsableDeleteView(BaseDeleteView):
     """Vista para eliminar Responsable."""
     model = Responsable
-    template_name = 'organizacion/responsable_confirm_delete.html'
+    template_name = 'organizacion/responsable/responsable_confirm_delete.html'
     permission_required = 'organizacion.delete_responsable'
     success_url = reverse_lazy('organizacion:responsable_list')

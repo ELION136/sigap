@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ titulo }} - SIGAP{% endblock %}
+
+{% block page_title %}{{ titulo }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="mb-4 text-sm">
+    <ol class="list-none p-0 inline-flex">
+        <li class="flex items-center">
+            <a href="/" class="text-primary-600 hover:text-primary-800">Inicio</a>
+            <i class="fas fa-chevron-right mx-2 text-gray-400 text-xs"></i>
+        </li>
+        <li class="flex items-center">
+            <a href="{% url 'organizacion:responsable_list' %}" class="text-primary-600 hover:text-primary-800">Responsables</a>
+            <i class="fas fa-chevron-right mx-2 text-gray-400 text-xs"></i>
+        </li>
+        <li class="text-gray-600">{{ titulo }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="w-full px-4">
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div class="bg-gradient-to-r from-primary-600 to-secondary-600 px-6 py-4">
+            <h2 class="text-xl font-semibold text-white flex items-center gap-2">
+                <i class="fas {% if es_creacion %}fa-user-plus{% else %}fa-user-edit{% endif %}"></i>
+                {{ titulo }}
+            </h2>
+        </div>
+        
+        <div class="p-6">
+            {% crispy form %}
+        </div>
+    </div>
+    
+    <!-- Información adicional -->
+    {% if es_creacion %}
+    <div class="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
+        <div class="flex gap-3">
+            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <i class="fas fa-info-circle text-blue-600 text-xl"></i>
+            </div>
+            <div>
+                <h4 class="font-semibold text-blue-800">Información importante</h4>
+                <p class="text-sm text-blue-700">El código debe ser único. Puedes usar un formato como RESP-001, EXT-001, etc.</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="h-8"></div>
+</div>
+{% endblock %}

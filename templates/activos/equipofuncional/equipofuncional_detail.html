@@ -1,0 +1,295 @@
+{% extends 'base.html' %}
+{% block title %}{{ equipo.codigo }} - SIGAP{% endblock %}
+{% block page_title %}Equipo Funcional{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb">
+    <a href="/"><i class="fas fa-house"></i> Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'activos:equipofuncional_list' %}">Equipos Funcionales</a>
+    <i class="fas fa-chevron-right"></i>
+    <span>{{ equipo.codigo }}</span>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ── Hero ── */
+    .eq-hero {
+        background:var(--surface); border:1px solid var(--border);
+        border-radius:16px; overflow:hidden; margin-bottom:1.25rem; position:relative;
+    }
+    .eq-hero-accent {
+        height:4px;
+        background:
+            {% if equipo.criticidad == 'alta' %}linear-gradient(90deg,#ef4444,#f97316)
+            {% elif equipo.criticidad == 'media' %}linear-gradient(90deg,#f59e0b,#fcd34d)
+            {% elif equipo.criticidad == 'baja' %}linear-gradient(90deg,#22c55e,#4ade80)
+            {% elif equipo.criticidad == 'critica' %}linear-gradient(90deg,#7c3aed,#c4b5fd)
+            {% else %}linear-gradient(90deg,var(--accent),var(--accent2)){% endif %};
+    }
+    .eq-hero-inner { padding:1.75rem 2rem; display:flex; gap:1.5rem; align-items:flex-start; }
+
+    .eq-hero-img {
+        width:96px; height:96px; border-radius:14px; flex-shrink:0;
+        background:rgba(37,99,235,.1); border:1px solid rgba(37,99,235,.2);
+        display:flex; align-items:center; justify-content:center; overflow:hidden;
+    }
+    .eq-hero-img img { width:100%; height:100%; object-fit:cover; }
+    .eq-hero-img i   { font-size:2.5rem; color:#60a5fa; }
+
+    .eq-hero-info { flex:1; min-width:0; }
+    .eq-hero-code { font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:var(--accent2); margin-bottom:.35rem; }
+    .eq-hero-name { font-family:'Syne',sans-serif; font-size:1.55rem; font-weight:700; color:var(--text); margin-bottom:.35rem; line-height:1.2; }
+    .eq-hero-sub  { font-size:.875rem; color:var(--text-muted); margin-bottom:.75rem; }
+    .eq-hero-chips { display:flex; gap:.5rem; flex-wrap:wrap; }
+
+    .eq-hero-actions { display:flex; gap:.5rem; flex-shrink:0; flex-wrap:wrap; }
+    .act-btn {
+        display:inline-flex; align-items:center; gap:.4rem;
+        padding:.5rem .9rem; border-radius:8px; font-size:.82rem; font-weight:500;
+        text-decoration:none; border:1px solid var(--border);
+        background:rgba(255,255,255,.04); color:var(--text-subtle);
+        transition:background .15s,color .15s,border-color .15s; white-space:nowrap; cursor:pointer;
+    }
+    .act-btn:hover { background:rgba(255,255,255,.08); color:var(--text); border-color:var(--border2); }
+    .act-btn.primary { background:linear-gradient(135deg,var(--accent),#1d4ed8); border-color:transparent; color:#fff; box-shadow:0 3px 14px rgba(37,99,235,.35); }
+    .act-btn.primary:hover { box-shadow:0 6px 20px rgba(37,99,235,.5); }
+    .act-btn.danger { color:#f87171; border-color:rgba(239,68,68,.25); }
+    .act-btn.danger:hover { background:rgba(239,68,68,.1); border-color:rgba(239,68,68,.4); }
+
+    /* Badge criticidad */
+    .badge-critica { background:rgba(124,58,237,.15); color:#c4b5fd; border:1px solid rgba(124,58,237,.25); }
+    .badge-alta    { background:rgba(239,68,68,.15);  color:#f87171; border:1px solid rgba(239,68,68,.25); }
+    .badge-media   { background:rgba(245,158,11,.15); color:#fcd34d; border:1px solid rgba(245,158,11,.25); }
+    .badge-baja    { background:rgba(34,197,94,.15);  color:#4ade80; border:1px solid rgba(34,197,94,.25); }
+
+    /* ── Quick stats ── */
+    .quick-stats {
+        display:grid; grid-template-columns:repeat(4,1fr);
+        border:1px solid var(--border); border-radius:12px; overflow:hidden;
+        background:var(--surface); margin-bottom:1.25rem;
+    }
+    .qs-item { padding:1.1rem 1.25rem; border-right:1px solid var(--border); text-align:center; }
+    .qs-item:last-child { border-right:none; }
+    .qs-val   { font-family:'Syne',sans-serif; font-size:1.5rem; font-weight:700; color:var(--text); }
+    .qs-label { font-size:.7rem; text-transform:uppercase; letter-spacing:.08em; color:var(--text-muted); margin-top:.2rem; }
+
+    /* ── Sections ── */
+    .two-col { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem; }
+    .full-col { margin-bottom:1rem; }
+
+    .detail-section { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+    .section-header { padding:.875rem 1.25rem; border-bottom:1px solid var(--border); background:var(--surface2); display:flex; align-items:center; gap:.5rem; font-family:'Syne',sans-serif; font-size:.875rem; font-weight:600; color:var(--text); }
+    .section-header i { color:var(--accent2); font-size:.8rem; }
+    .section-body { padding:1.1rem 1.25rem; }
+
+    .field-row { display:flex; justify-content:space-between; align-items:flex-start; padding:.5rem 0; border-bottom:1px solid rgba(255,255,255,.04); gap:1rem; }
+    .field-row:last-child { border-bottom:none; padding-bottom:0; }
+    .field-label { font-size:.73rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; flex-shrink:0; }
+    .field-value { font-size:.875rem; color:var(--text); text-align:right; }
+    .field-value.empty { color:var(--text-muted); font-style:italic; }
+
+    /* ── Activos list ── */
+    .activo-row {
+        display:flex; align-items:center; gap:.875rem;
+        padding:.75rem 0; border-bottom:1px solid rgba(255,255,255,.04);
+        text-decoration:none; transition:background .15s;
+    }
+    .activo-row:last-child { border-bottom:none; }
+    .activo-row:hover { background:rgba(255,255,255,.02); border-radius:8px; padding-left:.4rem; }
+    .ar-thumb {
+        width:38px; height:38px; border-radius:8px; flex-shrink:0;
+        background:rgba(37,99,235,.1); border:1px solid rgba(37,99,235,.15);
+        display:flex; align-items:center; justify-content:center; overflow:hidden;
+    }
+    .ar-thumb img { width:100%; height:100%; object-fit:cover; }
+    .ar-thumb i   { font-size:.9rem; color:#60a5fa; }
+    .ar-info { flex:1; min-width:0; }
+    .ar-code { font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--accent2); }
+    .ar-name { font-size:.85rem; font-weight:500; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .ar-tipo { font-size:.74rem; color:var(--text-muted); }
+    .ar-badge { flex-shrink:0; }
+
+    /* Doc card */
+    .doc-card {
+        display:flex; align-items:center; gap:.875rem;
+        padding:.875rem 1rem; background:rgba(255,255,255,.03);
+        border:1px solid var(--border); border-radius:10px;
+        text-decoration:none; color:var(--text); margin-bottom:.5rem;
+        transition:background .15s,border-color .15s;
+    }
+    .doc-card:hover { background:rgba(255,255,255,.06); border-color:var(--border2); }
+    .doc-icon { width:36px; height:36px; border-radius:8px; background:rgba(37,99,235,.15); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .doc-icon i { color:#60a5fa; font-size:.9rem; }
+
+    @media(max-width:900px) {
+        .two-col { grid-template-columns:1fr; }
+        .quick-stats { grid-template-columns:repeat(2,1fr); }
+        .qs-item:nth-child(2) { border-right:none; }
+        .qs-item:nth-child(3) { border-top:1px solid var(--border); }
+        .eq-hero-inner { flex-direction:column; }
+        .eq-hero-actions { width:100%; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Hero -->
+<div class="eq-hero">
+    <div class="eq-hero-accent"></div>
+    <div class="eq-hero-inner">
+        <div class="eq-hero-img">
+            {% if equipo.imagen %}<img src="{{ equipo.imagen.url }}" alt="">
+            {% else %}<i class="fas fa-cogs"></i>{% endif %}
+        </div>
+        <div class="eq-hero-info">
+            <div class="eq-hero-code">{{ equipo.codigo }}</div>
+            <h1 class="eq-hero-name">{{ equipo.nombre }}</h1>
+            <p class="eq-hero-sub">{% if equipo.area %}{{ equipo.area }}{% else %}Sin área asignada{% endif %}</p>
+            <div class="eq-hero-chips">
+                {% if equipo.estado_operativo == 'operativo' %}<span class="badge badge-green">{{ equipo.get_estado_operativo_display }}</span>
+                {% elif equipo.estado_operativo == 'mantenimiento' %}<span class="badge badge-yellow">{{ equipo.get_estado_operativo_display }}</span>
+                {% elif equipo.estado_operativo == 'fuera_servicio' %}<span class="badge badge-red">{{ equipo.get_estado_operativo_display }}</span>
+                {% else %}<span class="badge badge-gray">{{ equipo.get_estado_operativo_display|default:"—" }}</span>{% endif %}
+                {% if equipo.criticidad %}<span class="badge badge-{{ equipo.criticidad|lower }}">{{ equipo.get_criticidad_display }}</span>{% endif %}
+            </div>
+        </div>
+        <div class="eq-hero-actions">
+            {% if perms.activos.change_equipofuncional %}
+            <a href="{% url 'activos:equipofuncional_update' equipo.pk %}" class="act-btn primary">
+                <i class="fas fa-pen"></i> Editar
+            </a>
+            {% endif %}
+            {% if perms.activos.delete_equipofuncional %}
+            <a href="{% url 'activos:equipofuncional_delete' equipo.pk %}" class="act-btn danger">
+                <i class="fas fa-trash"></i>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Quick stats -->
+<div class="quick-stats">
+    <div class="qs-item">
+        <div class="qs-val">{{ equipo.activos.count }}</div>
+        <div class="qs-label">Activos</div>
+    </div>
+    <div class="qs-item">
+        <div class="qs-val">{{ equipo.get_criticidad_display|default:"—" }}</div>
+        <div class="qs-label">Criticidad</div>
+    </div>
+    <div class="qs-item">
+        <div class="qs-val">{% if equipo.fecha_instalacion %}{{ equipo.fecha_instalacion|date:"Y" }}{% else %}—{% endif %}</div>
+        <div class="qs-label">Instalación</div>
+    </div>
+    <div class="qs-item">
+        <div class="qs-val">{{ equipo.responsable|default:"—" }}</div>
+        <div class="qs-label">Responsable</div>
+    </div>
+</div>
+
+<!-- Info row -->
+<div class="two-col">
+    <!-- Información general -->
+    <div class="detail-section">
+        <div class="section-header"><i class="fas fa-circle-info"></i> Información General</div>
+        <div class="section-body">
+            <div class="field-row"><span class="field-label">Área</span><span class="field-value {% if not equipo.area %}empty{% endif %}">{{ equipo.area|default:"Sin asignar" }}</span></div>
+            <div class="field-row"><span class="field-label">Responsable</span><span class="field-value {% if not equipo.responsable %}empty{% endif %}">{{ equipo.responsable|default:"Sin asignar" }}</span></div>
+            <div class="field-row"><span class="field-label">Estado</span>
+                <span class="field-value">
+                    {% if equipo.estado_operativo == 'operativo' %}<span class="badge badge-green">{{ equipo.get_estado_operativo_display }}</span>
+                    {% elif equipo.estado_operativo == 'mantenimiento' %}<span class="badge badge-yellow">{{ equipo.get_estado_operativo_display }}</span>
+                    {% elif equipo.estado_operativo == 'fuera_servicio' %}<span class="badge badge-red">{{ equipo.get_estado_operativo_display }}</span>
+                    {% else %}<span class="badge badge-gray">{{ equipo.get_estado_operativo_display|default:"—" }}</span>{% endif %}
+                </span>
+            </div>
+            <div class="field-row"><span class="field-label">Criticidad</span>
+                <span class="field-value">{% if equipo.criticidad %}<span class="badge badge-{{ equipo.criticidad|lower }}">{{ equipo.get_criticidad_display }}</span>{% else %}<span class="empty">—</span>{% endif %}</span>
+            </div>
+            <div class="field-row"><span class="field-label">F. Instalación</span><span class="field-value {% if not equipo.fecha_instalacion %}empty{% endif %}">{{ equipo.fecha_instalacion|date:"d/m/Y"|default:"—" }}</span></div>
+            <div class="field-row"><span class="field-label">Activo en sistema</span>
+                <span class="field-value">{% if equipo.activo %}<span class="badge badge-green">Sí</span>{% else %}<span class="badge badge-red">No</span>{% endif %}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Descripción & Notas -->
+    <div class="detail-section">
+        <div class="section-header"><i class="fas fa-align-left"></i> Descripción & Notas</div>
+        <div class="section-body">
+            {% if equipo.descripcion %}
+            <p style="font-size:.875rem;color:var(--text-subtle);line-height:1.65;margin-bottom:{% if equipo.notas %}1rem{% else %}0{% endif %};">{{ equipo.descripcion }}</p>
+            {% else %}
+            <p style="font-size:.875rem;color:var(--text-muted);font-style:italic;">Sin descripción.</p>
+            {% endif %}
+            {% if equipo.notas %}
+            <div style="padding:.875rem;background:rgba(245,158,11,.05);border:1px solid rgba(245,158,11,.15);border-radius:8px;margin-top:.75rem;">
+                <p style="font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--warn);margin-bottom:.4rem;"><i class="fas fa-note-sticky"></i> Notas</p>
+                <p style="font-size:.875rem;color:var(--text-subtle);line-height:1.6;">{{ equipo.notas }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Activos asociados -->
+<div class="full-col detail-section">
+    <div class="section-header" style="justify-content:space-between;">
+        <span><i class="fas fa-boxes-stacked"></i> Activos Asociados</span>
+        <span style="font-size:.75rem;color:var(--text-muted);">{{ equipo.activos.count }} activos</span>
+    </div>
+    <div class="section-body">
+        {% if equipo.activos.all %}
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:0 1.5rem;">
+            {% for activo in equipo.activos.all %}
+            <a href="{% url 'activos:activo_detail' activo.pk %}" class="activo-row">
+                <div class="ar-thumb">
+                    {% if activo.imagen %}<img src="{{ activo.imagen.url }}" alt="">{% else %}<i class="fas fa-box"></i>{% endif %}
+                </div>
+                <div class="ar-info">
+                    <div class="ar-code">{{ activo.codigo }}</div>
+                    <div class="ar-name">{{ activo.nombre }}</div>
+                    <div class="ar-tipo">{{ activo.tipo.nombre }}</div>
+                </div>
+                <div class="ar-badge">
+                    <span class="badge badge-{{ activo.estado.color|default:'gray' }}">{{ activo.estado.nombre }}</span>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align:center;padding:2.5rem;color:var(--text-muted);">
+            <i class="fas fa-box-open" style="font-size:2rem;opacity:.2;display:block;margin-bottom:.75rem;"></i>
+            <p style="font-size:.875rem;">Sin activos asociados.</p>
+            {% if perms.activos.change_equipofuncional %}
+            <a href="{% url 'activos:equipofuncional_update' equipo.pk %}" class="act-btn" style="display:inline-flex;margin-top:.875rem;">
+                <i class="fas fa-link"></i> Asociar activos
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Documentación -->
+{% if equipo.documentacion %}
+<div class="full-col detail-section">
+    <div class="section-header"><i class="fas fa-folder-open"></i> Documentación</div>
+    <div class="section-body">
+        <a href="{{ equipo.documentacion.url }}" target="_blank" class="doc-card">
+            <div class="doc-icon"><i class="fas fa-file-lines"></i></div>
+            <div>
+                <div style="font-size:.875rem;font-weight:500;">Documentación técnica</div>
+                <div style="font-size:.72rem;color:var(--text-muted);margin-top:.1rem;">Haz clic para abrir</div>
+            </div>
+            <i class="fas fa-arrow-up-right-from-square" style="color:var(--text-muted);margin-left:auto;font-size:.8rem;"></i>
+        </a>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

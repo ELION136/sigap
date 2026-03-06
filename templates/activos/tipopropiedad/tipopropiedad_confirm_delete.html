@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% block title %}Eliminar {{ tipo_propiedad.codigo }} - SIGAP{% endblock %}
+{% block page_title %}Eliminar Tipo de Propiedad{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb">
+    <a href="/"><i class="fas fa-house"></i> Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'activos:tipopropiedad_list' %}">Tipos de Propiedad</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'activos:tipopropiedad_detail' tipo_propiedad.pk %}">{{ tipo_propiedad.codigo }}</a>
+    <i class="fas fa-chevron-right"></i>
+    <span style="color:#f87171;">Eliminar</span>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .delete-wrap { max-width:500px; margin:2rem auto; }
+    .delete-card { background:var(--surface); border:1px solid rgba(239,68,68,.3); border-radius:16px; overflow:hidden; }
+    .delete-top  { padding:2rem; text-align:center; border-bottom:1px solid var(--border); }
+    .del-icon-wrap { width:72px; height:72px; border-radius:50%; background:rgba(239,68,68,.1); border:2px solid rgba(239,68,68,.25); display:flex; align-items:center; justify-content:center; margin:0 auto 1.25rem; animation:shake .5s ease; }
+    .del-icon-wrap i { font-size:1.75rem; color:#f87171; }
+    .delete-title { font-family:'Syne',sans-serif; font-size:1.3rem; font-weight:700; color:var(--text); margin-bottom:.5rem; }
+    .delete-msg   { font-size:.875rem; color:var(--text-muted); line-height:1.6; }
+
+    .tp-preview { display:flex; align-items:center; gap:.875rem; background:rgba(239,68,68,.05); border:1px solid rgba(239,68,68,.15); border-radius:10px; padding:.875rem 1.1rem; margin:1.25rem auto 0; max-width:340px; text-align:left; }
+    .tp-icon { width:38px; height:38px; border-radius:9px; background:rgba(37,99,235,.1); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:.9rem; color:#60a5fa; }
+    .tp-code { font-size:.7rem; text-transform:uppercase; letter-spacing:.1em; color:#f87171; }
+    .tp-name { font-family:'Syne',sans-serif; font-size:1rem; font-weight:600; color:var(--text); }
+
+    .delete-body { padding:1.5rem 2rem; }
+    .warn-box    { display:flex; gap:.75rem; padding:.875rem 1rem; border-radius:9px; margin-bottom:1.25rem; font-size:.82rem; line-height:1.55; }
+    .warn-box i  { flex-shrink:0; margin-top:2px; }
+    .warn-danger { background:rgba(239,68,68,.08); border:1px solid rgba(239,68,68,.2); color:#fca5a5; }
+    .warn-yellow { background:rgba(245,158,11,.08); border:1px solid rgba(245,158,11,.2); color:#fcd34d; }
+
+    .count-row { display:flex; align-items:center; gap:.5rem; margin-bottom:1.25rem; font-size:.82rem; color:var(--text-muted); }
+    .c-badge-has   { display:inline-flex; align-items:center; gap:.35rem; padding:.25rem .7rem; border-radius:9999px; font-size:.78rem; font-weight:600; background:rgba(239,68,68,.12); color:#f87171; border:1px solid rgba(239,68,68,.25); }
+    .c-badge-empty { display:inline-flex; align-items:center; gap:.35rem; padding:.25rem .7rem; border-radius:9999px; font-size:.78rem; font-weight:600; background:rgba(34,197,94,.12); color:#4ade80; border:1px solid rgba(34,197,94,.25); }
+
+    .delete-actions { display:flex; gap:.75rem; justify-content:flex-end; }
+    .btn-danger { display:inline-flex; align-items:center; gap:.4rem; padding:.65rem 1.25rem; background:linear-gradient(135deg,#dc2626,#b91c1c); color:#fff; font-family:'Syne',sans-serif; font-size:.9rem; font-weight:600; border-radius:9px; border:none; cursor:pointer; box-shadow:0 4px 16px rgba(220,38,38,.35); transition:transform .15s,box-shadow .2s; }
+    .btn-danger:hover { transform:translateY(-1px); box-shadow:0 6px 22px rgba(220,38,38,.5); }
+    .btn-cancel-del { display:inline-flex; align-items:center; gap:.4rem; padding:.65rem 1.25rem; background:rgba(255,255,255,.04); border:1px solid var(--border); border-radius:9px; color:var(--text-subtle); font-size:.9rem; text-decoration:none; transition:background .15s,color .15s; }
+    .btn-cancel-del:hover { background:rgba(255,255,255,.08); color:var(--text); }
+
+    @keyframes shake { 0%,100%{transform:rotate(0)} 20%{transform:rotate(-8deg)} 40%{transform:rotate(8deg)} 60%{transform:rotate(-4deg)} 80%{transform:rotate(4deg)} }
+</style>
+{% endblock %}
+
+{% block content %}
+{% with activos_count=tipo_propiedad.activos.count %}
+<div class="delete-wrap">
+    <div class="delete-card">
+        <div class="delete-top">
+            <div class="del-icon-wrap"><i class="fas fa-trash-can"></i></div>
+            <h2 class="delete-title">¿Eliminar este tipo?</h2>
+            <p class="delete-msg">El tipo de propiedad <strong>{{ tipo_propiedad.codigo }}</strong> será eliminado permanentemente.</p>
+            <div class="tp-preview">
+                <div class="tp-icon"><i class="fas fa-file-contract"></i></div>
+                <div>
+                    <div class="tp-code">{{ tipo_propiedad.codigo }}</div>
+                    <div class="tp-name">{{ tipo_propiedad.nombre }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="delete-body">
+            <div class="count-row">
+                <span>Activos asignados:</span>
+                <span class="{% if activos_count > 0 %}c-badge-has{% else %}c-badge-empty{% endif %}">
+                    <i class="fas {% if activos_count > 0 %}fa-triangle-exclamation{% else %}fa-circle-check{% endif %}"></i>
+                    {{ activos_count }} activo{% if activos_count != 1 %}s{% endif %}
+                </span>
+            </div>
+
+            {% if activos_count > 0 %}
+            <div class="warn-box warn-danger">
+                <i class="fas fa-circle-xmark"></i>
+                <span>No puedes eliminar este tipo porque <strong>{{ activos_count }} activo{{ activos_count|pluralize }}</strong> lo tiene{{ activos_count|pluralize }}n asignado. Reasigna los activos primero.</span>
+            </div>
+            <div class="delete-actions">
+                <a href="{% url 'activos:tipopropiedad_detail' tipo_propiedad.pk %}" class="btn-cancel-del"><i class="fas fa-arrow-left"></i> Volver</a>
+                <a href="{% url 'activos:activo_list' %}" class="btn-primary"><i class="fas fa-boxes-stacked"></i> Ver activos</a>
+            </div>
+            {% else %}
+            <div class="warn-box warn-yellow">
+                <i class="fas fa-triangle-exclamation"></i>
+                <span>Esta acción es irreversible. El tipo de propiedad será eliminado permanentemente del sistema.</span>
+            </div>
+            <div class="delete-actions">
+                <a href="{% url 'activos:tipopropiedad_detail' tipo_propiedad.pk %}" class="btn-cancel-del"><i class="fas fa-arrow-left"></i> Cancelar</a>
+                <form method="post" style="display:contents;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-danger"><i class="fas fa-trash-can"></i> Sí, eliminar</button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endwith %}
+{% endblock %}

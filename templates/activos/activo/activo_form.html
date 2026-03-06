@@ -1,0 +1,558 @@
+{% extends 'base.html' %}
+{% block title %}{% if object %}Editar {{ object.codigo }}{% else %}Nuevo Activo{% endif %} - SIGAP{% endblock %}
+{% block page_title %}{% if object %}Editar Activo{% else %}Nuevo Activo{% endif %}{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb">
+    <a href="/"><i class="fas fa-house"></i> Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'activos:activo_list' %}">Activos</a>
+    <i class="fas fa-chevron-right"></i>
+    {% if object %}<a href="{% url 'activos:activo_detail' object.pk %}">{{ object.codigo }}</a>
+    <i class="fas fa-chevron-right"></i>
+    <span>Editar</span>
+    {% else %}<span>Nuevo Activo</span>{% endif %}
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-layout {
+        display: grid;
+        grid-template-columns: 1fr 280px;
+        gap: 1.25rem;
+        align-items: start;
+    }
+
+    /* ── Steps sidebar ── */
+    .steps-nav {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 1rem;
+        position: sticky;
+        top: 1rem;
+    }
+    .steps-title {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--text-muted);
+        margin-bottom: 0.75rem;
+        padding: 0 0.25rem;
+    }
+    .step-link {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        padding: 0.6rem 0.75rem;
+        border-radius: 9px;
+        font-size: 0.85rem;
+        color: var(--text-subtle);
+        text-decoration: none;
+        cursor: pointer;
+        background: none;
+        border: none;
+        width: 100%;
+        text-align: left;
+        transition: background 0.15s, color 0.15s;
+        margin-bottom: 1px;
+    }
+    .step-link:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+    .step-link.active { background: rgba(37,99,235,0.15); color: #60a5fa; }
+    .step-num {
+        width: 22px; height: 22px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.06);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.7rem;
+        font-weight: 700;
+        flex-shrink: 0;
+        transition: background 0.15s;
+    }
+    .step-link.active .step-num { background: var(--accent); color: #fff; }
+    .step-link.done .step-num { background: rgba(34,197,94,0.2); color: #4ade80; }
+
+    /* ── Form sections ── */
+    .form-section {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        overflow: hidden;
+        margin-bottom: 1rem;
+        scroll-margin-top: 1.5rem;
+    }
+    .form-section-header {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface2);
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+    .form-section-header .s-num {
+        width: 26px; height: 26px;
+        border-radius: 50%;
+        background: rgba(37,99,235,0.2);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #60a5fa;
+        flex-shrink: 0;
+    }
+    .form-section-header h3 {
+        font-family: 'Syne', sans-serif;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--text);
+    }
+    .form-section-header p {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-left: auto;
+    }
+    .form-section-body { padding: 1.5rem; }
+
+    /* ── Field grid ── */
+    .fg-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+    .fg-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+    .fg-1 { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+    .fg-1-2 { display: grid; grid-template-columns: 1fr 2fr; gap: 1rem; }
+    .span-2 { grid-column: span 2; }
+    .span-3 { grid-column: span 3; }
+    .gap-b { margin-bottom: 1rem; }
+
+    /* ── Form fields ── */
+    .field-group { display: flex; flex-direction: column; gap: 0.35rem; }
+    .field-group label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: var(--text-muted);
+    }
+    .field-group label .req { color: #f87171; margin-left: 2px; }
+
+    .f-input, .f-select, .f-textarea {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        padding: 0.6rem 0.875rem;
+        color: var(--text);
+        font-family: 'DM Sans', sans-serif;
+        font-size: 0.875rem;
+        outline: none;
+        width: 100%;
+        transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    }
+    .f-input::placeholder, .f-textarea::placeholder { color: rgba(107,114,128,0.5); }
+    .f-input:focus, .f-select:focus, .f-textarea:focus {
+        border-color: var(--accent);
+        background: rgba(37,99,235,0.05);
+        box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+    }
+    .f-select {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7280'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.875rem center;
+        background-color: rgba(255,255,255,0.04);
+        padding-right: 2.25rem;
+        cursor: pointer;
+    }
+    .f-select option { background: #1a2236; color: var(--text); }
+    .f-textarea { resize: vertical; min-height: 80px; }
+
+    /* File inputs */
+    .f-file-wrap { position: relative; }
+    .f-file {
+        width: 100%;
+        background: rgba(255,255,255,0.04);
+        border: 1px dashed rgba(255,255,255,0.12);
+        border-radius: 9px;
+        padding: 0.75rem 0.875rem;
+        color: var(--text-muted);
+        font-size: 0.82rem;
+        cursor: pointer;
+        transition: border-color 0.2s, background 0.2s;
+    }
+    .f-file:hover { border-color: var(--accent); background: rgba(37,99,235,0.04); }
+
+    /* Preview */
+    .img-preview {
+        margin-top: 0.5rem;
+        max-height: 140px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        object-fit: cover;
+        display: block;
+    }
+
+    /* ── Submit bar ── */
+    .submit-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.1rem 1.5rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        position: sticky;
+        bottom: 1rem;
+        margin-top: 1.25rem;
+        z-index: 10;
+        backdrop-filter: blur(8px);
+    }
+    .submit-bar .left { display: flex; align-items: center; gap: 0.5rem; color: var(--text-muted); font-size: 0.82rem; }
+    .submit-bar .right { display: flex; gap: 0.6rem; }
+
+    .btn-cancel {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        padding: 0.55rem 1.1rem;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.04);
+        color: var(--text-subtle);
+        font-size: 0.875rem;
+        text-decoration: none;
+        transition: background 0.15s, color 0.15s;
+    }
+    .btn-cancel:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+
+    /* Error states */
+    .field-error { font-size: 0.75rem; color: #f87171; margin-top: 0.2rem; }
+    .f-input.error, .f-select.error { border-color: rgba(239,68,68,0.5); }
+
+    @media (max-width: 960px) {
+        .form-layout { grid-template-columns: 1fr; }
+        .steps-nav { display: none; }
+        .fg-3 { grid-template-columns: repeat(2, 1fr); }
+        .fg-3 .span-3 { grid-column: span 2; }
+    }
+    @media (max-width: 580px) {
+        .fg-3, .fg-2, .fg-1-2 { grid-template-columns: 1fr; }
+        .span-2, .span-3 { grid-column: span 1; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<form method="post" enctype="multipart/form-data" id="activoForm" novalidate>
+    {% csrf_token %}
+    <div class="form-layout">
+
+        <!-- Main form -->
+        <div>
+
+            <!-- § 1 · Información General -->
+            <div class="form-section" id="sec-general">
+                <div class="form-section-header">
+                    <div class="s-num">1</div>
+                    <h3>Información General</h3>
+                    <p>Campos obligatorios</p>
+                </div>
+                <div class="form-section-body">
+                    <div class="fg-1-2 gap-b">
+                        <div class="field-group">
+                            <label>Código <span class="req">*</span></label>
+                            {{ form.codigo }}
+                            {% if form.codigo.errors %}<p class="field-error">{{ form.codigo.errors.0 }}</p>{% endif %}
+                        </div>
+                        <div class="field-group">
+                            <label>Nombre <span class="req">*</span></label>
+                            {{ form.nombre }}
+                            {% if form.nombre.errors %}<p class="field-error">{{ form.nombre.errors.0 }}</p>{% endif %}
+                        </div>
+                    </div>
+                    <div class="fg-2 gap-b">
+                        <div class="field-group">
+                            <label>Código Interno</label>
+                            {{ form.codigo_interno }}
+                        </div>
+                        <div class="field-group">
+                            <label>Código Contable</label>
+                            {{ form.codigo_contable }}
+                        </div>
+                    </div>
+                    <div class="field-group">
+                        <label>Descripción</label>
+                        {{ form.descripcion }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- § 2 · Clasificación -->
+            <div class="form-section" id="sec-clasificacion">
+                <div class="form-section-header">
+                    <div class="s-num">2</div>
+                    <h3>Clasificación</h3>
+                </div>
+                <div class="form-section-body">
+                    <div class="fg-3">
+                        <div class="field-group">
+                            <label>Tipo <span class="req">*</span></label>
+                            {{ form.tipo }}
+                            {% if form.tipo.errors %}<p class="field-error">{{ form.tipo.errors.0 }}</p>{% endif %}
+                        </div>
+                        <div class="field-group">
+                            <label>Estado <span class="req">*</span></label>
+                            {{ form.estado }}
+                        </div>
+                        <div class="field-group">
+                            <label>Tipo de Propiedad <span class="req">*</span></label>
+                            {{ form.tipo_propiedad }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- § 3 · Ubicación -->
+            <div class="form-section" id="sec-ubicacion">
+                <div class="form-section-header">
+                    <div class="s-num">3</div>
+                    <h3>Ubicación & Responsable</h3>
+                </div>
+                <div class="form-section-body">
+                    <div class="fg-2 gap-b">
+                        <div class="field-group">
+                            <label>Planta</label>
+                            {{ form.planta }}
+                        </div>
+                        <div class="field-group">
+                            <label>Nivel</label>
+                            {{ form.nivel }}
+                        </div>
+                    </div>
+                    <div class="fg-2 gap-b">
+                        <div class="field-group">
+                            <label>Área</label>
+                            {{ form.area }}
+                        </div>
+                        <div class="field-group">
+                            <label>Subárea</label>
+                            {{ form.subarea }}
+                        </div>
+                    </div>
+                    <div class="fg-2">
+                        <div class="field-group">
+                            <label>Ubicación Específica</label>
+                            {{ form.ubicacion_especifica }}
+                        </div>
+                        <div class="field-group">
+                            <label>Responsable</label>
+                            {{ form.responsable }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- § 4 · Adquisición -->
+            <div class="form-section" id="sec-adquisicion">
+                <div class="form-section-header">
+                    <div class="s-num">4</div>
+                    <h3>Adquisición</h3>
+                </div>
+                <div class="form-section-body">
+                    <div class="fg-3 gap-b">
+                        <div class="field-group">
+                            <label>F. Adquisición</label>
+                            {{ form.fecha_adquisicion }}
+                        </div>
+                        <div class="field-group">
+                            <label>F. Instalación</label>
+                            {{ form.fecha_instalacion }}
+                        </div>
+                        <div class="field-group">
+                            <label>Fin de Garantía</label>
+                            {{ form.fecha_garantia }}
+                        </div>
+                    </div>
+                    <div class="fg-2 gap-b">
+                        <div class="field-group">
+                            <label>Proveedor</label>
+                            {{ form.proveedor }}
+                        </div>
+                        <div class="field-group">
+                            <label>Nº Factura</label>
+                            {{ form.numero_factura }}
+                        </div>
+                    </div>
+                    <div class="fg-3">
+                        <div class="field-group">
+                            <label>Costo Adquisición</label>
+                            {{ form.costo_adquisicion }}
+                        </div>
+                        <div class="field-group">
+                            <label>Valor Actual</label>
+                            {{ form.valor_actual }}
+                        </div>
+                        <div class="field-group">
+                            <label>Moneda</label>
+                            {{ form.moneda }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- § 5 · Especificaciones Técnicas -->
+            <div class="form-section" id="sec-tecnico">
+                <div class="form-section-header">
+                    <div class="s-num">5</div>
+                    <h3>Especificaciones Técnicas</h3>
+                </div>
+                <div class="form-section-body">
+                    <div class="fg-3 gap-b">
+                        <div class="field-group">
+                            <label>Marca</label>
+                            {{ form.marca }}
+                        </div>
+                        <div class="field-group">
+                            <label>Modelo</label>
+                            {{ form.modelo }}
+                        </div>
+                        <div class="field-group">
+                            <label>Nº de Serie</label>
+                            {{ form.numero_serie }}
+                        </div>
+                    </div>
+                    <div class="fg-3">
+                        <div class="field-group">
+                            <label>Capacidad</label>
+                            {{ form.capacidad }}
+                        </div>
+                        <div class="field-group">
+                            <label>Dimensiones</label>
+                            {{ form.dimensiones }}
+                        </div>
+                        <div class="field-group">
+                            <label>Peso (kg)</label>
+                            {{ form.peso }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- § 6 · Archivos -->
+            <div class="form-section" id="sec-archivos">
+                <div class="form-section-header">
+                    <div class="s-num">6</div>
+                    <h3>Archivos</h3>
+                </div>
+                <div class="form-section-body">
+                    <div class="fg-3">
+                        <div class="field-group">
+                            <label>Imagen</label>
+                            {{ form.imagen }}
+                            {% if object.imagen %}
+                            <img src="{{ object.imagen.url }}" class="img-preview" alt="Imagen actual">
+                            {% endif %}
+                        </div>
+                        <div class="field-group">
+                            <label>Manual</label>
+                            {{ form.manual }}
+                        </div>
+                        <div class="field-group">
+                            <label>Ficha Técnica</label>
+                            {{ form.ficha_tecnica }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- § 7 · Mantenimiento & Notas -->
+            <div class="form-section" id="sec-notas">
+                <div class="form-section-header">
+                    <div class="s-num">7</div>
+                    <h3>Mantenimiento & Notas</h3>
+                </div>
+                <div class="form-section-body">
+                    <div class="field-group gap-b">
+                        <label>Frecuencia de Mantenimiento (días)</label>
+                        {{ form.frecuencia_mantenimiento }}
+                    </div>
+                    <div class="field-group">
+                        <label>Notas</label>
+                        {{ form.notas }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit bar -->
+            <div class="submit-bar">
+                <div class="left">
+                    <i class="fas fa-circle-info"></i>
+                    {% if object %}Editando activo <strong>{{ object.codigo }}</strong>{% else %}Nuevo activo{% endif %}
+                </div>
+                <div class="right">
+                    <a href="{% if object %}{% url 'activos:activo_detail' object.pk %}{% else %}{% url 'activos:activo_list' %}{% endif %}" class="btn-cancel">
+                        <i class="fas fa-xmark"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-floppy-disk"></i> {% if object %}Guardar cambios{% else %}Crear activo{% endif %}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Steps sidebar -->
+        <div class="steps-nav">
+            <p class="steps-title">Secciones</p>
+            <button type="button" class="step-link active" onclick="scrollTo('sec-general')">
+                <span class="step-num">1</span> Información General
+            </button>
+            <button type="button" class="step-link" onclick="scrollTo('sec-clasificacion')">
+                <span class="step-num">2</span> Clasificación
+            </button>
+            <button type="button" class="step-link" onclick="scrollTo('sec-ubicacion')">
+                <span class="step-num">3</span> Ubicación
+            </button>
+            <button type="button" class="step-link" onclick="scrollTo('sec-adquisicion')">
+                <span class="step-num">4</span> Adquisición
+            </button>
+            <button type="button" class="step-link" onclick="scrollTo('sec-tecnico')">
+                <span class="step-num">5</span> Especificaciones
+            </button>
+            <button type="button" class="step-link" onclick="scrollTo('sec-archivos')">
+                <span class="step-num">6</span> Archivos
+            </button>
+            <button type="button" class="step-link" onclick="scrollTo('sec-notas')">
+                <span class="step-num">7</span> Mant. & Notas
+            </button>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Apply dark styles to Django form widgets
+document.querySelectorAll('input[type=text], input[type=number], input[type=date], input[type=email], input[type=file]').forEach(el => {
+    if (el.type === 'file') {
+        el.classList.add('f-file');
+    } else {
+        el.classList.add('f-input');
+    }
+});
+document.querySelectorAll('select').forEach(el => el.classList.add('f-select'));
+document.querySelectorAll('textarea').forEach(el => el.classList.add('f-textarea'));
+
+// Scroll to section
+function scrollTo(id) {
+    document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+    document.querySelectorAll('.step-link').forEach(b => b.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+}
+
+// Active step on scroll
+const sections = ['sec-general','sec-clasificacion','sec-ubicacion','sec-adquisicion','sec-tecnico','sec-archivos','sec-notas'];
+const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+        if (e.isIntersecting) {
+            const idx = sections.indexOf(e.target.id);
+            document.querySelectorAll('.step-link').forEach((b, i) => b.classList.toggle('active', i === idx));
+        }
+    });
+}, { threshold: 0.4 });
+sections.forEach(id => { const el = document.getElementById(id); if (el) observer.observe(el); });
+</script>
+{% endblock %}

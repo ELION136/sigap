@@ -16,6 +16,8 @@ from .forms import (
     TipoMantenimientoForm, MantenimientoForm, 
     MantenimientoQuickForm, RepuestoUtilizadoForm
 )
+from apps.activos.models import Activo
+
 
 
 class BaseListView(LoginRequiredMixin, ListView):

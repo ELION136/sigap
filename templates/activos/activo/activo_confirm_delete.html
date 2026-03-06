@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% block title %}Eliminar {{ activo.codigo }} - SIGAP{% endblock %}
+{% block page_title %}Eliminar Activo{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb">
+    <a href="/"><i class="fas fa-house"></i> Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'activos:activo_list' %}">Activos</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'activos:activo_detail' activo.pk %}">{{ activo.codigo }}</a>
+    <i class="fas fa-chevron-right"></i>
+    <span style="color:#f87171;">Eliminar</span>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .delete-wrap {
+        max-width: 560px;
+        margin: 2rem auto;
+    }
+    .delete-card {
+        background: var(--surface);
+        border: 1px solid rgba(239,68,68,0.3);
+        border-radius: 16px;
+        overflow: hidden;
+    }
+    .delete-top {
+        padding: 2rem;
+        text-align: center;
+        border-bottom: 1px solid var(--border);
+    }
+    .delete-icon {
+        width: 72px; height: 72px;
+        border-radius: 50%;
+        background: rgba(239,68,68,0.1);
+        border: 2px solid rgba(239,68,68,0.25);
+        display: flex; align-items: center; justify-content: center;
+        margin: 0 auto 1.25rem;
+        animation: shake 0.5s ease;
+    }
+    .delete-icon i { font-size: 1.75rem; color: #f87171; }
+    .delete-title {
+        font-family: 'Syne', sans-serif;
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 0.5rem;
+    }
+    .delete-msg {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        line-height: 1.6;
+    }
+    .delete-asset-info {
+        background: rgba(239,68,68,0.05);
+        border: 1px solid rgba(239,68,68,0.15);
+        border-radius: 10px;
+        padding: 0.875rem 1.1rem;
+        margin: 1.25rem auto 0;
+        max-width: 360px;
+        text-align: left;
+    }
+    .dai-code {
+        font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em;
+        color: #f87171; margin-bottom: 0.25rem;
+    }
+    .dai-name {
+        font-family: 'Syne', sans-serif;
+        font-size: 1rem; font-weight: 600; color: var(--text);
+    }
+    .dai-meta { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; }
+
+    .delete-body { padding: 1.5rem 2rem; }
+    .warn-box {
+        display: flex; gap: 0.75rem;
+        padding: 0.875rem 1rem;
+        background: rgba(245,158,11,0.08);
+        border: 1px solid rgba(245,158,11,0.2);
+        border-radius: 9px;
+        margin-bottom: 1.5rem;
+        font-size: 0.82rem;
+        color: #fcd34d;
+        line-height: 1.55;
+    }
+    .warn-box i { flex-shrink: 0; margin-top: 2px; }
+
+    .delete-actions { display: flex; gap: 0.75rem; justify-content: flex-end; }
+    .btn-danger {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        padding: 0.65rem 1.25rem;
+        background: linear-gradient(135deg, #dc2626, #b91c1c);
+        color: #fff;
+        font-family: 'Syne', sans-serif;
+        font-size: 0.9rem; font-weight: 600;
+        border-radius: 9px; border: none;
+        cursor: pointer;
+        box-shadow: 0 4px 16px rgba(220,38,38,0.35);
+        transition: transform 0.15s, box-shadow 0.2s;
+    }
+    .btn-danger:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(220,38,38,0.5); }
+    .btn-cancel-del {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        padding: 0.65rem 1.25rem;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        color: var(--text-subtle);
+        font-size: 0.9rem;
+        text-decoration: none;
+        transition: background 0.15s, color 0.15s;
+    }
+    .btn-cancel-del:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+
+    @keyframes shake {
+        0%,100% { transform: rotate(0deg); }
+        20% { transform: rotate(-8deg); }
+        40% { transform: rotate(8deg); }
+        60% { transform: rotate(-4deg); }
+        80% { transform: rotate(4deg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="delete-wrap">
+    <div class="delete-card">
+        <div class="delete-top">
+            <div class="delete-icon"><i class="fas fa-trash-can"></i></div>
+            <h2 class="delete-title">¿Eliminar este activo?</h2>
+            <p class="delete-msg">Esta acción no se puede deshacer. El activo será eliminado permanentemente del sistema junto con todos sus datos asociados.</p>
+            <div class="delete-asset-info">
+                <div class="dai-code">{{ activo.codigo }}</div>
+                <div class="dai-name">{{ activo.nombre }}</div>
+                <div class="dai-meta">{{ activo.tipo.nombre }} · {{ activo.estado.nombre }}</div>
+            </div>
+        </div>
+        <div class="delete-body">
+            <div class="warn-box">
+                <i class="fas fa-triangle-exclamation"></i>
+                <span>Se eliminarán también todos los mantenimientos, historial de ubicaciones y datos relacionados a este activo.</span>
+            </div>
+            <div class="delete-actions">
+                <a href="{% url 'activos:activo_detail' activo.pk %}" class="btn-cancel-del">
+                    <i class="fas fa-arrow-left"></i> Cancelar
+                </a>
+                <form method="post" style="display:contents;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-danger">
+                        <i class="fas fa-trash-can"></i> Sí, eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

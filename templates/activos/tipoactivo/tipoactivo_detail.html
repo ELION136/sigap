@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+{% block title %}{{ tipo.codigo }} - SIGAP{% endblock %}
+{% block page_title %}Tipo de Activo{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb">
+    <a href="/"><i class="fas fa-house"></i> Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'activos:tipoactivo_list' %}">Tipos de Activo</a>
+    <i class="fas fa-chevron-right"></i>
+    <span>{{ tipo.codigo }}</span>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detail-wrap { max-width:800px; }
+
+    /* Hero card */
+    .tipo-hero {
+        background:var(--surface); border:1px solid var(--border);
+        border-radius:16px; overflow:hidden; margin-bottom:1.25rem;
+    }
+    .hero-accent { height:3px; }
+    .hero-inner { padding:1.75rem 2rem; display:flex; gap:1.5rem; align-items:center; }
+
+    .hero-icon {
+        width:80px; height:80px; border-radius:16px; flex-shrink:0;
+        display:flex; align-items:center; justify-content:center; font-size:2rem;
+    }
+    .hero-text { flex:1; }
+    .hero-code  { font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:var(--accent2); margin-bottom:.3rem; }
+    .hero-name  { font-family:'Syne',sans-serif; font-size:1.5rem; font-weight:700; color:var(--text); margin-bottom:.35rem; }
+    .hero-cat   { font-size:.875rem; color:var(--text-muted); }
+    .hero-chips { display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.65rem; }
+
+    .hero-actions { display:flex; gap:.5rem; flex-shrink:0; }
+    .act-btn {
+        display:inline-flex; align-items:center; gap:.4rem;
+        padding:.5rem .9rem; border-radius:8px; font-size:.82rem; font-weight:500;
+        text-decoration:none; border:1px solid var(--border);
+        background:rgba(255,255,255,.04); color:var(--text-subtle);
+        transition:background .15s,color .15s,border-color .15s; cursor:pointer; white-space:nowrap;
+    }
+    .act-btn:hover { background:rgba(255,255,255,.08); color:var(--text); border-color:var(--border2); }
+    .act-btn.primary { background:linear-gradient(135deg,var(--accent),#1d4ed8); border-color:transparent; color:#fff; box-shadow:0 3px 14px rgba(37,99,235,.35); }
+    .act-btn.primary:hover { box-shadow:0 6px 20px rgba(37,99,235,.5); }
+    .act-btn.danger  { color:#f87171; border-color:rgba(239,68,68,.25); }
+    .act-btn.danger:hover { background:rgba(239,68,68,.1); }
+
+    /* Properties grid */
+    .props-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem; }
+
+    .prop-section { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+    .ps-header { padding:.875rem 1.25rem; border-bottom:1px solid var(--border); background:var(--surface2); display:flex; align-items:center; gap:.5rem; font-family:'Syne',sans-serif; font-size:.875rem; font-weight:600; color:var(--text); }
+    .ps-header i { color:var(--accent2); font-size:.8rem; }
+    .ps-body { padding:1.1rem 1.25rem; }
+
+    .field-row { display:flex; justify-content:space-between; align-items:center; padding:.5rem 0; border-bottom:1px solid rgba(255,255,255,.04); gap:1rem; }
+    .field-row:last-child { border-bottom:none; padding-bottom:0; }
+    .fl { font-size:.73rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; flex-shrink:0; }
+    .fv { font-size:.875rem; color:var(--text); text-align:right; }
+    .fv.empty { color:var(--text-muted); font-style:italic; }
+
+    /* Toggle chips */
+    .toggle-chip {
+        display:inline-flex; align-items:center; gap:.4rem;
+        padding:.25rem .75rem; border-radius:9999px;
+        font-size:.78rem; font-weight:600;
+    }
+    .tc-on  { background:rgba(34,197,94,.12);  color:#4ade80; border:1px solid rgba(34,197,94,.25); }
+    .tc-off { background:rgba(107,114,128,.1); color:#6b7280; border:1px solid rgba(107,114,128,.2); }
+
+    /* Activos relacionados section */
+    .activos-section { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; margin-bottom:1rem; }
+    .activo-mini {
+        display:flex; align-items:center; gap:.75rem;
+        padding:.6rem 0; border-bottom:1px solid rgba(255,255,255,.04);
+        text-decoration:none; transition:padding-left .15s;
+    }
+    .activo-mini:last-child { border-bottom:none; }
+    .activo-mini:hover { padding-left:.4rem; }
+    .am-code { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--accent2); flex-shrink:0; width:80px; }
+    .am-name { font-size:.85rem; color:var(--text); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    @media(max-width:700px) { .props-grid{grid-template-columns:1fr} .hero-inner{flex-direction:column} .hero-actions{width:100%} }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="detail-wrap">
+
+    <!-- Hero -->
+    <div class="tipo-hero">
+        <div class="hero-accent" style="background:{% if tipo.categoria == 'MAQUINARIA' %}linear-gradient(90deg,#60a5fa,#38bdf8){% elif tipo.categoria == 'EQUIPO_COMPUTO' %}linear-gradient(90deg,#a78bfa,#7c3aed){% elif tipo.categoria == 'MUEBLES' %}linear-gradient(90deg,#fb923c,#f97316){% elif tipo.categoria == 'EQUIPO_TRANSPORTE' %}linear-gradient(90deg,#34d399,#059669){% elif tipo.categoria == 'EQUIPO_COMUNICACION' %}linear-gradient(90deg,#f472b6,#ec4899){% elif tipo.categoria == 'HERRAMIENTAS' %}linear-gradient(90deg,#fbbf24,#f59e0b){% elif tipo.categoria == 'INSTALACIONES' %}linear-gradient(90deg,#38bdf8,#0ea5e9){% elif tipo.categoria == 'EDIFICIOS' %}linear-gradient(90deg,#6ee7b7,#10b981){% else %}linear-gradient(90deg,#9ca3af,#6b7280){% endif %};"></div>
+        <div class="hero-inner">
+            <div class="hero-icon" style="
+                background:{% if tipo.categoria == 'MAQUINARIA' %}rgba(96,165,250,.12){% elif tipo.categoria == 'EQUIPO_COMPUTO' %}rgba(167,139,250,.12){% elif tipo.categoria == 'MUEBLES' %}rgba(251,146,60,.12){% elif tipo.categoria == 'EQUIPO_TRANSPORTE' %}rgba(52,211,153,.12){% elif tipo.categoria == 'EQUIPO_COMUNICACION' %}rgba(244,114,182,.12){% elif tipo.categoria == 'HERRAMIENTAS' %}rgba(251,191,36,.12){% elif tipo.categoria == 'INSTALACIONES' %}rgba(56,189,248,.12){% elif tipo.categoria == 'EDIFICIOS' %}rgba(110,231,183,.12){% else %}rgba(156,163,175,.12){% endif %};
+                color:{% if tipo.categoria == 'MAQUINARIA' %}#60a5fa{% elif tipo.categoria == 'EQUIPO_COMPUTO' %}#a78bfa{% elif tipo.categoria == 'MUEBLES' %}#fb923c{% elif tipo.categoria == 'EQUIPO_TRANSPORTE' %}#34d399{% elif tipo.categoria == 'EQUIPO_COMUNICACION' %}#f472b6{% elif tipo.categoria == 'HERRAMIENTAS' %}#fbbf24{% elif tipo.categoria == 'INSTALACIONES' %}#38bdf8{% elif tipo.categoria == 'EDIFICIOS' %}#6ee7b7{% else %}#9ca3af{% endif %};">
+                <i class="fas {% if tipo.categoria == 'MAQUINARIA' %}fa-gear{% elif tipo.categoria == 'EQUIPO_COMPUTO' %}fa-computer{% elif tipo.categoria == 'MUEBLES' %}fa-couch{% elif tipo.categoria == 'EQUIPO_TRANSPORTE' %}fa-truck{% elif tipo.categoria == 'EQUIPO_COMUNICACION' %}fa-radio{% elif tipo.categoria == 'HERRAMIENTAS' %}fa-screwdriver-wrench{% elif tipo.categoria == 'INSTALACIONES' %}fa-plug{% elif tipo.categoria == 'EDIFICIOS' %}fa-building{% else %}fa-tag{% endif %}"></i>
+            </div>
+            <div class="hero-text">
+                <div class="hero-code">{{ tipo.codigo }}</div>
+                <div class="hero-name">{{ tipo.nombre }}</div>
+                <div class="hero-cat">{{ tipo.get_categoria_display }}</div>
+                <div class="hero-chips">
+                    <span class="toggle-chip {% if tipo.activo %}tc-on{% else %}tc-off{% endif %}">
+                        <i class="fas {% if tipo.activo %}fa-circle-check{% else %}fa-circle-xmark{% endif %}"></i>
+                        {% if tipo.activo %}Activo{% else %}Inactivo{% endif %}
+                    </span>
+                    <span class="toggle-chip {% if tipo.depreciable %}tc-on{% else %}tc-off{% endif %}">
+                        <i class="fas fa-chart-line"></i>
+                        {% if tipo.depreciable %}Depreciable{% else %}No depreciable{% endif %}
+                    </span>
+                    <span class="toggle-chip {% if tipo.requiere_mantenimiento %}tc-on{% else %}tc-off{% endif %}">
+                        <i class="fas fa-wrench"></i>
+                        {% if tipo.requiere_mantenimiento %}Requiere mant.{% else %}Sin mant.{% endif %}
+                    </span>
+                    {% if tipo.vida_util_anios %}
+                    <span class="toggle-chip" style="background:rgba(245,158,11,.12);color:#fcd34d;border:1px solid rgba(245,158,11,.25);">
+                        <i class="fas fa-clock"></i> {{ tipo.vida_util_anios }} años de vida útil
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="hero-actions">
+                {% if perms.activos.change_tipoactivo %}
+                <a href="{% url 'activos:tipoactivo_update' tipo.pk %}" class="act-btn primary">
+                    <i class="fas fa-pen"></i> Editar
+                </a>
+                {% endif %}
+                {% if perms.activos.delete_tipoactivo %}
+                <a href="{% url 'activos:tipoactivo_delete' tipo.pk %}" class="act-btn danger">
+                    <i class="fas fa-trash"></i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Properties -->
+    <div class="props-grid">
+        <div class="prop-section">
+            <div class="ps-header"><i class="fas fa-circle-info"></i> Propiedades</div>
+            <div class="ps-body">
+                <div class="field-row"><span class="fl">Categoría</span><span class="fv">{{ tipo.get_categoria_display }}</span></div>
+                <div class="field-row"><span class="fl">Vida útil</span><span class="fv {% if not tipo.vida_util_anios %}empty{% endif %}">{% if tipo.vida_util_anios %}{{ tipo.vida_util_anios }} años{% else %}No definida{% endif %}</span></div>
+                <div class="field-row"><span class="fl">Depreciable</span><span class="fv"><span class="toggle-chip {% if tipo.depreciable %}tc-on{% else %}tc-off{% endif %}">{% if tipo.depreciable %}Sí{% else %}No{% endif %}</span></span></div>
+                <div class="field-row"><span class="fl">Requiere mant.</span><span class="fv"><span class="toggle-chip {% if tipo.requiere_mantenimiento %}tc-on{% else %}tc-off{% endif %}">{% if tipo.requiere_mantenimiento %}Sí{% else %}No{% endif %}</span></span></div>
+                <div class="field-row"><span class="fl">Estado</span><span class="fv"><span class="toggle-chip {% if tipo.activo %}tc-on{% else %}tc-off{% endif %}">{% if tipo.activo %}Activo{% else %}Inactivo{% endif %}</span></span></div>
+            </div>
+        </div>
+
+        <div class="prop-section">
+            <div class="ps-header"><i class="fas fa-align-left"></i> Descripción</div>
+            <div class="ps-body">
+                {% if tipo.descripcion %}
+                <p style="font-size:.875rem;color:var(--text-subtle);line-height:1.65;">{{ tipo.descripcion }}</p>
+                {% else %}
+                <p style="font-size:.875rem;color:var(--text-muted);font-style:italic;">Sin descripción.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Activos de este tipo -->
+    {% with activos=tipo.activos.all|slice:":12" total=tipo.activos.count %}
+    {% if total > 0 %}
+    <div class="activos-section">
+        <div class="ps-header" style="justify-content:space-between;">
+            <span><i class="fas fa-boxes-stacked"></i> Activos de este tipo</span>
+            <span style="font-size:.75rem;color:var(--text-muted);">{{ total }} en total</span>
+        </div>
+        <div style="padding:1rem 1.25rem;">
+            {% for activo in activos %}
+            <a href="{% url 'activos:activo_detail' activo.pk %}" class="activo-mini">
+                <span class="am-code">{{ activo.codigo }}</span>
+                <span class="am-name">{{ activo.nombre }}</span>
+                <span class="badge badge-{{ activo.estado.color|default:'gray' }}">{{ activo.estado.nombre }}</span>
+            </a>
+            {% endfor %}
+            {% if total > 12 %}
+            <a href="{% url 'activos:activo_list' %}?tipo={{ tipo.pk }}" style="display:block;text-align:center;padding:.75rem;font-size:.8rem;color:var(--accent2);text-decoration:none;margin-top:.5rem;">
+                Ver los {{ total|add:"-12" }} restantes →
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    {% endwith %}
+
+</div>
+{% endblock %}

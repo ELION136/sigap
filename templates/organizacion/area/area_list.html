@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+
+{% block title %}Áreas - SIGAP{% endblock %}
+
+{% block page_title %}Áreas{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="mb-4">
+    <ol class="flex items-center space-x-2 text-sm text-gray-500">
+        <li><a href="{% url 'core:dashboard' %}" class="hover:text-primary-600"><i class="fas fa-home"></i></a></li>
+        <li><i class="fas fa-chevron-right text-xs"></i></li>
+        <li><a href="{% url 'organizacion:area_list' %}" class="hover:text-primary-600">Organización</a></li>
+        <li><i class="fas fa-chevron-right text-xs"></i></li>
+        <li class="text-gray-700">Áreas</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<!-- Header con acciones -->
+<div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+    <div class="mb-4 md:mb-0">
+        <h2 class="text-2xl font-bold text-gray-800">Áreas</h2>
+        <p class="text-gray-500 mt-1">Gestión de áreas y departamentos</p>
+    </div>
+    <div class="flex space-x-3">
+        {% if perms.organizacion.add_area %}
+        <a href="{% url 'organizacion:area_create' %}" class="btn-primary">
+            <i class="fas fa-plus mr-2"></i>Nueva Área
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-6">
+    <div class="card-body">
+        <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div>
+                <label class="form-label">Planta</label>
+                <select name="planta" class="form-select">
+                    <option value="">Todas las plantas</option>
+                    {% for planta in plantas %}
+                    <option value="{{ planta.id }}" {% if request.GET.planta == planta.id|stringformat:"s" %}selected{% endif %}>
+                        {{ planta.nombre }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="form-label">Tipo de Área</label>
+                <select name="tipo" class="form-select">
+                    <option value="">Todos los tipos</option>
+                    {% for value, label in tipos_area %}
+                    <option value="{{ value }}" {% if request.GET.tipo == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex items-end space-x-2 md:col-span-2">
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-filter mr-2"></i>Filtrar
+                </button>
+                {% if request.GET.planta or request.GET.tipo %}
+                <a href="{% url 'organizacion:area_list' %}" class="btn-secondary">
+                    <i class="fas fa-times mr-2"></i>Limpiar
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabla -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Nombre</th>
+                        <th>Planta / Nivel</th>
+                        <th>Tipo</th>
+                        <th>Supervisor</th>
+                        <th>Estado</th>
+                        <th class="text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for area in areas %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="font-medium">{{ area.codigo }}</td>
+                        <td>
+                            <div class="flex items-center">
+                                {% if area.plano %}
+                                <img src="{{ area.plano.url }}" alt="" class="w-8 h-8 rounded-lg object-cover mr-3">
+                                {% else %}
+                                <div class="w-8 h-8 bg-gray-200 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-map-signs text-gray-400 text-sm"></i>
+                                </div>
+                                {% endif %}
+                                <a href="{% url 'organizacion:area_detail' area.pk %}" class="text-primary-600 hover:text-primary-800 font-medium">
+                                    {{ area.nombre }}
+                                </a>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="text-sm">
+                                <p>{{ area.nivel.planta.nombre }}</p>
+                                <p class="text-gray-500">{{ area.nivel.nombre }} (Nivel {{ area.nivel.numero_nivel }})</p>
+                            </div>
+                        </td>
+                        <td>{{ area.get_tipo_area_display|default:"-" }}</td>
+                        <td>
+                            {{ area.supervisor.nombre_completo }}
+                        </td>
+                        <td>
+                            {% if area.activa %}
+                            <span class="badge badge-green">Activa</span>
+                            {% else %}
+                            <span class="badge badge-gray">Inactiva</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-right">
+                            <div class="flex items-center justify-end space-x-2">
+                                <a href="{% url 'organizacion:area_detail' area.pk %}" 
+                                   class="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50"
+                                   title="Ver detalle">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% if perms.organizacion.change_area %}
+                                <a href="{% url 'organizacion:area_update' area.pk %}" 
+                                   class="text-yellow-600 hover:text-yellow-800 p-2 rounded-lg hover:bg-yellow-50"
+                                   title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% endif %}
+                                {% if perms.organizacion.delete_area %}
+                                <a href="{% url 'organizacion:area_delete' area.pk %}" 
+                                   class="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50"
+                                   title="Eliminar"
+                                   onclick="return confirm('¿Está seguro de eliminar esta área?')">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-8">
+                            <div class="text-gray-500">
+                                <i class="fas fa-map-signs text-4xl mb-3"></i>
+                                <p>No se encontraron áreas</p>
+                                {% if request.GET.planta or request.GET.tipo %}
+                                <p class="text-sm mt-1">Intente con otros filtros</p>
+                                {% else %}
+                                <p class="text-sm mt-1">Comience creando una nueva área</p>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Paginación (si está paginada) -->
+{% if is_paginated %}
+<div class="mt-6 flex justify-center">
+    <nav class="flex items-center space-x-2">
+        {% if page_obj.has_previous %}
+        <a href="?page=1{% if request.GET.planta %}&planta={{ request.GET.planta }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}" 
+           class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50">
+            <i class="fas fa-angle-double-left"></i>
+        </a>
+        <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.planta %}&planta={{ request.GET.planta }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}" 
+           class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50">
+            <i class="fas fa-angle-left"></i>
+        </a>
+        {% endif %}
+        
+        <span class="px-4 py-2 bg-primary-600 text-white rounded-lg">
+            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+        </span>
+        
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if request.GET.planta %}&planta={{ request.GET.planta }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}" 
+           class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50">
+            <i class="fas fa-angle-right"></i>
+        </a>
+        <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.planta %}&planta={{ request.GET.planta }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}" 
+           class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50">
+            <i class="fas fa-angle-double-right"></i>
+        </a>
+        {% endif %}
+    </nav>
+</div>
+{% endif %}
+{% endblock %}

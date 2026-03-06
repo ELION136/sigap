@@ -11,7 +11,8 @@ from django.contrib import messages
 from django.db.models import Q, Count
 from django.http import JsonResponse
 
-from .models import TipoActivo, Estado, TipoPropiedad, Activo, EquipoFuncional
+
+from .models import TipoActivo, Estado, TipoPropiedad, Activo, EquipoFuncional, Planta, Responsable
 from .forms import (
     TipoActivoForm, EstadoForm, TipoPropiedadForm,
     ActivoForm, ActivoEstadoForm, EquipoFuncionalForm
@@ -81,7 +82,7 @@ class BaseDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
 class TipoActivoListView(BaseListView):
     """Vista de lista para Tipos de Activo."""
     model = TipoActivo
-    template_name = 'activos/tipoactivo_list.html'
+    template_name = 'activos/tipoactivo/tipoactivo_list.html'
     context_object_name = 'tipos'
     permission_required = 'activos.view_tipoactivo'
 
@@ -89,7 +90,7 @@ class TipoActivoListView(BaseListView):
 class TipoActivoDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     """Vista de detalle para Tipo de Activo."""
     model = TipoActivo
-    template_name = 'activos/tipoactivo_detail.html'
+    template_name = 'activos/tipoactivo/tipoactivo_detail.html'
     context_object_name = 'tipo'
     permission_required = 'activos.view_tipoactivo'
 
@@ -98,7 +99,7 @@ class TipoActivoCreateView(BaseCreateView):
     """Vista para crear Tipo de Activo."""
     model = TipoActivo
     form_class = TipoActivoForm
-    template_name = 'activos/tipoactivo_form.html'
+    template_name = 'activos/tipoactivo/tipoactivo_form.html'
     permission_required = 'activos.add_tipoactivo'
     success_url = reverse_lazy('activos:tipoactivo_list')
 
@@ -107,7 +108,7 @@ class TipoActivoUpdateView(BaseUpdateView):
     """Vista para actualizar Tipo de Activo."""
     model = TipoActivo
     form_class = TipoActivoForm
-    template_name = 'activos/tipoactivo_form.html'
+    template_name = 'activos/tipoactivo/tipoactivo_form.html'
     permission_required = 'activos.change_tipoactivo'
     success_url = reverse_lazy('activos:tipoactivo_list')
 
@@ -115,19 +116,15 @@ class TipoActivoUpdateView(BaseUpdateView):
 class TipoActivoDeleteView(BaseDeleteView):
     """Vista para eliminar Tipo de Activo."""
     model = TipoActivo
-    template_name = 'activos/tipoactivo_confirm_delete.html'
+    template_name = 'activos/tipoactivo/tipoactivo_confirm_delete.html'
     permission_required = 'activos.delete_tipoactivo'
     success_url = reverse_lazy('activos:tipoactivo_list')
 
 
-# =============================================================================
-# VISTAS PARA ESTADO
-# =============================================================================
-
-class EstadoListView(BaseListView):
+class EstadoListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):  # Cambiado BaseListView → ListView
     """Vista de lista para Estados."""
     model = Estado
-    template_name = 'activos/estado_list.html'
+    template_name = 'activos/estado/estado_list.html'
     context_object_name = 'estados'
     permission_required = 'activos.view_estado'
 
@@ -135,35 +132,36 @@ class EstadoListView(BaseListView):
 class EstadoDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     """Vista de detalle para Estado."""
     model = Estado
-    template_name = 'activos/estado_detail.html'
+    template_name = 'activos/estado/estado_detail.html'
     context_object_name = 'estado'
     permission_required = 'activos.view_estado'
 
 
-class EstadoCreateView(BaseCreateView):
+class EstadoCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):  # Cambiado BaseCreateView → CreateView
     """Vista para crear Estado."""
     model = Estado
     form_class = EstadoForm
-    template_name = 'activos/estado_form.html'
+    template_name = 'activos/estado/estado_form.html'
     permission_required = 'activos.add_estado'
     success_url = reverse_lazy('activos:estado_list')
 
 
-class EstadoUpdateView(BaseUpdateView):
+class EstadoUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):  # Cambiado BaseUpdateView → UpdateView
     """Vista para actualizar Estado."""
     model = Estado
     form_class = EstadoForm
-    template_name = 'activos/estado_form.html'
+    template_name = 'activos/estado/estado_form.html'
     permission_required = 'activos.change_estado'
     success_url = reverse_lazy('activos:estado_list')
 
 
-class EstadoDeleteView(BaseDeleteView):
+class EstadoDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):  # Cambiado BaseDeleteView → DeleteView
     """Vista para eliminar Estado."""
     model = Estado
-    template_name = 'activos/estado_confirm_delete.html'
+    template_name = 'activos/estado/estado_confirm_delete.html'
     permission_required = 'activos.delete_estado'
     success_url = reverse_lazy('activos:estado_list')
+
 
 
 # =============================================================================
@@ -173,7 +171,7 @@ class EstadoDeleteView(BaseDeleteView):
 class TipoPropiedadListView(BaseListView):
     """Vista de lista para Tipos de Propiedad."""
     model = TipoPropiedad
-    template_name = 'activos/tipopropiedad_list.html'
+    template_name = 'activos/tipopropiedad/tipopropiedad_list.html'
     context_object_name = 'tipos_propiedad'
     permission_required = 'activos.view_tipopropiedad'
 
@@ -181,7 +179,7 @@ class TipoPropiedadListView(BaseListView):
 class TipoPropiedadDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     """Vista de detalle para Tipo de Propiedad."""
     model = TipoPropiedad
-    template_name = 'activos/tipopropiedad_detail.html'
+    template_name = 'activos/tipopropiedad/tipopropiedad_detail.html'
     context_object_name = 'tipo_propiedad'
     permission_required = 'activos.view_tipopropiedad'
 
@@ -190,7 +188,7 @@ class TipoPropiedadCreateView(BaseCreateView):
     """Vista para crear Tipo de Propiedad."""
     model = TipoPropiedad
     form_class = TipoPropiedadForm
-    template_name = 'activos/tipopropiedad_form.html'
+    template_name = 'activos/tipopropiedad/tipopropiedad_form.html'
     permission_required = 'activos.add_tipopropiedad'
     success_url = reverse_lazy('activos:tipopropiedad_list')
 
@@ -199,7 +197,7 @@ class TipoPropiedadUpdateView(BaseUpdateView):
     """Vista para actualizar Tipo de Propiedad."""
     model = TipoPropiedad
     form_class = TipoPropiedadForm
-    template_name = 'activos/tipopropiedad_form.html'
+    template_name = 'activos/tipopropiedad/tipopropiedad_form.html'
     permission_required = 'activos.change_tipopropiedad'
     success_url = reverse_lazy('activos:tipopropiedad_list')
 
@@ -207,7 +205,7 @@ class TipoPropiedadUpdateView(BaseUpdateView):
 class TipoPropiedadDeleteView(BaseDeleteView):
     """Vista para eliminar Tipo de Propiedad."""
     model = TipoPropiedad
-    template_name = 'activos/tipopropiedad_confirm_delete.html'
+    template_name = 'activos/tipopropiedad/tipopropiedad_confirm_delete.html'
     permission_required = 'activos.delete_tipopropiedad'
     success_url = reverse_lazy('activos:tipopropiedad_list')
 
@@ -219,7 +217,7 @@ class TipoPropiedadDeleteView(BaseDeleteView):
 class ActivoListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     """Vista de lista para Activos."""
     model = Activo
-    template_name = 'activos/activo_list.html'
+    template_name = 'activos/activo/activo_list.html'
     context_object_name = 'activos'
     permission_required = 'activos.view_activo'
     paginate_by = 25
@@ -275,7 +273,7 @@ class ActivoListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 class ActivoDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     """Vista de detalle para Activo."""
     model = Activo
-    template_name = 'activos/activo_detail.html'
+    template_name = 'activos/activo/activo_detail.html'
     context_object_name = 'activo'
     permission_required = 'activos.view_activo'
     
@@ -289,7 +287,7 @@ class ActivoCreateView(BaseCreateView):
     """Vista para crear Activo."""
     model = Activo
     form_class = ActivoForm
-    template_name = 'activos/activo_form.html'
+    template_name = 'activos/activo/activo_form.html'
     permission_required = 'activos.add_activo'
     success_url = reverse_lazy('activos:activo_list')
 
@@ -298,7 +296,7 @@ class ActivoUpdateView(BaseUpdateView):
     """Vista para actualizar Activo."""
     model = Activo
     form_class = ActivoForm
-    template_name = 'activos/activo_form.html'
+    template_name = 'activos/activo/activo_form.html'
     permission_required = 'activos.change_activo'
     success_url = reverse_lazy('activos:activo_list')
     
@@ -319,7 +317,7 @@ class ActivoUpdateView(BaseUpdateView):
 class ActivoDeleteView(BaseDeleteView):
     """Vista para eliminar Activo."""
     model = Activo
-    template_name = 'activos/activo_confirm_delete.html'
+    template_name = 'activos/activo/activo_confirm_delete.html'
     permission_required = 'activos.delete_activo'
     success_url = reverse_lazy('activos:activo_list')
 
@@ -328,7 +326,7 @@ class ActivoCambiarEstadoView(LoginRequiredMixin, PermissionRequiredMixin, Updat
     """Vista para cambiar solo el estado del activo."""
     model = Activo
     form_class = ActivoEstadoForm
-    template_name = 'activos/activo_cambiar_estado.html'
+    template_name = 'activos/activo/activo_cambiar_estado.html'
     permission_required = 'activos.change_activo_estado'
     
     def form_valid(self, form):
@@ -350,7 +348,7 @@ class ActivoCambiarEstadoView(LoginRequiredMixin, PermissionRequiredMixin, Updat
 class EquipoFuncionalListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     """Vista de lista para Equipos Funcionales."""
     model = EquipoFuncional
-    template_name = 'activos/equipofuncional_list.html'
+    template_name = 'activos/equipofuncional/equipofuncional_list.html'
     context_object_name = 'equipos'
     permission_required = 'activos.view_equipofuncional'
     paginate_by = 25
@@ -386,7 +384,7 @@ class EquipoFuncionalListView(LoginRequiredMixin, PermissionRequiredMixin, ListV
 class EquipoFuncionalDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     """Vista de detalle para Equipo Funcional."""
     model = EquipoFuncional
-    template_name = 'activos/equipofuncional_detail.html'
+    template_name = 'activos/equipofuncional/equipofuncional_detail.html'
     context_object_name = 'equipo'
     permission_required = 'activos.view_equipofuncional'
     
@@ -400,7 +398,7 @@ class EquipoFuncionalCreateView(BaseCreateView):
     """Vista para crear Equipo Funcional."""
     model = EquipoFuncional
     form_class = EquipoFuncionalForm
-    template_name = 'activos/equipofuncional_form.html'
+    template_name = 'activos/equipofuncional/equipofuncional_form.html'
     permission_required = 'activos.add_equipofuncional'
     success_url = reverse_lazy('activos:equipofuncional_list')
 
@@ -409,7 +407,7 @@ class EquipoFuncionalUpdateView(BaseUpdateView):
     """Vista para actualizar Equipo Funcional."""
     model = EquipoFuncional
     form_class = EquipoFuncionalForm
-    template_name = 'activos/equipofuncional_form.html'
+    template_name = 'activos/equipofuncional/equipofuncional_form.html'
     permission_required = 'activos.change_equipofuncional'
     success_url = reverse_lazy('activos:equipofuncional_list')
 
@@ -417,7 +415,7 @@ class EquipoFuncionalUpdateView(BaseUpdateView):
 class EquipoFuncionalDeleteView(BaseDeleteView):
     """Vista para eliminar Equipo Funcional."""
     model = EquipoFuncional
-    template_name = 'activos/equipofuncional_confirm_delete.html'
+    template_name = 'activos/equipofuncional/equipofuncional_confirm_delete.html'
     permission_required = 'activos.delete_equipofuncional'
     success_url = reverse_lazy('activos:equipofuncional_list')
 

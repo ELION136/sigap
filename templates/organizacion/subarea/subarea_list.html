@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+
+{% block title %}Subáreas - SIGAP{% endblock %}
+
+{% block page_title %}Subáreas{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="mb-4">
+    <ol class="flex items-center space-x-2 text-sm text-gray-500">
+        <li><a href="{% url 'core:dashboard' %}" class="hover:text-primary-600"><i class="fas fa-home"></i></a></li>
+        <li><i class="fas fa-chevron-right text-xs"></i></li>
+        <li><a href="{% url 'organizacion:subarea_list' %}" class="hover:text-primary-600">Organización</a></li>
+        <li><i class="fas fa-chevron-right text-xs"></i></li>
+        <li class="text-gray-700">Subáreas</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<!-- Header con acciones -->
+<div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+    <div class="mb-4 md:mb-0">
+        <h2 class="text-2xl font-bold text-gray-800">Subáreas</h2>
+        <p class="text-gray-500 mt-1">Gestión de subáreas y departamentos internos</p>
+    </div>
+    <div class="flex space-x-3">
+        {% if perms.organizacion.add_subarea %}
+        <a href="{% url 'organizacion:subarea_create' %}" class="btn-primary">
+            <i class="fas fa-plus mr-2"></i>Nueva Subárea
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-6">
+    <div class="card-body">
+        <form method="get" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div>
+                <label class="form-label">Área</label>
+                <select name="area" class="form-select">
+                    <option value="">Todas las áreas</option>
+                    {% for area in areas %}
+                    <option value="{{ area.id }}" {% if request.GET.area == area.id|stringformat:"s" %}selected{% endif %}>
+                        {{ area.nombre }} ({{ area.nivel.planta.nombre }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex items-end space-x-2 md:col-span-2">
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-filter mr-2"></i>Filtrar
+                </button>
+                {% if request.GET.area %}
+                <a href="{% url 'organizacion:subarea_list' %}" class="btn-secondary">
+                    <i class="fas fa-times mr-2"></i>Limpiar
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabla -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Nombre</th>
+                        <th>Área / Nivel / Planta</th>
+                        <th>Responsable</th>
+                        <th>Estado</th>
+                        <th class="text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for subarea in subareas %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="font-medium">{{ subarea.codigo }}</td>
+                        <td>
+                            <a href="{% url 'organizacion:subarea_detail' subarea.pk %}" class="text-primary-600 hover:text-primary-800 font-medium">
+                                {{ subarea.nombre }}
+                            </a>
+                        </td>
+                        <td>
+                            <div class="text-sm">
+                                <p>{{ subarea.area.nombre }}</p>
+                                <p class="text-gray-500">{{ subarea.area.nivel.nombre }} (Nivel {{ subarea.area.nivel.numero_nivel }})</p>
+                                <p class="text-gray-400 text-xs">{{ subarea.area.nivel.planta.nombre }}</p>
+                            </div>
+                        </td>
+                        <td>{{ subarea.responsable.get_full_name|default:subarea.responsable.username|default:"-" }}</td>
+                        <td>
+                            {% if subarea.activa %}
+                            <span class="badge badge-green">Activa</span>
+                            {% else %}
+                            <span class="badge badge-gray">Inactiva</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-right">
+                            <div class="flex items-center justify-end space-x-2">
+                                <a href="{% url 'organizacion:subarea_detail' subarea.pk %}" 
+                                   class="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50"
+                                   title="Ver detalle">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% if perms.organizacion.change_subarea %}
+                                <a href="{% url 'organizacion:subarea_update' subarea.pk %}" 
+                                   class="text-yellow-600 hover:text-yellow-800 p-2 rounded-lg hover:bg-yellow-50"
+                                   title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% endif %}
+                                {% if perms.organizacion.delete_subarea %}
+                                <a href="{% url 'organizacion:subarea_delete' subarea.pk %}" 
+                                   class="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50"
+                                   title="Eliminar"
+                                   onclick="return confirm('¿Está seguro de eliminar esta subárea?')">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-8">
+                            <div class="text-gray-500">
+                                <i class="fas fa-sitemap text-4xl mb-3"></i>
+                                <p>No se encontraron subáreas</p>
+                                {% if request.GET.area %}
+                                <p class="text-sm mt-1">Intente con otro filtro</p>
+                                {% else %}
+                                <p class="text-sm mt-1">Comience creando una nueva subárea</p>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Paginación (si está paginada) -->
+{% if is_paginated %}
+<div class="mt-6 flex justify-center">
+    <nav class="flex items-center space-x-2">
+        {% if page_obj.has_previous %}
+        <a href="?page=1{% if request.GET.area %}&area={{ request.GET.area }}{% endif %}" 
+           class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50">
+            <i class="fas fa-angle-double-left"></i>
+        </a>
+        <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.area %}&area={{ request.GET.area }}{% endif %}" 
+           class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50">
+            <i class="fas fa-angle-left"></i>
+        </a>
+        {% endif %}
+        
+        <span class="px-4 py-2 bg-primary-600 text-white rounded-lg">
+            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+        </span>
+        
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if request.GET.area %}&area={{ request.GET.area }}{% endif %}" 
+           class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50">
+            <i class="fas fa-angle-right"></i>
+        </a>
+        <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.area %}&area={{ request.GET.area }}{% endif %}" 
+           class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50">
+            <i class="fas fa-angle-double-right"></i>
+        </a>
+        {% endif %}
+    </nav>
+</div>
+{% endif %}
+{% endblock %}

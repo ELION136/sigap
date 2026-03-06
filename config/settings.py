@@ -253,6 +253,17 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5 MB
 ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5 MB
 
+
+
+# =============================================================================
+# AUTENTICACIÓN Y REDIRECCIONES
+# =============================================================================
+
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'core:dashboard'
+LOGOUT_REDIRECT_URL = 'login'
+
+
 # =============================================================================
 # DEFAULT PRIMARY KEY
 # =============================================================================

@@ -1,0 +1,552 @@
+{% extends 'base.html' %}
+{% block title %}{{ activo.codigo }} - SIGAP{% endblock %}
+{% block page_title %}Detalle de Activo{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb">
+    <a href="/"><i class="fas fa-house"></i> Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'activos:activo_list' %}">Activos</a>
+    <i class="fas fa-chevron-right"></i>
+    <span>{{ activo.codigo }}</span>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ── Hero header ── */
+    .detail-hero {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        overflow: hidden;
+        margin-bottom: 1.25rem;
+        position: relative;
+    }
+    .detail-hero::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--accent), var(--accent2));
+    }
+    .hero-inner {
+        padding: 1.75rem 2rem;
+        display: flex;
+        gap: 1.5rem;
+        align-items: flex-start;
+    }
+    .hero-image {
+        width: 96px; height: 96px;
+        border-radius: 14px;
+        background: rgba(37,99,235,0.1);
+        border: 1px solid rgba(37,99,235,0.2);
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+        overflow: hidden;
+    }
+    .hero-image img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-image i { font-size: 2.5rem; color: #60a5fa; }
+
+    .hero-info { flex: 1; min-width: 0; }
+    .hero-code {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--accent2);
+        margin-bottom: 0.35rem;
+    }
+    .hero-name {
+        font-family: 'Syne', sans-serif;
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 0.4rem;
+        line-height: 1.2;
+    }
+    .hero-type { font-size: 0.875rem; color: var(--text-muted); margin-bottom: 0.75rem; }
+
+    .hero-chips { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+    .hero-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-shrink: 0;
+        flex-wrap: wrap;
+    }
+    .act-btn {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        padding: 0.5rem 0.9rem;
+        border-radius: 8px;
+        font-size: 0.82rem;
+        font-weight: 500;
+        text-decoration: none;
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.04);
+        color: var(--text-subtle);
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s, border-color 0.15s;
+        white-space: nowrap;
+    }
+    .act-btn:hover { background: rgba(255,255,255,0.08); color: var(--text); border-color: var(--border2); }
+    .act-btn.primary {
+        background: linear-gradient(135deg, var(--accent), #1d4ed8);
+        border-color: transparent;
+        color: #fff;
+        box-shadow: 0 3px 14px rgba(37,99,235,0.35);
+    }
+    .act-btn.primary:hover { box-shadow: 0 6px 20px rgba(37,99,235,0.5); }
+    .act-btn.danger { color: #f87171; border-color: rgba(239,68,68,0.25); }
+    .act-btn.danger:hover { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.4); }
+
+    /* ── Info grid ── */
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+    }
+
+    /* ── Detail sections ── */
+    .section-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .detail-section {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        overflow: hidden;
+    }
+
+    .section-header {
+        padding: 0.875rem 1.25rem;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface2);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-family: 'Syne', sans-serif;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text);
+    }
+    .section-header i { color: var(--accent2); font-size: 0.8rem; }
+
+    .section-body { padding: 1.1rem 1.25rem; }
+
+    .field-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: 0.55rem 0;
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+        gap: 1rem;
+    }
+    .field-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .field-label {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+    .field-value {
+        font-size: 0.875rem;
+        color: var(--text);
+        text-align: right;
+        word-break: break-word;
+    }
+    .field-value.empty { color: var(--text-muted); font-style: italic; }
+    .field-value.mono { font-family: 'Syne', sans-serif; font-size: 0.82rem; letter-spacing: 0.03em; }
+
+    /* ── Quick stats bar ── */
+    .quick-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+        margin-bottom: 1.25rem;
+        background: var(--surface);
+    }
+    .qs-item {
+        padding: 1.1rem 1.25rem;
+        border-right: 1px solid var(--border);
+        text-align: center;
+    }
+    .qs-item:last-child { border-right: none; }
+    .qs-val { font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 700; color: var(--text); }
+    .qs-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-top: 0.2rem; }
+
+    /* ── Tabs ── */
+    .tab-nav {
+        display: flex;
+        gap: 0;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 1.25rem;
+        overflow-x: auto;
+    }
+    .tab-btn {
+        padding: 0.65rem 1.25rem;
+        background: none;
+        border: none;
+        border-bottom: 2px solid transparent;
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: color 0.15s, border-color 0.15s;
+        margin-bottom: -1px;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--accent2); border-bottom-color: var(--accent2); }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* ── Docs ── */
+    .doc-card {
+        display: flex;
+        align-items: center;
+        gap: 0.875rem;
+        padding: 0.875rem 1rem;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        text-decoration: none;
+        color: var(--text);
+        transition: background 0.15s, border-color 0.15s;
+        margin-bottom: 0.5rem;
+    }
+    .doc-card:hover { background: rgba(255,255,255,0.06); border-color: var(--border2); }
+    .doc-icon { width: 38px; height: 38px; border-radius: 8px; background: rgba(37,99,235,0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .doc-icon i { color: #60a5fa; font-size: 1rem; }
+    .doc-name { font-size: 0.875rem; font-weight: 500; }
+    .doc-meta { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.1rem; }
+
+    /* ── Timeline ── */
+    .timeline { position: relative; padding-left: 1.5rem; }
+    .timeline::before { content: ''; position: absolute; left: 7px; top: 8px; bottom: 8px; width: 1px; background: var(--border); }
+    .tl-item { position: relative; margin-bottom: 1.25rem; }
+    .tl-dot { position: absolute; left: -1.5rem; top: 4px; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg); box-shadow: 0 0 8px rgba(37,99,235,0.5); }
+    .tl-date { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.2rem; }
+    .tl-title { font-size: 0.875rem; font-weight: 500; color: var(--text); }
+    .tl-sub { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.15rem; }
+
+    @media (max-width: 900px) {
+        .info-grid { grid-template-columns: repeat(2, 1fr); }
+        .section-grid { grid-template-columns: 1fr; }
+        .quick-stats { grid-template-columns: repeat(2, 1fr); }
+        .qs-item:nth-child(2) { border-right: none; }
+        .qs-item:nth-child(3) { border-top: 1px solid var(--border); }
+        .hero-inner { flex-direction: column; }
+        .hero-actions { width: 100%; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Hero -->
+<div class="detail-hero">
+    <div class="hero-inner">
+        <div class="hero-image">
+            {% if activo.imagen %}
+            <img src="{{ activo.imagen.url }}" alt="{{ activo.nombre }}">
+            {% else %}
+            <i class="fas fa-box"></i>
+            {% endif %}
+        </div>
+
+        <div class="hero-info">
+            <div class="hero-code">{{ activo.codigo }}{% if activo.codigo_interno %} · {{ activo.codigo_interno }}{% endif %}</div>
+            <h1 class="hero-name">{{ activo.nombre }}</h1>
+            <p class="hero-type">{{ activo.tipo.nombre }} · {{ activo.tipo_propiedad.nombre }}</p>
+            <div class="hero-chips">
+                <span class="badge badge-{{ activo.estado.color|default:'gray' }}">{{ activo.estado.nombre }}</span>
+                {% if activo.marca %}<span class="badge badge-blue">{{ activo.marca }}</span>{% endif %}
+                {% if activo.proximo_mantenimiento %}<span class="badge badge-yellow"><i class="fas fa-wrench" style="margin-right:3px; font-size:0.65rem;"></i> Próx. {{ activo.proximo_mantenimiento|date:"d/m/Y" }}</span>{% endif %}
+            </div>
+        </div>
+
+        <div class="hero-actions">
+            {% if perms.activos.change_activo %}
+            <a href="{% url 'activos:activo_update' activo.pk %}" class="act-btn primary">
+                <i class="fas fa-pen"></i> Editar
+            </a>
+            {% endif %}
+            {% if perms.activos.change_activo_estado %}
+            <a href="{% url 'activos:activo_cambiar_estado' activo.pk %}" class="act-btn">
+                <i class="fas fa-sliders"></i> Estado
+            </a>
+            {% endif %}
+            {% if perms.activos.delete_activo %}
+            <a href="{% url 'activos:activo_delete' activo.pk %}" class="act-btn danger">
+                <i class="fas fa-trash"></i>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Quick stats -->
+<div class="quick-stats">
+    <div class="qs-item">
+        <div class="qs-val">{{ activo.get_mantenimientos_count }}</div>
+        <div class="qs-label">Mantenimientos</div>
+    </div>
+    <div class="qs-item">
+        <div class="qs-val">{{ activo.get_equipos_funcionales.count }}</div>
+        <div class="qs-label">Equipos Asoc.</div>
+    </div>
+    <div class="qs-item">
+        <div class="qs-val">{% if activo.costo_adquisicion %}{{ activo.moneda }} {{ activo.costo_adquisicion|floatformat:0 }}{% else %}—{% endif %}</div>
+        <div class="qs-label">Costo Adq.</div>
+    </div>
+    <div class="qs-item">
+        <div class="qs-val">{% if activo.fecha_adquisicion %}{{ activo.fecha_adquisicion|date:"Y" }}{% else %}—{% endif %}</div>
+        <div class="qs-label">Año Adq.</div>
+    </div>
+</div>
+
+<!-- Tabs -->
+<div class="tab-nav">
+    <button class="tab-btn active" onclick="showTab('general', this)"><i class="fas fa-circle-info"></i> General</button>
+    <button class="tab-btn" onclick="showTab('tecnico', this)"><i class="fas fa-microchip"></i> Técnico</button>
+    <button class="tab-btn" onclick="showTab('financiero', this)"><i class="fas fa-dollar-sign"></i> Financiero</button>
+    <button class="tab-btn" onclick="showTab('mantenimiento', this)"><i class="fas fa-wrench"></i> Mantenimiento</button>
+    <button class="tab-btn" onclick="showTab('documentos', this)"><i class="fas fa-file"></i> Documentos</button>
+</div>
+
+<!-- TAB: General -->
+<div class="tab-pane active" id="tab-general">
+    <div class="section-grid">
+        <!-- Clasificación -->
+        <div class="detail-section">
+            <div class="section-header"><i class="fas fa-tag"></i> Clasificación</div>
+            <div class="section-body">
+                <div class="field-row"><span class="field-label">Tipo</span><span class="field-value">{{ activo.tipo.nombre }}</span></div>
+                <div class="field-row"><span class="field-label">Estado</span><span class="field-value"><span class="badge badge-{{ activo.estado.color|default:'gray' }}">{{ activo.estado.nombre }}</span></span></div>
+                <div class="field-row"><span class="field-label">Propiedad</span><span class="field-value">{{ activo.tipo_propiedad.nombre }}</span></div>
+                <div class="field-row"><span class="field-label">Cód. Contable</span><span class="field-value mono {% if not activo.codigo_contable %}empty{% endif %}">{{ activo.codigo_contable|default:"Sin código" }}</span></div>
+            </div>
+        </div>
+
+        <!-- Ubicación & Responsable -->
+        <div class="detail-section">
+            <div class="section-header"><i class="fas fa-location-dot"></i> Ubicación & Responsable</div>
+            <div class="section-body">
+                {% if activo.ubicacion %}
+                <div class="field-row"><span class="field-label">Planta</span><span class="field-value">{{ activo.ubicacion.planta }}</span></div>
+                <div class="field-row"><span class="field-label">Nivel</span><span class="field-value">{{ activo.ubicacion.nivel|default:"—" }}</span></div>
+                <div class="field-row"><span class="field-label">Área</span><span class="field-value">{{ activo.ubicacion.area }}</span></div>
+                {% if activo.ubicacion.subarea %}<div class="field-row"><span class="field-label">Subárea</span><span class="field-value">{{ activo.ubicacion.subarea }}</span></div>{% endif %}
+                {% if activo.ubicacion.ubicacion_especifica %}<div class="field-row"><span class="field-label">Específico</span><span class="field-value">{{ activo.ubicacion.ubicacion_especifica }}</span></div>{% endif %}
+                {% else %}
+                <p style="color:var(--text-muted); font-size:0.875rem; padding:0.5rem 0;">Sin ubicación asignada.</p>
+                {% endif %}
+                <div class="field-row" style="margin-top:0.5rem; border-top:1px solid var(--border); padding-top:0.75rem;">
+                    <span class="field-label">Responsable</span>
+                    <span class="field-value {% if not activo.responsable %}empty{% endif %}">{{ activo.responsable|default:"Sin asignar" }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Descripción -->
+        {% if activo.descripcion or activo.notas %}
+        <div class="detail-section" style="grid-column: 1 / -1;">
+            <div class="section-header"><i class="fas fa-align-left"></i> Descripción y Notas</div>
+            <div class="section-body">
+                {% if activo.descripcion %}
+                <p style="font-size:0.875rem; color:var(--text-subtle); line-height:1.65; margin-bottom:{% if activo.notas %}1rem{% else %}0{% endif %};">{{ activo.descripcion }}</p>
+                {% endif %}
+                {% if activo.notas %}
+                <div style="padding:0.875rem; background:rgba(245,158,11,0.05); border:1px solid rgba(245,158,11,0.15); border-radius:8px;">
+                    <p style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--warn); margin-bottom:0.4rem;"><i class="fas fa-note-sticky"></i> Notas</p>
+                    <p style="font-size:0.875rem; color:var(--text-subtle); line-height:1.6;">{{ activo.notas }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- TAB: Técnico -->
+<div class="tab-pane" id="tab-tecnico">
+    <div class="section-grid">
+        <div class="detail-section">
+            <div class="section-header"><i class="fas fa-industry"></i> Especificaciones</div>
+            <div class="section-body">
+                <div class="field-row"><span class="field-label">Marca</span><span class="field-value {% if not activo.marca %}empty{% endif %}">{{ activo.marca|default:"—" }}</span></div>
+                <div class="field-row"><span class="field-label">Modelo</span><span class="field-value {% if not activo.modelo %}empty{% endif %}">{{ activo.modelo|default:"—" }}</span></div>
+                <div class="field-row"><span class="field-label">Nº Serie</span><span class="field-value mono {% if not activo.numero_serie %}empty{% endif %}">{{ activo.numero_serie|default:"—" }}</span></div>
+                <div class="field-row"><span class="field-label">Capacidad</span><span class="field-value {% if not activo.capacidad %}empty{% endif %}">{{ activo.capacidad|default:"—" }}</span></div>
+                <div class="field-row"><span class="field-label">Dimensiones</span><span class="field-value {% if not activo.dimensiones %}empty{% endif %}">{{ activo.dimensiones|default:"—" }}</span></div>
+                <div class="field-row"><span class="field-label">Peso</span><span class="field-value {% if not activo.peso %}empty{% endif %}">{% if activo.peso %}{{ activo.peso }} kg{% else %}—{% endif %}</span></div>
+            </div>
+        </div>
+        <div class="detail-section">
+            <div class="section-header"><i class="fas fa-link"></i> Equipos Funcionales</div>
+            <div class="section-body">
+                {% for equipo in activo.get_equipos_funcionales %}
+                <div style="display:flex; align-items:center; gap:0.6rem; padding:0.55rem 0; border-bottom:1px solid rgba(255,255,255,0.04);">
+                    <i class="fas fa-cogs" style="color:var(--accent2); font-size:0.8rem; width:14px;"></i>
+                    <span style="font-size:0.875rem; color:var(--text-subtle);">{{ equipo }}</span>
+                </div>
+                {% empty %}
+                <p style="color:var(--text-muted); font-size:0.875rem;">Sin equipos funcionales asociados.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TAB: Financiero -->
+<div class="tab-pane" id="tab-financiero">
+    <div class="section-grid">
+        <div class="detail-section">
+            <div class="section-header"><i class="fas fa-receipt"></i> Adquisición</div>
+            <div class="section-body">
+                <div class="field-row"><span class="field-label">Proveedor</span><span class="field-value {% if not activo.proveedor %}empty{% endif %}">{{ activo.proveedor|default:"—" }}</span></div>
+                <div class="field-row"><span class="field-label">Nº Factura</span><span class="field-value mono {% if not activo.numero_factura %}empty{% endif %}">{{ activo.numero_factura|default:"—" }}</span></div>
+                <div class="field-row"><span class="field-label">F. Adquisición</span><span class="field-value {% if not activo.fecha_adquisicion %}empty{% endif %}">{{ activo.fecha_adquisicion|date:"d/m/Y"|default:"—" }}</span></div>
+                <div class="field-row"><span class="field-label">F. Instalación</span><span class="field-value {% if not activo.fecha_instalacion %}empty{% endif %}">{{ activo.fecha_instalacion|date:"d/m/Y"|default:"—" }}</span></div>
+                <div class="field-row"><span class="field-label">Fin Garantía</span>
+                    <span class="field-value {% if not activo.fecha_garantia %}empty{% endif %}">
+                        {% if activo.fecha_garantia %}
+                        {{ activo.fecha_garantia|date:"d/m/Y" }}
+                        {% else %}—{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="detail-section">
+            <div class="section-header"><i class="fas fa-coins"></i> Valores</div>
+            <div class="section-body">
+                <div class="field-row">
+                    <span class="field-label">Moneda</span>
+                    <span class="field-value"><span class="badge badge-blue">{{ activo.moneda }}</span></span>
+                </div>
+                <div class="field-row">
+                    <span class="field-label">Costo Adq.</span>
+                    <span class="field-value" style="font-family:'Syne',sans-serif; font-size:1rem; color:var(--accent2);">
+                        {% if activo.costo_adquisicion %}{{ activo.costo_adquisicion|floatformat:2 }}{% else %}<span class="empty">—</span>{% endif %}
+                    </span>
+                </div>
+                <div class="field-row">
+                    <span class="field-label">Valor Actual</span>
+                    <span class="field-value" style="font-family:'Syne',sans-serif; font-size:1rem; color:#4ade80;">
+                        {% if activo.valor_actual %}{{ activo.valor_actual|floatformat:2 }}{% else %}<span class="empty">—</span>{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TAB: Mantenimiento -->
+<div class="tab-pane" id="tab-mantenimiento">
+    <div class="section-grid">
+        <div class="detail-section">
+            <div class="section-header"><i class="fas fa-calendar-check"></i> Programación</div>
+            <div class="section-body">
+                <div class="field-row"><span class="field-label">Frecuencia</span><span class="field-value {% if not activo.frecuencia_mantenimiento %}empty{% endif %}">{% if activo.frecuencia_mantenimiento %}Cada {{ activo.frecuencia_mantenimiento }} días{% else %}No definida{% endif %}</span></div>
+                <div class="field-row"><span class="field-label">Último</span><span class="field-value {% if not activo.ultimo_mantenimiento %}empty{% endif %}">{{ activo.ultimo_mantenimiento|date:"d/m/Y"|default:"Sin registro" }}</span></div>
+                <div class="field-row"><span class="field-label">Próximo</span>
+                    <span class="field-value {% if not activo.proximo_mantenimiento %}empty{% endif %}">
+                        {% if activo.proximo_mantenimiento %}
+                        <span class="badge badge-yellow">{{ activo.proximo_mantenimiento|date:"d/m/Y" }}</span>
+                        {% else %}No programado{% endif %}
+                    </span>
+                </div>
+                <div class="field-row"><span class="field-label">Total registros</span><span class="field-value">{{ activo.get_mantenimientos_count }}</span></div>
+            </div>
+        </div>
+
+        <div class="detail-section">
+            <div class="section-header"><i class="fas fa-clock-rotate-left"></i> Historial reciente</div>
+            <div class="section-body">
+                {% with mantenimientos=activo.mantenimientos.all|slice:":5" %}
+                {% if mantenimientos %}
+                <div class="timeline">
+                    {% for m in mantenimientos %}
+                    <div class="tl-item">
+                        <div class="tl-dot" style="background:{% if m.estado.color == 'green' %}#4ade80{% elif m.estado.color == 'red' %}#f87171{% else %}var(--accent){% endif %};"></div>
+                        <div class="tl-date">{{ m.fecha|date:"d/m/Y" }}</div>
+                        <div class="tl-title">{{ m.get_tipo_display }}</div>
+                        <div class="tl-sub">{{ m.get_estado_display }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p style="color:var(--text-muted); font-size:0.875rem;">Sin mantenimientos registrados.</p>
+                {% endif %}
+                {% endwith %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TAB: Documentos -->
+<div class="tab-pane" id="tab-documentos">
+    <div class="detail-section" style="max-width:600px;">
+        <div class="section-header"><i class="fas fa-folder-open"></i> Archivos adjuntos</div>
+        <div class="section-body">
+            {% if activo.manual %}
+            <a href="{{ activo.manual.url }}" target="_blank" class="doc-card">
+                <div class="doc-icon"><i class="fas fa-book"></i></div>
+                <div>
+                    <div class="doc-name">Manual del equipo</div>
+                    <div class="doc-meta">Haz clic para abrir</div>
+                </div>
+                <i class="fas fa-arrow-up-right-from-square" style="color:var(--text-muted); margin-left:auto; font-size:0.8rem;"></i>
+            </a>
+            {% endif %}
+            {% if activo.ficha_tecnica %}
+            <a href="{{ activo.ficha_tecnica.url }}" target="_blank" class="doc-card">
+                <div class="doc-icon"><i class="fas fa-file-lines"></i></div>
+                <div>
+                    <div class="doc-name">Ficha técnica</div>
+                    <div class="doc-meta">Haz clic para abrir</div>
+                </div>
+                <i class="fas fa-arrow-up-right-from-square" style="color:var(--text-muted); margin-left:auto; font-size:0.8rem;"></i>
+            </a>
+            {% endif %}
+            {% if not activo.manual and not activo.ficha_tecnica %}
+            <div style="text-align:center; padding:2rem; color:var(--text-muted);">
+                <i class="fas fa-folder-open" style="font-size:2rem; opacity:0.2; display:block; margin-bottom:0.75rem;"></i>
+                <p style="font-size:0.875rem;">Sin documentos adjuntos.</p>
+                {% if perms.activos.change_activo %}
+                <a href="{% url 'activos:activo_update' activo.pk %}" class="act-btn" style="display:inline-flex; margin-top:0.875rem;">
+                    <i class="fas fa-upload"></i> Subir archivos
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showTab(id, btn) {
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + id).classList.add('active');
+    btn.classList.add('active');
+}
+</script>
+{% endblock %}
