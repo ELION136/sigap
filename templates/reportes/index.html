@@ -1,0 +1,270 @@
+{% extends 'base.html' %}
+
+{% block title %}Reportes · SIGAP{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb">
+    <a href="">Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <span>Reportes</span>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Hero ── */
+.rep-hero {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 2rem 2.25rem;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+}
+.rep-hero::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2), #8b5cf6);
+}
+.rep-hero-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: .4rem;
+}
+.rep-hero-sub {
+    color: var(--text-muted);
+    font-size: .9rem;
+    max-width: 540px;
+}
+
+/* ── Section label ── */
+.section-label {
+    font-family: 'Syne', sans-serif;
+    font-size: .72rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    margin-bottom: .9rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+.section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+}
+
+/* ── Report cards grid ── */
+.rep-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.rep-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.4rem 1.5rem;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    gap: .85rem;
+    position: relative;
+    overflow: hidden;
+    transition: border-color .2s, transform .2s, box-shadow .2s;
+}
+.rep-card::before {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    opacity: 0;
+    transition: opacity .2s;
+}
+.rep-card:hover {
+    border-color: var(--border2);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(0,0,0,.25);
+}
+.rep-card:hover::before { opacity: 1; }
+
+.rep-card.c-blue::before   { background: var(--accent); }
+.rep-card.c-cyan::before   { background: var(--accent2); }
+.rep-card.c-green::before  { background: #22c55e; }
+.rep-card.c-purple::before { background: #8b5cf6; }
+
+.rep-card-icon {
+    width: 44px; height: 44px;
+    border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+}
+.rep-card.c-blue   .rep-card-icon { background: rgba(37,99,235,.15);  color: #60a5fa; }
+.rep-card.c-cyan   .rep-card-icon { background: rgba(56,189,248,.15); color: var(--accent2); }
+.rep-card.c-green  .rep-card-icon { background: rgba(34,197,94,.15);  color: #4ade80; }
+.rep-card.c-purple .rep-card-icon { background: rgba(139,92,246,.15); color: #c4b5fd; }
+
+.rep-card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: .95rem;
+    font-weight: 700;
+    color: var(--text);
+}
+.rep-card-desc {
+    font-size: .82rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+.rep-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: auto;
+    padding-top: .75rem;
+    border-top: 1px solid var(--border);
+}
+.rep-card-tags { display: flex; gap: .35rem; flex-wrap: wrap; }
+.rep-tag {
+    font-size: .65rem;
+    padding: .15rem .5rem;
+    border-radius: 9999px;
+    background: var(--surface2);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+}
+.rep-card-arrow {
+    color: var(--text-muted);
+    font-size: .8rem;
+    transition: transform .2s, color .2s;
+}
+.rep-card:hover .rep-card-arrow { transform: translateX(4px); color: var(--accent2); }
+
+/* ── Export cards ── */
+.export-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: .75rem;
+}
+.export-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: .85rem;
+    text-decoration: none;
+    transition: border-color .15s, background .15s;
+}
+.export-card:hover { border-color: var(--border2); background: var(--surface2); }
+.export-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .95rem;
+    flex-shrink: 0;
+    background: rgba(34,197,94,.12);
+    color: #4ade80;
+}
+.export-title { font-size: .85rem; font-weight: 500; color: var(--text); }
+.export-sub   { font-size: .72rem; color: var(--text-muted); margin-top: 1px; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Hero -->
+<div class="rep-hero">
+    <div class="rep-hero-title"><i class="fas fa-chart-bar" style="color:var(--accent2);margin-right:.5rem;font-size:1.3rem;"></i>Centro de Reportes</div>
+    <div class="rep-hero-sub">Genera, filtra y exporta información detallada de activos, mantenimientos y equipos de planta.</div>
+</div>
+
+<!-- Reportes HTML -->
+<div class="section-label"><i class="fas fa-file-chart-column"></i> Reportes</div>
+<div class="rep-grid">
+
+    <a href="{% url 'reportes:reporte_activos' %}" class="rep-card c-blue">
+        <div class="rep-card-icon"><i class="fas fa-boxes-stacked"></i></div>
+        <div>
+            <div class="rep-card-title">Reporte de Activos</div>
+            <div class="rep-card-desc">Inventario completo de activos con filtros por planta, tipo, estado y responsable. Incluye estadísticas de valor y distribución.</div>
+        </div>
+        <div class="rep-card-footer">
+            <div class="rep-card-tags">
+                <span class="rep-tag">Planta</span>
+                <span class="rep-tag">Tipo</span>
+                <span class="rep-tag">Estado</span>
+            </div>
+            <i class="fas fa-arrow-right rep-card-arrow"></i>
+        </div>
+    </a>
+
+    <a href="{% url 'reportes:reporte_mantenimientos' %}" class="rep-card c-cyan">
+        <div class="rep-card-icon"><i class="fas fa-screwdriver-wrench"></i></div>
+        <div>
+            <div class="rep-card-title">Reporte de Mantenimientos</div>
+            <div class="rep-card-desc">Historial y análisis de mantenimientos por período. Costos, tiempos y distribución por tipo y estado.</div>
+        </div>
+        <div class="rep-card-footer">
+            <div class="rep-card-tags">
+                <span class="rep-tag">Fechas</span>
+                <span class="rep-tag">Tipo</span>
+                <span class="rep-tag">Costos</span>
+            </div>
+            <i class="fas fa-arrow-right rep-card-arrow"></i>
+        </div>
+    </a>
+
+    <a href="{% url 'reportes:reporte_equipos' %}" class="rep-card c-green">
+        <div class="rep-card-icon"><i class="fas fa-industry"></i></div>
+        <div>
+            <div class="rep-card-title">Reporte de Equipos</div>
+            <div class="rep-card-desc">Estado operativo de equipos funcionales por planta. Criticidad y cantidad de activos asociados por equipo.</div>
+        </div>
+        <div class="rep-card-footer">
+            <div class="rep-card-tags">
+                <span class="rep-tag">Criticidad</span>
+                <span class="rep-tag">Operativo</span>
+                <span class="rep-tag">Planta</span>
+            </div>
+            <i class="fas fa-arrow-right rep-card-arrow"></i>
+        </div>
+    </a>
+
+</div>
+
+<!-- Exportaciones -->
+<div class="section-label"><i class="fas fa-file-excel"></i> Exportar a Excel</div>
+<div class="export-grid">
+
+    <a href="{% url 'reportes:exportar_activos' %}" class="export-card">
+        <div class="export-icon"><i class="fas fa-file-excel"></i></div>
+        <div>
+            <div class="export-title">Activos (.xlsx)</div>
+            <div class="export-sub">Exportar inventario completo</div>
+        </div>
+    </a>
+
+    <a href="{% url 'reportes:exportar_mantenimientos' %}" class="export-card">
+        <div class="export-icon"><i class="fas fa-file-excel"></i></div>
+        <div>
+            <div class="export-title">Mantenimientos (.xlsx)</div>
+            <div class="export-sub">Exportar historial completo</div>
+        </div>
+    </a>
+
+</div>
+
+{% endblock %}

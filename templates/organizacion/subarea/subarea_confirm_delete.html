@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% block title %}Eliminar {{ subarea.nombre }} - SIGAP{% endblock %}
+{% block page_title %}Eliminar Subárea{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb">
+    <a href="{% url 'core:dashboard' %}"><i class="fas fa-house"></i> Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'organizacion:subarea_list' %}">Subáreas</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'organizacion:subarea_detail' subarea.pk %}">{{ subarea.nombre }}</a>
+    <i class="fas fa-chevron-right"></i>
+    <span style="color:#f87171;">Eliminar</span>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.del-wrap{max-width:520px;margin:2rem auto}
+.del-card{background:var(--surface);border:1px solid rgba(239,68,68,.3);border-radius:16px;overflow:hidden}
+
+/* Top */
+.del-top{padding:2rem;text-align:center;border-bottom:1px solid var(--border);position:relative;background:var(--surface2)}
+.del-icon{width:68px;height:68px;border-radius:50%;background:rgba(239,68,68,.1);border:2px solid rgba(239,68,68,.3);display:flex;align-items:center;justify-content:center;margin:0 auto 1.1rem;animation:shake .5s ease}
+.del-icon i{font-size:1.7rem;color:#f87171}
+.del-title{font-family:'Syne',sans-serif;font-size:1.25rem;font-weight:700;color:var(--text);margin-bottom:.4rem}
+.del-msg{font-size:.875rem;color:var(--text-muted);line-height:1.6}
+
+/* Identity badge */
+.id-badge{
+    margin:1.25rem auto 0;
+    display:inline-flex;align-items:center;gap:.875rem;
+    background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.18);
+    border-radius:11px;padding:.875rem 1.1rem;text-align:left;
+}
+.ib-icon{width:40px;height:40px;border-radius:9px;flex-shrink:0;
+    background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);
+    display:flex;align-items:center;justify-content:center;color:#f87171;font-size:.9rem}
+.ib-code{font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#f87171}
+.ib-name{font-family:'Syne',sans-serif;font-size:.95rem;font-weight:600;color:var(--text)}
+.ib-path{font-size:.7rem;color:var(--text-muted);margin-top:.15rem;display:flex;align-items:center;gap:.3rem;flex-wrap:wrap}
+.ib-path i{font-size:.55rem;color:rgba(239,68,68,.4)}
+
+/* Body */
+.del-body{padding:1.5rem 2rem}
+
+/* Hierarchy trail in body */
+.hier-trail{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin-bottom:1.25rem;font-size:.78rem;padding:.75rem 1rem;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:9px}
+.ht-node{display:flex;align-items:center;gap:.3rem;color:var(--text-muted)}
+.ht-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.htd-p{background:#3b82f6}.htd-n{background:#38bdf8}.htd-a{background:#818cf8}.htd-s{background:var(--accent)}
+.ht-sep{color:rgba(255,255,255,.12);font-size:.55rem}
+.ht-node.current{color:var(--accent2);font-weight:600}
+
+/* Warn */
+.warn{display:flex;gap:.75rem;padding:.875rem 1rem;border-radius:9px;margin-bottom:1.25rem;font-size:.82rem;line-height:1.55}
+.warn i{flex-shrink:0;margin-top:2px}
+.warn-red{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#fca5a5}
+.warn-yellow{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);color:#fcd34d}
+
+/* Actions */
+.del-actions{display:flex;gap:.75rem;justify-content:flex-end;flex-wrap:wrap}
+.btn-del{display:inline-flex;align-items:center;gap:.4rem;padding:.65rem 1.25rem;background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;font-family:'Syne',sans-serif;font-size:.9rem;font-weight:600;border-radius:9px;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(220,38,38,.35);transition:transform .15s,box-shadow .2s}
+.btn-del:hover{transform:translateY(-1px);box-shadow:0 6px 22px rgba(220,38,38,.5)}
+.btn-back{display:inline-flex;align-items:center;gap:.4rem;padding:.65rem 1.25rem;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:9px;color:var(--text-subtle);font-size:.9rem;text-decoration:none;transition:background .15s,color .15s}
+.btn-back:hover{background:rgba(255,255,255,.08);color:var(--text)}
+
+@keyframes shake{0%,100%{transform:rotate(0)}20%{transform:rotate(-8deg)}40%{transform:rotate(8deg)}60%{transform:rotate(-4deg)}80%{transform:rotate(4deg)}}
+</style>
+{% endblock %}
+
+{% block content %}
+{% with eq_count=subarea.equipos.count|default:0 %}
+<div class="del-wrap">
+<div class="del-card">
+
+    <!-- Top -->
+    <div class="del-top">
+        <div class="del-icon"><i class="fas fa-trash-can"></i></div>
+        <h2 class="del-title">¿Eliminar esta subárea?</h2>
+        <p class="del-msg">Estás a punto de eliminar <strong>{{ subarea.nombre }}</strong>.<br>Esta acción es permanente e irreversible.</p>
+
+        <!-- Identity -->
+        <div class="id-badge">
+            <div class="ib-icon"><i class="fas fa-sitemap"></i></div>
+            <div>
+                <div class="ib-code">{{ subarea.codigo }}</div>
+                <div class="ib-name">{{ subarea.nombre }}</div>
+                <div class="ib-path">
+                    {% if subarea.area and subarea.area.nivel and subarea.area.nivel.planta %}
+                    <i class="fas fa-industry"></i>{{ subarea.area.nivel.planta.nombre }}
+                    <i class="fas fa-chevron-right"></i>
+                    <i class="fas fa-layer-group"></i>{{ subarea.area.nivel.nombre }}
+                    <i class="fas fa-chevron-right"></i>
+                    <i class="fas fa-map-signs"></i>{{ subarea.area.nombre }}
+                    {% elif subarea.area %}
+                    <i class="fas fa-map-signs"></i>{{ subarea.area.nombre }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Body -->
+    <div class="del-body">
+
+        <!-- Hierarchy trail -->
+        {% if subarea.area and subarea.area.nivel and subarea.area.nivel.planta %}
+        <div class="hier-trail">
+            <span class="ht-node"><div class="ht-dot htd-p"></div>{{ subarea.area.nivel.planta.nombre }}</span>
+            <i class="fas fa-chevron-right ht-sep"></i>
+            <span class="ht-node"><div class="ht-dot htd-n"></div>{{ subarea.area.nivel.nombre }}</span>
+            <i class="fas fa-chevron-right ht-sep"></i>
+            <span class="ht-node"><div class="ht-dot htd-a"></div>{{ subarea.area.nombre }}</span>
+            <i class="fas fa-chevron-right ht-sep"></i>
+            <span class="ht-node current"><div class="ht-dot htd-s"></div>{{ subarea.nombre }}</span>
+        </div>
+        {% endif %}
+
+        {% if eq_count > 0 %}
+        <div class="warn warn-red">
+            <i class="fas fa-circle-xmark"></i>
+            <span>Esta subárea tiene <strong>{{ eq_count }} equipo{{ eq_count|pluralize }}</strong> asociado{{ eq_count|pluralize }}. Al eliminarla, estos equipos perderán su asignación de subárea. Acción <strong>irreversible</strong>.</span>
+        </div>
+        <div class="del-actions">
+            <a href="{% url 'organizacion:subarea_detail' subarea.pk %}" class="btn-back"><i class="fas fa-arrow-left"></i> Cancelar</a>
+            <form method="post" style="display:contents;">
+                {% csrf_token %}
+                <button type="submit" class="btn-del"><i class="fas fa-trash-can"></i> Eliminar de todas formas</button>
+            </form>
+        </div>
+        {% else %}
+        <div class="warn warn-yellow">
+            <i class="fas fa-triangle-exclamation"></i>
+            <span>Esta subárea no tiene equipos asociados. Puede eliminarse de forma segura. La acción es <strong>irreversible</strong>.</span>
+        </div>
+        <div class="del-actions">
+            <a href="{% url 'organizacion:subarea_detail' subarea.pk %}" class="btn-back"><i class="fas fa-arrow-left"></i> Cancelar</a>
+            <form method="post" style="display:contents;">
+                {% csrf_token %}
+                <button type="submit" class="btn-del"><i class="fas fa-trash-can"></i> Sí, eliminar</button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</div>
+</div>
+{% endwith %}
+{% endblock %}

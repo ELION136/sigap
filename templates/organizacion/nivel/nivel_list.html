@@ -1,194 +1,303 @@
 {% extends 'base.html' %}
-
 {% block title %}Niveles - SIGAP{% endblock %}
-
 {% block page_title %}Niveles{% endblock %}
 
 {% block breadcrumbs %}
-<nav class="mb-4">
-    <ol class="flex items-center space-x-2 text-sm text-gray-500">
-        <li><a href="{% url 'core:dashboard' %}" class="hover:text-primary-600"><i class="fas fa-home"></i></a></li>
-        <li><i class="fas fa-chevron-right text-xs"></i></li>
-        <li><a href="{% url 'organizacion:nivel_list' %}" class="hover:text-primary-600">Organización</a></li>
-        <li><i class="fas fa-chevron-right text-xs"></i></li>
-        <li class="text-gray-700">Niveles</li>
-    </ol>
+<nav class="breadcrumb">
+    <a href="{% url 'core:dashboard' %}"><i class="fas fa-house"></i> Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'organizacion:planta_list' %}">Plantas</a>
+    <i class="fas fa-chevron-right"></i>
+    <span>Niveles</span>
 </nav>
 {% endblock %}
 
-{% block content %}
-<!-- Header con acciones -->
-<div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-    <div class="mb-4 md:mb-0">
-        <h2 class="text-2xl font-bold text-gray-800">Niveles</h2>
-        <p class="text-gray-500 mt-1">Gestión de niveles y pisos de las plantas</p>
-    </div>
-    <div class="flex space-x-3">
-        {% if perms.organizacion.add_nivel %}
-        <a href="{% url 'organizacion:nivel_create' %}" class="btn-primary">
-            <i class="fas fa-plus mr-2"></i>Nuevo Nivel
-        </a>
-        {% endif %}
-    </div>
-</div>
+{% block extra_css %}
+<style>
+    .toolbar { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; margin-bottom:1.5rem; }
+    .toolbar-left { flex:1; display:flex; gap:.5rem; }
+    .toolbar-right { display:flex; gap:.5rem; }
+    .search-wrap { position:relative; min-width:200px; max-width:300px; flex:1; }
+    .search-wrap input {
+        width:100%; background:var(--surface); border:1px solid var(--border); border-radius:9px;
+        padding:.55rem 1rem .55rem 2.4rem; color:var(--text);
+        font-family:'DM Sans',sans-serif; font-size:.875rem; outline:none;
+        transition:border-color .2s,background .2s;
+    }
+    .search-wrap input::placeholder { color:var(--text-muted); }
+    .search-wrap input:focus { border-color:var(--accent); background:rgba(37,99,235,.06); }
+    .search-wrap i { position:absolute; left:.8rem; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:.8rem; pointer-events:none; }
 
-<!-- Filtros -->
-<div class="card mb-6">
-    <div class="card-body">
-        <form method="get" class="flex flex-col md:flex-row md:items-end space-y-4 md:space-y-0 md:space-x-4">
-            <div class="flex-1">
-                <label class="form-label">Buscar</label>
-                <div class="relative">
-                    <input type="text" 
-                           name="q" 
-                           value="{{ search_query|default:'' }}"
-                           placeholder="Código, nombre o planta..."
-                           class="form-input pl-10">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fas fa-search text-gray-400"></i>
-                    </div>
-                </div>
-            </div>
-            <div>
-                <button type="submit" class="btn-primary w-full md:w-auto">
-                    <i class="fas fa-filter mr-2"></i>Filtrar
-                </button>
+    /* ── Plantas grid ── */
+    .plantas-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:1.25rem; }
+
+    /* ── Building card ── */
+    .building-card {
+        background:var(--surface); border:1px solid var(--border); border-radius:16px;
+        overflow:hidden; animation:fadeUp .4s ease both;
+        display:flex; flex-direction:column;
+    }
+
+    .building-header {
+        padding:1rem 1.25rem;
+        background:var(--surface2); border-bottom:1px solid var(--border);
+        display:flex; align-items:center; gap:.875rem;
+        cursor:pointer; user-select:none;
+        transition:background .15s;
+    }
+    .building-header:hover { background:rgba(255,255,255,.04); }
+
+    .building-icon {
+        width:44px; height:44px; border-radius:10px; flex-shrink:0;
+        background:rgba(37,99,235,.1); border:1px solid rgba(37,99,235,.18);
+        display:flex; align-items:center; justify-content:center;
+        font-size:1.1rem; color:#60a5fa;
+    }
+    .building-meta { flex:1; min-width:0; }
+    .building-name { font-family:'Syne',sans-serif; font-size:.95rem; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .building-sub  { font-size:.72rem; color:var(--text-muted); margin-top:.15rem; }
+    .building-count {
+        background:rgba(37,99,235,.12); color:#60a5fa;
+        border:1px solid rgba(37,99,235,.2); border-radius:9999px;
+        padding:.2rem .6rem; font-size:.72rem; font-weight:700; flex-shrink:0;
+    }
+    .building-chevron { color:var(--text-muted); font-size:.75rem; transition:transform .25s; flex-shrink:0; margin-left:.25rem; }
+    .building-card.collapsed .building-chevron { transform:rotate(-90deg); }
+
+    /* ── Floor stack visual ── */
+    .floors-wrap { padding:.75rem 1rem 1rem; display:flex; flex-direction:column; gap:0; }
+    .building-card.collapsed .floors-wrap { display:none; }
+
+    /* The "building silhouette" left edge */
+    .floors-inner { position:relative; padding-left:2rem; }
+    .floors-inner::before {
+        content:'';
+        position:absolute; left:.8rem; top:0; bottom:1rem;
+        width:2px; background:linear-gradient(to bottom,rgba(37,99,235,.5),rgba(37,99,235,.05));
+        border-radius:2px;
+    }
+
+    .floor-item {
+        position:relative; margin-bottom:.5rem;
+        background:rgba(255,255,255,.03); border:1px solid var(--border);
+        border-radius:10px; padding:.7rem 1rem;
+        display:flex; align-items:center; gap:.875rem;
+        transition:border-color .2s,transform .15s,background .15s;
+        animation:slideIn .3s ease both;
+        text-decoration:none;
+    }
+    .floor-item:hover {
+        border-color:rgba(37,99,235,.4); transform:translateX(3px);
+        background:rgba(37,99,235,.04);
+    }
+    .floor-item:last-child { margin-bottom:0; }
+
+    /* Connector dot */
+    .floor-item::before {
+        content:''; position:absolute; left:-1.33rem; top:50%; transform:translateY(-50%);
+        width:8px; height:8px; border-radius:50%;
+        background:var(--accent); box-shadow:0 0 0 3px rgba(37,99,235,.15);
+    }
+
+    /* Floor number badge */
+    .floor-num {
+        width:32px; height:32px; border-radius:8px; flex-shrink:0;
+        display:flex; align-items:center; justify-content:center;
+        font-family:'Syne',sans-serif; font-weight:800; font-size:.8rem;
+        background:rgba(37,99,235,.1); color:#60a5fa;
+        border:1px solid rgba(37,99,235,.2);
+    }
+    .floor-num.sub-zero { background:rgba(245,158,11,.1); color:#fcd34d; border-color:rgba(245,158,11,.25); }
+    .floor-num.ground   { background:rgba(34,197,94,.1);  color:#4ade80; border-color:rgba(34,197,94,.25); }
+
+    .floor-info { flex:1; min-width:0; }
+    .floor-code { font-size:.65rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--accent2); margin-bottom:.1rem; }
+    .floor-name { font-size:.88rem; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .floor-meta { font-size:.72rem; color:var(--text-muted); margin-top:.1rem; display:flex; gap:.6rem; }
+    .floor-meta i { font-size:.62rem; }
+
+    .floor-status { flex-shrink:0; }
+    .floor-badge { display:inline-flex; align-items:center; gap:.3rem; padding:.18rem .55rem; border-radius:9999px; font-size:.68rem; font-weight:600; }
+    .fb-on  { background:rgba(34,197,94,.12);  color:#4ade80; border:1px solid rgba(34,197,94,.2); }
+    .fb-off { background:rgba(107,114,128,.1); color:#6b7280; border:1px solid rgba(107,114,128,.15); }
+
+    .floor-actions { display:flex; gap:.3rem; flex-shrink:0; }
+    .act-btn-xs {
+        width:26px; height:26px; border-radius:6px;
+        background:rgba(255,255,255,.04); border:1px solid var(--border);
+        display:flex; align-items:center; justify-content:center;
+        color:var(--text-muted); font-size:.72rem; text-decoration:none;
+        transition:background .15s,color .15s,border-color .15s;
+    }
+    .act-btn-xs:hover { background:rgba(255,255,255,.08); color:var(--text); border-color:var(--border2); }
+    .act-btn-xs.danger:hover { background:rgba(239,68,68,.1); color:#f87171; border-color:rgba(239,68,68,.3); }
+
+    /* Add floor btn */
+    .add-floor-btn {
+        display:flex; align-items:center; justify-content:center; gap:.5rem;
+        margin-top:.5rem; padding:.55rem; border-radius:9px;
+        border:1.5px dashed rgba(37,99,235,.25); color:rgba(96,165,250,.6);
+        font-size:.78rem; font-weight:500; text-decoration:none;
+        transition:border-color .2s,color .2s,background .2s;
+    }
+    .add-floor-btn:hover { border-color:rgba(37,99,235,.5); color:#60a5fa; background:rgba(37,99,235,.05); }
+
+    /* Empty */
+    .empty-state { text-align:center; padding:4rem 2rem; color:var(--text-muted); background:var(--surface); border:1px solid var(--border); border-radius:14px; }
+    .empty-state i { font-size:3rem; opacity:.2; display:block; margin-bottom:1rem; }
+
+    /* Pagination */
+    .pagination { display:flex; align-items:center; justify-content:center; gap:.4rem; margin-top:1.5rem; }
+    .page-btn { min-width:34px; height:34px; border-radius:8px; padding:0 .6rem; background:var(--surface); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--text-subtle); font-size:.82rem; text-decoration:none; transition:background .15s,color .15s; }
+    .page-btn:hover { background:rgba(255,255,255,.08); color:var(--text); }
+    .page-btn.active { background:var(--accent); border-color:transparent; color:#fff; font-weight:600; }
+    .page-btn.disabled { opacity:.35; pointer-events:none; }
+
+    @keyframes fadeUp  { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+    @keyframes slideIn { from{opacity:0;transform:translateX(-6px)} to{opacity:1;transform:none} }
+
+    @media(max-width:640px){ .plantas-grid{grid-template-columns:1fr} }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="toolbar">
+    <div class="toolbar-left">
+        <form method="get" id="filterForm" style="display:contents;">
+            <div class="search-wrap">
+                <i class="fas fa-search"></i>
+                <input type="text" name="q" value="{{ search_query|default:'' }}"
+                       placeholder="Código, nombre o planta…"
+                       onchange="document.getElementById('filterForm').submit()">
             </div>
             {% if search_query %}
-            <div>
-                <a href="{% url 'organizacion:nivel_list' %}" class="btn-secondary w-full md:w-auto">
-                    <i class="fas fa-times mr-2"></i>Limpiar
-                </a>
-            </div>
+            <a href="{% url 'organizacion:nivel_list' %}" style="display:flex;align-items:center;gap:.4rem;padding:.5rem .75rem;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text-muted);font-size:.82rem;text-decoration:none;">
+                <i class="fas fa-xmark"></i> Limpiar
+            </a>
             {% endif %}
         </form>
     </div>
-</div>
-
-<!-- Tabla -->
-<div class="card">
-    <div class="card-body p-0">
-        <div class="table-container">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Código</th>
-                        <th>Nombre</th>
-                        <th>Planta</th>
-                        <th>Número</th>
-                        <th>Altura (m)</th>
-                        <th>Estado</th>
-                        <th class="text-right">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for nivel in object_list %}
-                    <tr class="hover:bg-gray-50">
-                        <td class="font-medium">{{ nivel.codigo }}</td>
-                        <td>
-                            <div class="flex items-center">
-                                {% if nivel.plano %}
-                                <img src="{{ nivel.plano.url }}" alt="" class="w-8 h-8 rounded-lg object-cover mr-3">
-                                {% else %}
-                                <div class="w-8 h-8 bg-gray-200 rounded-lg flex items-center justify-center mr-3">
-                                    <i class="fas fa-layer-group text-gray-400 text-sm"></i>
-                                </div>
-                                {% endif %}
-                                <a href="{% url 'organizacion:nivel_detail' nivel.pk %}" class="text-primary-600 hover:text-primary-800 font-medium">
-                                    {{ nivel.nombre }}
-                                </a>
-                            </div>
-                        </td>
-                        <td>{{ nivel.planta.nombre }}</td>
-                        <td>{{ nivel.numero_nivel }}</td>
-                        <td>{{ nivel.altura|default:"-" }}</td>
-                        <td>
-                            {% if nivel.activo %}
-                            <span class="badge badge-green">Activo</span>
-                            {% else %}
-                            <span class="badge badge-gray">Inactivo</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-right">
-                            <div class="flex items-center justify-end space-x-2">
-                                {% if perms.organizacion.view_nivel %}
-                                <a href="{% url 'organizacion:nivel_detail' nivel.pk %}" 
-                                   class="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50"
-                                   title="Ver detalle">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                {% endif %}
-                                {% if perms.organizacion.change_nivel %}
-                                <a href="{% url 'organizacion:nivel_update' nivel.pk %}" 
-                                   class="text-yellow-600 hover:text-yellow-800 p-2 rounded-lg hover:bg-yellow-50"
-                                   title="Editar">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                {% endif %}
-                                {% if perms.organizacion.delete_nivel %}
-                                <a href="{% url 'organizacion:nivel_delete' nivel.pk %}" 
-                                   class="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50"
-                                   title="Eliminar"
-                                   onclick="return confirm('¿Está seguro de eliminar este nivel?')">
-                                    <i class="fas fa-trash"></i>
-                                </a>
-
-                                
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="7" class="text-center py-8">
-                            <div class="text-gray-500">
-                                <i class="fas fa-layer-group text-4xl mb-3"></i>
-                                <p>No se encontraron niveles</p>
-                                {% if search_query %}
-                                <p class="text-sm mt-1">Intente con otros términos de búsqueda</p>
-                                {% else %}
-                                <p class="text-sm mt-1">Comience creando un nuevo nivel</p>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+    <div class="toolbar-right">
+        {% if perms.organizacion.add_nivel %}
+        <a href="{% url 'organizacion:nivel_create' %}" class="btn-primary">
+            <i class="fas fa-plus"></i> Nuevo Nivel
+        </a>
+        {% endif %}
     </div>
 </div>
 
-<!-- Paginación -->
-{% if is_paginated %}
-<div class="mt-6 flex justify-center">
-    <nav class="flex items-center space-x-2">
-        {% if page_obj.has_previous %}
-        <a href="?page=1{% if search_query %}&q={{ search_query }}{% endif %}" 
-           class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50">
-            <i class="fas fa-angle-double-left"></i>
-        </a>
-        <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}" 
-           class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50">
-            <i class="fas fa-angle-left"></i>
-        </a>
-        {% endif %}
-        
-        <span class="px-4 py-2 bg-primary-600 text-white rounded-lg">
-            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
-        </span>
-        
-        {% if page_obj.has_next %}
-        <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}" 
-           class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50">
-            <i class="fas fa-angle-right"></i>
-        </a>
-        <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&q={{ search_query }}{% endif %}" 
-           class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50">
-            <i class="fas fa-angle-double-right"></i>
-        </a>
-        {% endif %}
-    </nav>
+{% if object_list %}
+
+{# ── Group niveles by planta ── #}
+{% regroup object_list by planta as por_planta %}
+
+<div class="plantas-grid">
+    {% for grupo in por_planta %}
+    <div class="building-card" style="animation-delay:{{ forloop.counter0 }}0ms;" data-building="{{ grupo.grouper.pk }}">
+
+        <!-- Planta header (click to collapse) -->
+        <div class="building-header" onclick="toggleBuilding(this)">
+            <div class="building-icon"><i class="fas fa-industry"></i></div>
+            <div class="building-meta">
+                <div class="building-name">{{ grupo.grouper.nombre }}</div>
+                <div class="building-sub"><i class="fas fa-location-dot" style="margin-right:.3rem;font-size:.65rem;"></i>{{ grupo.grouper.ciudad }}{% if grupo.grouper.estado_provincia %}, {{ grupo.grouper.estado_provincia }}{% endif %}</div>
+            </div>
+            <span class="building-count">{{ grupo.list|length }}</span>
+            <i class="fas fa-chevron-down building-chevron"></i>
+        </div>
+
+        <!-- Floors -->
+        <div class="floors-wrap">
+            <div class="floors-inner">
+                {% for nivel in grupo.list|dictsortreversed:"numero_nivel" %}
+                <div class="floor-item">
+                    <!-- Floor number -->
+                    <div class="floor-num {% if nivel.numero_nivel < 0 %}sub-zero{% elif nivel.numero_nivel == 0 %}ground{% endif %}">
+                        {% if nivel.numero_nivel > 0 %}+{% endif %}{{ nivel.numero_nivel }}
+                    </div>
+
+                    <!-- Info -->
+                    <div class="floor-info">
+                        <div class="floor-code">{{ nivel.codigo }}</div>
+                        <div class="floor-name">{{ nivel.nombre }}</div>
+                        <div class="floor-meta">
+                            <span><i class="fas fa-th-large"></i> {{ nivel.get_areas_count }} áreas</span>
+                            {% if nivel.altura %}<span><i class="fas fa-ruler-vertical"></i> {{ nivel.altura }} m</span>{% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="floor-status">
+                        <span class="floor-badge {% if nivel.activo %}fb-on{% else %}fb-off{% endif %}">
+                            <i class="fas {% if nivel.activo %}fa-circle{% else %}fa-circle-xmark{% endif %}" style="font-size:.45rem;"></i>
+                            {% if nivel.activo %}Activo{% else %}Inactivo{% endif %}
+                        </span>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="floor-actions">
+                        <a href="{% url 'organizacion:nivel_detail' nivel.pk %}" class="act-btn-xs" title="Ver"><i class="fas fa-eye"></i></a>
+                        {% if perms.organizacion.change_nivel %}
+                        <a href="{% url 'organizacion:nivel_update' nivel.pk %}" class="act-btn-xs" title="Editar"><i class="fas fa-pen"></i></a>
+                        {% endif %}
+                        {% if perms.organizacion.delete_nivel %}
+                        <a href="{% url 'organizacion:nivel_delete' nivel.pk %}" class="act-btn-xs danger" title="Eliminar"><i class="fas fa-trash"></i></a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+
+                {% if perms.organizacion.add_nivel %}
+                <a href="{% url 'organizacion:nivel_create' %}?planta={{ grupo.grouper.pk }}" class="add-floor-btn">
+                    <i class="fas fa-plus"></i> Agregar nivel a {{ grupo.grouper.nombre }}
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+<div class="empty-state">
+    <i class="fas fa-layer-group"></i>
+    <p>No se encontraron niveles{% if search_query %} para "<strong>{{ search_query }}</strong>"{% endif %}.</p>
+    {% if perms.organizacion.add_nivel %}
+    <a href="{% url 'organizacion:nivel_create' %}" class="btn-primary" style="display:inline-flex;margin-top:1rem;">
+        <i class="fas fa-plus"></i> Crear primer nivel
+    </a>
+    {% endif %}
 </div>
 {% endif %}
+
+{% if is_paginated %}
+<div class="pagination">
+    {% if page_obj.has_previous %}
+    <a href="?page=1{% if search_query %}&q={{ search_query }}{% endif %}" class="page-btn"><i class="fas fa-angles-left"></i></a>
+    <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}" class="page-btn"><i class="fas fa-angle-left"></i></a>
+    {% else %}
+    <span class="page-btn disabled"><i class="fas fa-angles-left"></i></span>
+    <span class="page-btn disabled"><i class="fas fa-angle-left"></i></span>
+    {% endif %}
+    <span class="page-btn active">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}" class="page-btn"><i class="fas fa-angle-right"></i></a>
+    <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&q={{ search_query }}{% endif %}" class="page-btn"><i class="fas fa-angles-right"></i></a>
+    {% else %}
+    <span class="page-btn disabled"><i class="fas fa-angle-right"></i></span>
+    <span class="page-btn disabled"><i class="fas fa-angles-right"></i></span>
+    {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleBuilding(header) {
+    const card = header.closest('.building-card');
+    card.classList.toggle('collapsed');
+}
+</script>
 {% endblock %}

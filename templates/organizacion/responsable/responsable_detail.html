@@ -1,190 +1,269 @@
 {% extends 'base.html' %}
-
 {% block title %}{{ responsable.nombre_completo }} - SIGAP{% endblock %}
-
-{% block page_title %}{{ responsable.nombre_completo }}{% endblock %}
+{% block page_title %}Responsable{% endblock %}
 
 {% block breadcrumbs %}
-<nav class="mb-4 text-sm">
-    <ol class="list-none p-0 inline-flex">
-        <li class="flex items-center">
-            <a href="/" class="text-primary-600 hover:text-primary-800">Inicio</a>
-            <i class="fas fa-chevron-right mx-2 text-gray-400 text-xs"></i>
-        </li>
-        <li class="flex items-center">
-            <a href="{% url 'organizacion:responsable_list' %}" class="text-primary-600 hover:text-primary-800">Responsables</a>
-            <i class="fas fa-chevron-right mx-2 text-gray-400 text-xs"></i>
-        </li>
-        <li class="text-gray-600">Detalle</li>
-    </ol>
+<nav class="breadcrumb">
+    <a href="{% url 'core:dashboard' %}"><i class="fas fa-house"></i> Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'organizacion:responsable_list' %}">Responsables</a>
+    <i class="fas fa-chevron-right"></i>
+    <span>{{ responsable.nombre_completo }}</span>
 </nav>
 {% endblock %}
 
+{% block extra_css %}
+<style>
+/* ─── Hero card ─── */
+.resp-hero{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:1.25rem}
+
+/* Tipo-colored top bar */
+.rh-bar{height:4px;width:100%;position:relative;overflow:hidden}
+.rh-bar::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent);animation:shimmer 3s ease-in-out infinite}
+.rhb-interno    {background:linear-gradient(90deg,#1d4ed8,#60a5fa)}
+.rhb-externo    {background:linear-gradient(90deg,#6d28d9,#a78bfa)}
+.rhb-contratista{background:linear-gradient(90deg,#b45309,#fcd34d)}
+
+/* Hero body */
+.rh-body{padding:1.5rem 1.75rem;display:flex;align-items:center;justify-content:space-between;gap:1.5rem;flex-wrap:wrap}
+.rh-left{display:flex;align-items:center;gap:1.25rem}
+.rh-photo{width:80px;height:80px;border-radius:16px;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:2rem;position:relative}
+.rh-photo img{width:100%;height:100%;object-fit:cover}
+.av-interno    {background:rgba(29,78,216,.15);border:2px solid rgba(29,78,216,.3);color:#60a5fa}
+.av-externo    {background:rgba(109,40,217,.15);border:2px solid rgba(109,40,217,.3);color:#a78bfa}
+.av-contratista{background:rgba(180,83,9,.15);border:2px solid rgba(180,83,9,.3);color:#fcd34d}
+.rh-online{position:absolute;bottom:-3px;right:-3px;width:16px;height:16px;border-radius:50%;background:#22c55e;border:2.5px solid var(--surface);box-shadow:0 0 0 2px rgba(34,197,94,.25)}
+.rh-info{}
+.rh-code{font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--accent2);margin-bottom:.2rem}
+.rh-name{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:700;color:var(--text);line-height:1.1}
+.rh-puesto{font-size:.875rem;color:var(--text-muted);margin-top:.25rem}
+.rh-chips{display:flex;gap:.45rem;margin-top:.65rem;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .65rem;border-radius:9999px;font-size:.73rem;font-weight:600}
+.chip i{font-size:.55rem}
+.ch-interno    {background:rgba(29,78,216,.1);color:#60a5fa;border:1px solid rgba(29,78,216,.22)}
+.ch-externo    {background:rgba(109,40,217,.1);color:#a78bfa;border:1px solid rgba(109,40,217,.22)}
+.ch-contratista{background:rgba(180,83,9,.1);color:#fcd34d;border:1px solid rgba(180,83,9,.22)}
+.ch-on {background:rgba(34,197,94,.08);color:#4ade80;border:1px solid rgba(34,197,94,.2)}
+.ch-off{background:rgba(107,114,128,.08);color:#6b7280;border:1px solid rgba(107,114,128,.15)}
+.rh-actions{display:flex;gap:.5rem;flex-shrink:0;flex-wrap:wrap}
+.ha-btn{display:inline-flex;align-items:center;gap:.4rem;padding:.55rem 1rem;border-radius:8px;font-size:.84rem;font-weight:500;text-decoration:none;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text-subtle);transition:background .15s,color .15s;cursor:pointer}
+.ha-btn:hover{background:rgba(255,255,255,.08);color:var(--text)}
+.ha-btn.pri{background:linear-gradient(135deg,var(--accent),#1d4ed8);border-color:transparent;color:#fff;box-shadow:0 3px 14px rgba(37,99,235,.35)}
+.ha-btn.dan{color:#f87171;border-color:rgba(239,68,68,.25)}
+.ha-btn.dan:hover{background:rgba(239,68,68,.1)}
+
+/* ─── Stats strip ─── */
+.stats-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:.875rem;margin-bottom:1.25rem}
+.sm{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:.875rem 1.1rem;display:flex;align-items:center;gap:.75rem;transition:border-color .2s}
+.sm:hover{border-color:var(--border2)}
+.sm-ico{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.9rem}
+.sm-val{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:700;color:var(--text);line-height:1}
+.sm-lbl{font-size:.67rem;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-top:.1rem}
+
+/* ─── Content grid ─── */
+.detail-grid{display:grid;grid-template-columns:1fr 280px;gap:1.25rem;align-items:start}
+
+/* Section card */
+.sc{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:1rem}
+.sc-hd{padding:.875rem 1.25rem;border-bottom:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;gap:.5rem}
+.sc-hd-l{display:flex;align-items:center;gap:.5rem;font-family:'Syne',sans-serif;font-size:.875rem;font-weight:600;color:var(--text)}
+.sc-hd-l i{color:var(--accent2);font-size:.8rem}
+.sc-body{padding:1.1rem 1.25rem}
+
+/* Field rows */
+.fg-grid{display:grid;grid-template-columns:1fr 1fr;gap:.35rem 1.5rem}
+.fr{padding:.5rem 0;border-bottom:1px solid rgba(255,255,255,.04);display:flex;flex-direction:column;gap:.12rem}
+.fr:last-child{border-bottom:none}
+.fl{font-size:.67rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted)}
+.fv{font-size:.875rem;color:var(--text)}
+.fv.em{color:var(--text-muted);font-style:italic}
+.fv a{color:var(--accent2);text-decoration:none}
+.fv a:hover{color:var(--text);text-decoration:underline}
+
+/* Divider section */
+.sep-row{grid-column:1/-1;border-top:1px solid rgba(255,255,255,.06);margin:.35rem 0;padding-top:.35rem;font-size:.67rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);display:flex;align-items:center;gap:.4rem}
+
+/* Photo card */
+.photo-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:1rem}
+.photo-wrap{padding:1.25rem;display:flex;justify-content:center}
+.photo-img{width:160px;height:160px;border-radius:14px;object-fit:cover;border:2px solid var(--border)}
+.photo-placeholder{width:160px;height:160px;border-radius:14px;background:rgba(37,99,235,.06);border:2px dashed rgba(37,99,235,.2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem;color:var(--text-muted)}
+.photo-placeholder i{font-size:2.5rem;opacity:.25}
+.photo-placeholder span{font-size:.72rem}
+
+/* Contact items */
+.ci{display:flex;align-items:center;gap:.6rem;padding:.4rem 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.875rem;color:var(--text-subtle)}
+.ci:last-child{border-bottom:none}
+.ci i{color:var(--accent2);font-size:.78rem;width:14px;text-align:center;flex-shrink:0}
+.ci a{color:var(--accent2);text-decoration:none}
+.ci a:hover{color:var(--text);text-decoration:underline}
+
+/* Audit */
+.ar{display:flex;align-items:baseline;gap:.5rem;padding:.25rem 0;font-size:.82rem}
+.al{color:var(--text-muted);font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;width:80px;flex-shrink:0}
+.av{color:var(--text-subtle)}
+
+/* Usuario linked */
+.user-link{display:flex;align-items:center;gap:.6rem;padding:.75rem;background:rgba(37,99,235,.06);border:1px solid rgba(37,99,235,.15);border-radius:9px;margin-top:.75rem}
+.user-av{width:32px;height:32px;border-radius:8px;background:rgba(37,99,235,.15);display:flex;align-items:center;justify-content:center;font-size:.8rem;color:#60a5fa;flex-shrink:0}
+.user-n{font-size:.84rem;font-weight:600;color:var(--text)}
+.user-sub{font-size:.7rem;color:var(--text-muted)}
+
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+@media(max-width:768px){.detail-grid{grid-template-columns:1fr}.stats-strip{grid-template-columns:1fr 1fr}.fg-grid{grid-template-columns:1fr}.rh-body{flex-direction:column;align-items:flex-start}}
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="mb-6 flex justify-end space-x-2">
-    <a href="{% url 'organizacion:responsable_update' responsable.pk %}" class="btn-primary">
-        <i class="fas fa-edit mr-2"></i>Editar
-    </a>
-    <a href="{% url 'organizacion:responsable_delete' responsable.pk %}" class="btn-danger">
-        <i class="fas fa-trash mr-2"></i>Eliminar
-    </a>
+{% with tl=responsable.tipo|lower %}
+
+<!-- Hero -->
+<div class="resp-hero">
+    <div class="rh-bar rhb-{{ tl }}"></div>
+    <div class="rh-body">
+        <div class="rh-left">
+            <div class="rh-photo av-{{ tl }}">
+                {% if responsable.foto %}<img src="{{ responsable.foto.url }}" alt="{{ responsable.nombre_completo }}">
+                {% else %}<i class="fas fa-user-tie"></i>{% endif %}
+                {% if responsable.activo %}<div class="rh-online"></div>{% endif %}
+            </div>
+            <div class="rh-info">
+                <div class="rh-code">{{ responsable.codigo }}</div>
+                <div class="rh-name">{{ responsable.nombre_completo }}</div>
+                <div class="rh-puesto">{{ responsable.puesto|default:"Sin puesto asignado" }}{% if responsable.departamento %} · {{ responsable.departamento }}{% endif %}</div>
+                <div class="rh-chips">
+                    <span class="chip ch-{{ tl }}">
+                        <i class="fas {% if responsable.tipo == 'INTERNO' %}fa-building{% elif responsable.tipo == 'EXTERNO' %}fa-handshake{% else %}fa-hard-hat{% endif %}"></i>
+                        {{ responsable.get_tipo_display }}
+                    </span>
+                    <span class="chip {% if responsable.activo %}ch-on{% else %}ch-off{% endif %}">
+                        <i class="fas fa-circle" style="font-size:.35rem;"></i>
+                        {% if responsable.activo %}Activo{% else %}Inactivo{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="rh-actions">
+            {% if perms.organizacion.change_responsable %}
+            <a href="{% url 'organizacion:responsable_update' responsable.pk %}" class="ha-btn pri"><i class="fas fa-pen"></i> Editar</a>
+            {% endif %}
+            {% if perms.organizacion.delete_responsable %}
+            <a href="{% url 'organizacion:responsable_delete' responsable.pk %}" class="ha-btn dan"><i class="fas fa-trash"></i></a>
+            {% endif %}
+        </div>
+    </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Información personal -->
-    <div class="lg:col-span-2">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="text-lg font-semibold">
-                    <i class="fas fa-user-circle mr-2 text-primary-600"></i>
-                    Información Personal
-                </h3>
-            </div>
-            <div class="card-body">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <dt class="text-sm font-medium text-gray-500">Código</dt>
-                        <dd class="text-base font-semibold">{{ responsable.codigo }}</dd>
-                    </div>
-                    <div>
-                        <dt class="text-sm font-medium text-gray-500">Tipo</dt>
-                        <dd>
-                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium
-                                {% if responsable.tipo == 'INTERNO' %}bg-blue-100 text-blue-800
-                                {% elif responsable.tipo == 'EXTERNO' %}bg-purple-100 text-purple-800
-                                {% elif responsable.tipo == 'CONTRATISTA' %}bg-orange-100 text-orange-800
-                                {% endif %}">
-                                {{ responsable.get_tipo_display }}
-                            </span>
-                        </dd>
-                    </div>
-                    <div>
-                        <dt class="text-sm font-medium text-gray-500">Nombres</dt>
-                        <dd>{{ responsable.nombres }}</dd>
-                    </div>
-                    <div>
-                        <dt class="text-sm font-medium text-gray-500">Apellidos</dt>
-                        <dd>{{ responsable.apellidos }}</dd>
-                    </div>
-                    <div>
-                        <dt class="text-sm font-medium text-gray-500">Puesto</dt>
-                        <dd>{{ responsable.puesto|default:"-" }}</dd>
-                    </div>
-                    <div>
-                        <dt class="text-sm font-medium text-gray-500">Departamento</dt>
-                        <dd>{{ responsable.departamento|default:"-" }}</dd>
-                    </div>
-                    <div>
-                        <dt class="text-sm font-medium text-gray-500">Fecha de Ingreso</dt>
-                        <dd>{{ responsable.fecha_ingreso|date:"d/m/Y"|default:"-" }}</dd>
-                    </div>
-                    <div>
-                        <dt class="text-sm font-medium text-gray-500">Estado</dt>
-                        <dd>
-                            {% if responsable.activo %}
-                            <span class="badge badge-green">Activo</span>
-                            {% else %}
-                            <span class="badge badge-gray">Inactivo</span>
-                            {% endif %}
-                        </dd>
-                    </div>
+<!-- Stats -->
+<div class="stats-strip">
+    <div class="sm">
+        <div class="sm-ico" style="background:rgba(37,99,235,.1);color:#60a5fa;"><i class="fas fa-boxes-stacked"></i></div>
+        <div><div class="sm-val">{{ activos_asignados|default:"0" }}</div><div class="sm-lbl">Activos</div></div>
+    </div>
+    <div class="sm">
+        <div class="sm-ico" style="background:rgba(99,102,241,.1);color:#a5b4fc;"><i class="fas fa-screwdriver-wrench"></i></div>
+        <div><div class="sm-val">{{ equipos_asignados|default:"0" }}</div><div class="sm-lbl">Equipos</div></div>
+    </div>
+    <div class="sm">
+        <div class="sm-ico" style="background:rgba(56,189,248,.1);color:#38bdf8;"><i class="fas fa-calendar-check"></i></div>
+        <div>
+            <div class="sm-val" style="font-size:.95rem;margin-top:.1rem;">{{ responsable.fecha_ingreso|date:"Y"|default:"—" }}</div>
+            <div class="sm-lbl">Año ingreso</div>
+        </div>
+    </div>
+</div>
+
+<div class="detail-grid">
+    <!-- LEFT -->
+    <div>
+        <!-- Información personal -->
+        <div class="sc">
+            <div class="sc-hd"><div class="sc-hd-l"><i class="fas fa-id-card"></i> Información Personal</div></div>
+            <div class="sc-body">
+                <div class="fg-grid">
+                    <div class="fr"><span class="fl">Nombres</span><span class="fv">{{ responsable.nombres }}</span></div>
+                    <div class="fr"><span class="fl">Apellidos</span><span class="fv">{{ responsable.apellidos }}</span></div>
+                    <div class="fr"><span class="fl">Puesto</span><span class="fv {% if not responsable.puesto %}em{% endif %}">{{ responsable.puesto|default:"No especificado" }}</span></div>
+                    <div class="fr"><span class="fl">Departamento</span><span class="fv {% if not responsable.departamento %}em{% endif %}">{{ responsable.departamento|default:"No especificado" }}</span></div>
+                    <div class="fr"><span class="fl">Tipo</span><span class="fv"><span class="chip ch-{{ tl }}" style="font-size:.72rem;">{{ responsable.get_tipo_display }}</span></span></div>
+                    <div class="fr"><span class="fl">Fecha Ingreso</span><span class="fv {% if not responsable.fecha_ingreso %}em{% endif %}">{{ responsable.fecha_ingreso|date:"d/m/Y"|default:"No registrada" }}</span></div>
                 </div>
-                
                 {% if responsable.notas %}
-                <div class="mt-4">
-                    <dt class="text-sm font-medium text-gray-500">Notas</dt>
-                    <dd class="mt-1 text-gray-700">{{ responsable.notas }}</dd>
+                <div style="margin-top:.875rem;padding-top:.875rem;border-top:1px solid rgba(255,255,255,.06);">
+                    <div class="fl" style="margin-bottom:.4rem;">Notas</div>
+                    <p style="font-size:.875rem;color:var(--text-subtle);line-height:1.65;">{{ responsable.notas }}</p>
                 </div>
                 {% endif %}
             </div>
         </div>
-        
-        <!-- Información de contacto -->
-        <div class="card mt-6">
-            <div class="card-header">
-                <h3 class="text-lg font-semibold">
-                    <i class="fas fa-address-card mr-2 text-primary-600"></i>
-                    Contacto
-                </h3>
-            </div>
-            <div class="card-body">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <dt class="text-sm font-medium text-gray-500">Email</dt>
-                        <dd>
-                            {% if responsable.email %}
-                            <a href="mailto:{{ responsable.email }}" class="text-primary-600 hover:text-primary-800">
-                                {{ responsable.email }}
-                            </a>
-                            {% else %}
-                            -
-                            {% endif %}
-                        </dd>
-                    </div>
-                    <div>
-                        <dt class="text-sm font-medium text-gray-500">Teléfono</dt>
-                        <dd>{{ responsable.telefono|default:"-" }}</dd>
-                    </div>
-                    <div>
-                        <dt class="text-sm font-medium text-gray-500">Teléfono Móvil</dt>
-                        <dd>{{ responsable.telefono_movil|default:"-" }}</dd>
-                    </div>
-                    <div>
-                        <dt class="text-sm font-medium text-gray-500">Dirección</dt>
-                        <dd>{{ responsable.direccion|default:"-" }}</dd>
-                    </div>
-                </div>
+
+        <!-- Contacto -->
+        <div class="sc">
+            <div class="sc-hd"><div class="sc-hd-l"><i class="fas fa-address-book"></i> Contacto</div></div>
+            <div class="sc-body">
+                {% if responsable.email %}
+                <div class="ci"><i class="fas fa-envelope"></i><a href="mailto:{{ responsable.email }}">{{ responsable.email }}</a></div>
+                {% endif %}
+                {% if responsable.telefono %}
+                <div class="ci"><i class="fas fa-phone"></i><a href="tel:{{ responsable.telefono }}">{{ responsable.telefono }}</a></div>
+                {% endif %}
+                {% if responsable.telefono_movil %}
+                <div class="ci"><i class="fas fa-mobile-screen"></i><a href="tel:{{ responsable.telefono_movil }}">{{ responsable.telefono_movil }}</a></div>
+                {% endif %}
+                {% if responsable.direccion %}
+                <div class="ci"><i class="fas fa-location-dot"></i><span>{{ responsable.direccion }}</span></div>
+                {% endif %}
+                {% if not responsable.email and not responsable.telefono and not responsable.telefono_movil and not responsable.direccion %}
+                <p style="font-size:.82rem;color:var(--text-muted);font-style:italic;">Sin datos de contacto registrados.</p>
+                {% endif %}
             </div>
         </div>
     </div>
-    
-    <!-- Estadísticas y foto -->
-    <div class="lg:col-span-1">
+
+    <!-- RIGHT -->
+    <div>
         <!-- Foto -->
-        <div class="card mb-6">
-            <div class="card-header">
-                <h3 class="text-lg font-semibold">
-                    <i class="fas fa-camera mr-2 text-primary-600"></i>
-                    Foto
-                </h3>
-            </div>
-            <div class="card-body flex justify-center">
+        <div class="photo-card">
+            <div class="sc-hd"><div class="sc-hd-l"><i class="fas fa-camera"></i> Foto</div></div>
+            <div class="photo-wrap">
                 {% if responsable.foto %}
-                <img src="{{ responsable.foto.url }}" alt="{{ responsable.nombre_completo }}" 
-                     class="w-48 h-48 rounded-xl object-cover shadow-lg border-4 border-white">
+                <img src="{{ responsable.foto.url }}" alt="{{ responsable.nombre_completo }}" class="photo-img">
                 {% else %}
-                <div class="w-48 h-48 bg-gray-100 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-user-tie text-gray-400 text-6xl"></i>
+                <div class="photo-placeholder">
+                    <i class="fas fa-user-tie"></i>
+                    <span>Sin foto</span>
                 </div>
                 {% endif %}
             </div>
         </div>
-        
-        <!-- Estadísticas -->
-        <div class="card">
-            <div class="card-header">
-                <h3 class="text-lg font-semibold">
-                    <i class="fas fa-chart-pie mr-2 text-primary-600"></i>
-                    Estadísticas
-                </h3>
+
+        <!-- Vinculación usuario -->
+        {% if responsable.usuario %}
+        <div class="sc">
+            <div class="sc-hd"><div class="sc-hd-l"><i class="fas fa-circle-user"></i> Usuario del sistema</div></div>
+            <div class="sc-body" style="padding-bottom:.875rem;">
+                <div class="user-link">
+                    <div class="user-av"><i class="fas fa-user-shield"></i></div>
+                    <div>
+                        <div class="user-n">{{ responsable.usuario.username }}</div>
+                        <div class="user-sub">{{ responsable.usuario.email|default:"Sin email" }}</div>
+                    </div>
+                </div>
             </div>
-            <div class="card-body space-y-4">
-                <div class="flex justify-between items-center">
-                    <span class="text-gray-600">Activos asignados</span>
-                    <span class="font-bold text-xl">{{ activos_asignados }}</span>
-                </div>
-                <div class="flex justify-between items-center">
-                    <span class="text-gray-600">Equipos funcionales</span>
-                    <span class="font-bold text-xl">{{ equipos_asignados }}</span>
-                </div>
-                {% if responsable.usuario %}
-                <div class="pt-4 border-t border-gray-200">
-                    <span class="text-sm text-gray-500 block mb-1">Vinculado a usuario:</span>
-                    <span class="font-medium text-primary-600">{{ responsable.usuario.username }}</span>
-                </div>
-                {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Auditoría -->
+        <div class="sc">
+            <div class="sc-hd"><div class="sc-hd-l"><i class="fas fa-clock-rotate-left"></i> Auditoría</div></div>
+            <div class="sc-body">
+                <div class="ar"><span class="al">Creado</span><span class="av">{{ responsable.creado|date:"d/m/Y H:i" }}</span></div>
+                <div class="ar"><span class="al">Por</span><span class="av">{{ responsable.creado_por|default:"Sistema" }}</span></div>
+                <div class="ar"><span class="al">Modificado</span><span class="av">{{ responsable.modificado|date:"d/m/Y H:i" }}</span></div>
+                <div class="ar"><span class="al">Por</span><span class="av">{{ responsable.modificado_por|default:"Sistema" }}</span></div>
             </div>
         </div>
     </div>
 </div>
+{% endwith %}
 {% endblock %}

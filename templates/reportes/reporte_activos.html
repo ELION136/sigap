@@ -1,0 +1,358 @@
+{% extends 'base.html' %}
+
+{% block title %}Reporte de Activos · SIGAP{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb">
+    <a href="">Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'reportes:index' %}">Reportes</a>
+    <i class="fas fa-chevron-right"></i>
+    <span>Activos</span>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Page header ── */
+.rep-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+.rep-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+}
+.rep-title i { color: var(--accent2); }
+
+/* ── Stats row ── */
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: .85rem;
+    margin-bottom: 1.5rem;
+}
+.stat-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    padding: .9rem 1.1rem;
+    position: relative;
+    overflow: hidden;
+}
+.stat-box::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+}
+.stat-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+}
+.stat-lbl { font-size: .7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .07em; margin-top: 4px; }
+
+/* ── Filters ── */
+.filter-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .75rem;
+    align-items: flex-end;
+}
+.fg { display: flex; flex-direction: column; gap: .25rem; flex: 1; min-width: 140px; }
+.fg label { font-size: .68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; }
+.fi {
+    background: var(--bg); border: 1px solid var(--border2);
+    color: var(--text); border-radius: 7px; padding: .4rem .75rem;
+    font-size: .83rem; font-family: 'DM Sans', sans-serif; outline: none;
+    transition: border-color .2s; height: 34px; width: 100%;
+}
+.fi:focus { border-color: var(--accent); }
+
+/* ── Two-col layout ── */
+.rep-layout {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 1.25rem;
+    align-items: start;
+}
+@media (max-width: 960px) { .rep-layout { grid-template-columns: 1fr; } }
+
+/* ── Distribution cards ── */
+.dist-section { display: flex; flex-direction: column; gap: 1rem; }
+.dist-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+}
+.dist-card-header {
+    padding: .75rem 1rem;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    font-family: 'Syne', sans-serif;
+    font-size: .78rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+}
+.dist-card-header i { color: var(--accent2); }
+.dist-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .55rem 1rem;
+    border-bottom: 1px solid var(--border);
+    font-size: .82rem;
+    gap: .75rem;
+}
+.dist-item:last-child { border-bottom: none; }
+.dist-item-name { color: var(--text-subtle); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dist-bar-wrap { flex: 1; max-width: 80px; height: 4px; background: var(--surface2); border-radius: 9999px; }
+.dist-bar { height: 4px; background: var(--accent); border-radius: 9999px; min-width: 4px; }
+.dist-count { font-family: 'Syne', sans-serif; font-size: .82rem; font-weight: 700; color: var(--text); flex-shrink: 0; min-width: 24px; text-align: right; }
+
+/* ── Table ── */
+.btn-icon {
+    width: 28px; height: 28px; border-radius: 6px;
+    border: 1px solid var(--border2); background: var(--surface2);
+    color: var(--text-subtle); display: inline-flex; align-items: center;
+    justify-content: center; font-size: .73rem; text-decoration: none;
+    transition: background .15s, color .15s;
+}
+.btn-icon:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+.row-actions { display: flex; gap: .35rem; opacity: 0; transition: opacity .15s; }
+tr:hover .row-actions { opacity: 1; }
+
+.valor-cell { font-family: 'Syne', sans-serif; font-size: .8rem; color: #4ade80; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="rep-header">
+    <div class="rep-title"><i class="fas fa-boxes-stacked"></i> Reporte de Activos</div>
+    <a href="{% url 'reportes:exportar_activos' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}"
+       class="btn-primary" style="padding:.4rem 1rem;font-size:.82rem;">
+        <i class="fas fa-file-excel"></i> Exportar Excel
+    </a>
+</div>
+
+<!-- Stats -->
+<div class="stats-row">
+    <div class="stat-box">
+        <div class="stat-num">{{ stats.total }}</div>
+        <div class="stat-lbl">Total activos</div>
+    </div>
+    <div class="stat-box">
+        <div class="stat-num">{{ stats.por_tipo|length }}</div>
+        <div class="stat-lbl">Tipos distintos</div>
+    </div>
+    <div class="stat-box">
+        <div class="stat-num">{{ stats.por_planta|length }}</div>
+        <div class="stat-lbl">Plantas</div>
+    </div>
+    <div class="stat-box" style="border-color:rgba(74,222,128,.2);">
+        <div class="stat-num" style="color:#4ade80;font-size:1.15rem;">
+            {{ stats.valor_total|floatformat:0 }}
+        </div>
+        <div class="stat-lbl">Valor total (BOB)</div>
+    </div>
+</div>
+
+<!-- Filters -->
+<form method="get" class="filter-card">
+    <div class="fg">
+        <label>Planta</label>
+        <select name="planta" class="fi">
+            <option value="">Todas</option>
+            {% for p in plantas %}
+            <option value="{{ p.id }}" {% if filtros.planta == p.id|stringformat:"s" %}selected{% endif %}>{{ p.nombre }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="fg">
+        <label>Tipo</label>
+        <select name="tipo" class="fi">
+            <option value="">Todos</option>
+            {% for t in tipos %}
+            <option value="{{ t.id }}" {% if filtros.tipo == t.id|stringformat:"s" %}selected{% endif %}>{{ t.nombre }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="fg">
+        <label>Estado</label>
+        <select name="estado" class="fi">
+            <option value="">Todos</option>
+            {% for e in estados %}
+            <option value="{{ e.id }}" {% if filtros.estado == e.id|stringformat:"s" %}selected{% endif %}>{{ e.nombre }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="fg">
+        <label>Responsable</label>
+        <select name="responsable" class="fi">
+            <option value="">Todos</option>
+            {% for r in responsables %}
+            <option value="{{ r.id }}" {% if filtros.responsable == r.id|stringformat:"s" %}selected{% endif %}>{{ r }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div style="display:flex;gap:.4rem;align-items:flex-end;">
+        <button type="submit" class="btn-primary" style="height:34px;padding:0 1rem;font-size:.82rem;">
+            <i class="fas fa-filter"></i> Filtrar
+        </button>
+        {% if filtros.planta or filtros.tipo or filtros.estado or filtros.responsable %}
+        <a href="{% url 'reportes:reporte_activos' %}" class="btn-icon" title="Limpiar" style="width:34px;height:34px;">
+            <i class="fas fa-xmark"></i>
+        </a>
+        {% endif %}
+    </div>
+</form>
+
+<!-- Layout -->
+<div class="rep-layout">
+
+    <!-- Table -->
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fas fa-table"></i> Activos ({{ stats.total }}{% if stats.total > 100 %}, mostrando 100{% endif %})</h3>
+        </div>
+        <div class="table-container card-body p-0">
+            {% if activos %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Nombre</th>
+                        <th>Tipo</th>
+                        <th>Estado</th>
+                        <th>Planta</th>
+                        <th>Responsable</th>
+                        <th>Valor actual</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in activos %}
+                    <tr>
+                        <td style="font-family:'Syne',sans-serif;font-size:.78rem;color:var(--accent2);">
+                            {{ a.codigo }}
+                        </td>
+                        <td class="font-medium">{{ a.nombre }}</td>
+                        <td>
+                            {% if a.tipo %}
+                            <span class="badge badge-blue" style="font-size:.65rem;">{{ a.tipo.nombre }}</span>
+                            {% else %}—{% endif %}
+                        </td>
+                        <td>
+                            {% if a.estado %}
+                            <span class="badge badge-{{ a.estado.color|default:'gray' }}" style="font-size:.65rem;">{{ a.estado.nombre }}</span>
+                            {% else %}—{% endif %}
+                        </td>
+                        <td style="font-size:.8rem;color:var(--text-subtle);">
+                            {{ a.ubicacion.planta.nombre|default:"—" }}
+                        </td>
+                        <td style="font-size:.8rem;color:var(--text-subtle);">
+                            {{ a.responsable|default:"—" }}
+                        </td>
+                        <td class="valor-cell">
+                            {% if a.valor_actual %}{{ a.valor_actual|floatformat:0 }}{% else %}—{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div style="text-align:center;padding:3rem;color:var(--text-muted);">
+                <i class="fas fa-boxes-stacked" style="font-size:2rem;opacity:.25;display:block;margin-bottom:.75rem;"></i>
+                <p style="font-size:.88rem;">Sin activos para los filtros seleccionados.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Distribution sidebar -->
+    <div class="dist-section">
+
+        <!-- Por tipo -->
+        <div class="dist-card">
+            <div class="dist-card-header"><i class="fas fa-tag"></i> Por tipo</div>
+            {% for item in stats.por_tipo %}
+            {% with max_val=stats.por_tipo.0.cantidad %}
+            <div class="dist-item">
+                <span class="dist-item-name" title="{{ item.tipo__nombre }}">{{ item.tipo__nombre|default:"Sin tipo" }}</span>
+                <div class="dist-bar-wrap">
+                    <div class="dist-bar" style="width:{% widthratio item.cantidad max_val 100 %}%;"></div>
+                </div>
+                <span class="dist-count">{{ item.cantidad }}</span>
+            </div>
+            {% endwith %}
+            {% empty %}
+            <div style="padding:.75rem 1rem;font-size:.8rem;color:var(--text-muted);">Sin datos</div>
+            {% endfor %}
+        </div>
+
+        <!-- Por estado -->
+        <div class="dist-card">
+            <div class="dist-card-header"><i class="fas fa-circle-half-stroke"></i> Por estado</div>
+            {% for item in stats.por_estado %}
+            {% with max_val=stats.por_estado.0.cantidad %}
+            <div class="dist-item">
+                <span class="dist-item-name">{{ item.estado__nombre|default:"Sin estado" }}</span>
+                <div class="dist-bar-wrap">
+                    <div class="dist-bar" style="width:{% widthratio item.cantidad max_val 100 %}%;background:var(--accent2);"></div>
+                </div>
+                <span class="dist-count">{{ item.cantidad }}</span>
+            </div>
+            {% endwith %}
+            {% empty %}
+            <div style="padding:.75rem 1rem;font-size:.8rem;color:var(--text-muted);">Sin datos</div>
+            {% endfor %}
+        </div>
+
+        <!-- Por planta -->
+        <div class="dist-card">
+            <div class="dist-card-header"><i class="fas fa-industry"></i> Por planta</div>
+            {% for item in stats.por_planta %}
+            {% with max_val=stats.por_planta.0.cantidad %}
+            <div class="dist-item">
+                <span class="dist-item-name">{{ item.ubicacion__planta__nombre|default:"Sin planta" }}</span>
+                <div class="dist-bar-wrap">
+                    <div class="dist-bar" style="width:{% widthratio item.cantidad max_val 100 %}%;background:#8b5cf6;"></div>
+                </div>
+                <span class="dist-count">{{ item.cantidad }}</span>
+            </div>
+            {% endwith %}
+            {% empty %}
+            <div style="padding:.75rem 1rem;font-size:.8rem;color:var(--text-muted);">Sin datos</div>
+            {% endfor %}
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

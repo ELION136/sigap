@@ -1,296 +1,240 @@
 {% extends 'base.html' %}
-
 {% block title %}Responsables - SIGAP{% endblock %}
-
-{% block page_title %}Gestión de Responsables{% endblock %}
+{% block page_title %}Responsables{% endblock %}
 
 {% block breadcrumbs %}
-<nav class="mb-4 text-sm">
-    <ol class="list-none p-0 inline-flex">
-        <li class="flex items-center">
-            <a href="/" class="text-primary-600 hover:text-primary-800">Inicio</a>
-            <i class="fas fa-chevron-right mx-2 text-gray-400 text-xs"></i>
-        </li>
-        <li class="flex items-center">
-            <a href="{% url 'organizacion:responsable_list' %}" class="text-primary-600 hover:text-primary-800">Organización</a>
-            <i class="fas fa-chevron-right mx-2 text-gray-400 text-xs"></i>
-        </li>
-        <li class="text-gray-600">Responsables</li>
-    </ol>
+<nav class="breadcrumb">
+    <a href="{% url 'core:dashboard' %}"><i class="fas fa-house"></i> Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <span>Responsables</span>
 </nav>
 {% endblock %}
 
+{% block extra_css %}
+<style>
+.toolbar{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;margin-bottom:1.25rem}
+.toolbar-left{flex:1;display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+.toolbar-right{display:flex;gap:.5rem;flex-shrink:0}
+.search-wrap{position:relative;min-width:200px;max-width:300px;flex:1}
+.search-wrap input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:.55rem 1rem .55rem 2.4rem;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.875rem;outline:none;transition:border-color .2s,background .2s}
+.search-wrap input::placeholder{color:var(--text-muted)}
+.search-wrap input:focus{border-color:var(--accent);background:rgba(37,99,235,.06)}
+.search-wrap i{position:absolute;left:.8rem;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:.8rem;pointer-events:none}
+.f-sel{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:.52rem 2rem .52rem .875rem;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.82rem;outline:none;appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7280'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right .65rem center}
+.f-sel:focus{border-color:var(--accent);outline:none}
+.f-sel option{background:#1a2236}
+.clear-btn{display:flex;align-items:center;gap:.4rem;padding:.5rem .75rem;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text-muted);font-size:.82rem;text-decoration:none;transition:background .15s,color .15s;white-space:nowrap}
+.clear-btn:hover{background:rgba(255,255,255,.08);color:var(--text)}
+
+/* Tipo filter tabs */
+.tipo-tabs{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1.25rem}
+.tt{display:inline-flex;align-items:center;gap:.35rem;padding:.28rem .8rem;border-radius:9999px;font-size:.75rem;font-weight:500;text-decoration:none;border:1px solid var(--border);background:transparent;color:var(--text-muted);transition:all .15s}
+.tt:hover{background:rgba(255,255,255,.06);color:var(--text)}
+.tt.active{border-color:rgba(37,99,235,.5);background:rgba(37,99,235,.12);color:#60a5fa}
+.tt i{font-size:.6rem}
+
+/* People grid */
+.people-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(275px,1fr));gap:1rem}
+
+/* Person card */
+.person-card{
+    background:var(--surface);border:1px solid var(--border);border-radius:14px;
+    overflow:hidden;display:flex;flex-direction:column;
+    transition:border-color .2s,transform .18s,box-shadow .22s;
+    animation:fadeUp .35s ease both;
+}
+.person-card:hover{border-color:var(--accent2);transform:translateY(-3px);box-shadow:0 12px 36px rgba(0,0,0,.4)}
+
+/* Top color bar */
+.pc-bar{height:3px;width:100%;flex-shrink:0;overflow:hidden;position:relative}
+.pc-bar::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.25) 50%,transparent 100%);animation:shimmer 2.5s ease-in-out infinite}
+.pb-interno    {background:linear-gradient(90deg,#1d4ed8,#60a5fa)}
+.pb-externo    {background:linear-gradient(90deg,#6d28d9,#a78bfa)}
+.pb-contratista{background:linear-gradient(90deg,#b45309,#fcd34d)}
+
+/* Head */
+.pc-head{padding:1.1rem 1.1rem .65rem;display:flex;align-items:flex-start;gap:.875rem}
+.pc-avatar{width:54px;height:54px;border-radius:12px;flex-shrink:0;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;font-size:1.4rem}
+.pc-avatar img{width:100%;height:100%;object-fit:cover}
+.av-interno    {background:rgba(29,78,216,.15);border:1px solid rgba(29,78,216,.3);color:#60a5fa}
+.av-externo    {background:rgba(109,40,217,.15);border:1px solid rgba(109,40,217,.3);color:#a78bfa}
+.av-contratista{background:rgba(180,83,9,.15);border:1px solid rgba(180,83,9,.3);color:#fcd34d}
+.av-online{position:absolute;bottom:-2px;right:-2px;width:13px;height:13px;border-radius:50%;background:#22c55e;border:2px solid var(--surface);box-shadow:0 0 0 2px rgba(34,197,94,.25)}
+.pc-info{flex:1;min-width:0}
+.pc-code{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--accent2);margin-bottom:.1rem}
+.pc-name{font-family:'Syne',sans-serif;font-size:.95rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-puesto{font-size:.72rem;color:var(--text-muted);margin-top:.15rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Chips */
+.pc-chips{padding:0 1.1rem .7rem;display:flex;gap:.35rem;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:.28rem;padding:.17rem .55rem;border-radius:9999px;font-size:.67rem;font-weight:600}
+.chip i{font-size:.52rem}
+.ch-interno    {background:rgba(29,78,216,.1);color:#60a5fa;border:1px solid rgba(29,78,216,.22)}
+.ch-externo    {background:rgba(109,40,217,.1);color:#a78bfa;border:1px solid rgba(109,40,217,.22)}
+.ch-contratista{background:rgba(180,83,9,.1);color:#fcd34d;border:1px solid rgba(180,83,9,.22)}
+.ch-on {background:rgba(34,197,94,.08);color:#4ade80;border:1px solid rgba(34,197,94,.2)}
+.ch-off{background:rgba(107,114,128,.08);color:#6b7280;border:1px solid rgba(107,114,128,.15)}
+
+/* Contact */
+.pc-contact{padding:.6rem 1.1rem;border-top:1px solid rgba(255,255,255,.045);display:flex;flex-direction:column;gap:.27rem;flex:1}
+.pc-ci{display:flex;align-items:center;gap:.45rem;font-size:.74rem;color:var(--text-muted);min-width:0}
+.pc-ci i{color:var(--accent2);font-size:.62rem;width:12px;text-align:center;flex-shrink:0;opacity:.75}
+.pc-ci span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.no-contact{font-size:.72rem;color:rgba(107,114,128,.3);font-style:italic;padding:.2rem 0}
+
+/* Footer */
+.pc-foot{padding:.55rem .875rem;border-top:1px solid rgba(255,255,255,.04);display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.015)}
+.pc-dept{font-size:.68rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;margin-right:.5rem;display:flex;align-items:center;gap:.3rem}
+.pc-dept i{font-size:.58rem;opacity:.45;flex-shrink:0}
+.pc-actions{display:flex;gap:.3rem;flex-shrink:0}
+.ab{width:26px;height:26px;border-radius:6px;background:rgba(255,255,255,.04);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:.68rem;text-decoration:none;transition:all .15s}
+.ab:hover{background:rgba(255,255,255,.08);color:var(--text);border-color:var(--border2)}
+.ab.d:hover{background:rgba(239,68,68,.1);color:#f87171;border-color:rgba(239,68,68,.3)}
+
+/* Empty */
+.empty-state{text-align:center;padding:4.5rem 2rem;background:var(--surface);border:1px solid var(--border);border-radius:14px;color:var(--text-muted)}
+.empty-state i{font-size:3rem;opacity:.1;display:block;margin-bottom:1rem}
+
+/* Pagination */
+.pag{display:flex;align-items:center;justify-content:center;gap:.4rem;margin-top:1.25rem}
+.pb-p{min-width:34px;height:34px;border-radius:8px;padding:0 .6rem;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-subtle);font-size:.82rem;text-decoration:none;transition:background .15s,color .15s}
+.pb-p:hover{background:rgba(255,255,255,.08);color:var(--text)}
+.pb-p.act{background:var(--accent);border-color:transparent;color:#fff;font-weight:600}
+.pb-p.dis{opacity:.3;pointer-events:none}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+@media(max-width:500px){.people-grid{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+
 {% block content %}
-<!-- Tarjeta de búsqueda y filtros -->
-<div class="bg-white rounded-2xl shadow-xl p-6 mb-8 border border-gray-100">
-    <div class="flex flex-col lg:flex-row justify-between items-center gap-4">
-        <div class="flex items-center gap-3">
-            
-            <div>
-                <h2 class="text-xl font-bold text-gray-800">Listado de Responsables</h2>
-                
+
+<div class="toolbar">
+    <div class="toolbar-left">
+        <form method="get" id="ff" style="display:contents">
+            <div class="search-wrap">
+                <i class="fas fa-search"></i>
+                <input type="text" name="q" value="{{ search_query|default:'' }}"
+                       placeholder="Nombre, código o email…"
+                       onchange="document.getElementById('ff').submit()">
             </div>
-        </div>
-        
-        <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-            <form method="get" class="flex-1 lg:w-80">
-                <div class="relative">
-                    <input type="text" 
-                           name="q" 
-                           value="{{ search_query }}"
-                           placeholder="Buscar por nombre, código o email..."
-                           class="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-primary-400 focus:ring-2 focus:ring-primary-200 transition-all outline-none">
-                    <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                    {% if search_query %}
-                    <a href="{% url 'organizacion:responsable_list' %}" 
-                       class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                        <i class="fas fa-times-circle"></i>
-                    </a>
-                    {% endif %}
-                </div>
-            </form>
-            
-            <a href="{% url 'organizacion:responsable_create' %}" 
-               class="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white px-6 py-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                <i class="fas fa-plus-circle"></i>
-                <span class="font-medium">Nuevo Responsable</span>
-            </a>
-        </div>
+            <select name="activo" class="f-sel" onchange="document.getElementById('ff').submit()">
+                <option value="">Todos los estados</option>
+                <option value="true"  {% if request.GET.activo == 'true'  %}selected{% endif %}>Activos</option>
+                <option value="false" {% if request.GET.activo == 'false' %}selected{% endif %}>Inactivos</option>
+            </select>
+            {% if search_query or request.GET.tipo or request.GET.activo %}
+            <a href="{% url 'organizacion:responsable_list' %}" class="clear-btn"><i class="fas fa-xmark"></i> Limpiar</a>
+            {% endif %}
+        </form>
     </div>
-    
-    <!-- Filtros rápidos 
-    <div class="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-100">
-        <span class="text-sm text-gray-500 mr-2">Filtrar por:</span>
-        <a href="{% url 'organizacion:responsable_list' %}" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm transition-colors {% if not request.GET.tipo and not request.GET.activo %}bg-primary-100 text-primary-700{% endif %}">
-            Todos
-        </a>
-        {% for codigo, nombre in tipos_responsable %}
-        <a href="?tipo={{ codigo }}" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm transition-colors {% if request.GET.tipo == codigo %}bg-primary-100 text-primary-700{% endif %}">
-            {{ nombre }}
-        </a>
-        {% endfor %}
-        <a href="?activo=true" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm transition-colors {% if request.GET.activo == 'true' %}bg-primary-100 text-primary-700{% endif %}">
-            Activos
-        </a>
-        <a href="?activo=false" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm transition-colors {% if request.GET.activo == 'false' %}bg-primary-100 text-primary-700{% endif %}">
-            Inactivos
-        </a>
-    </div>-->
+    <div class="toolbar-right">
+        {% if perms.organizacion.add_responsable %}
+        <a href="{% url 'organizacion:responsable_create' %}" class="btn-primary"><i class="fas fa-plus"></i> Nuevo Responsable</a>
+        {% endif %}
+    </div>
 </div>
 
-<!-- Tarjeta de la tabla -->
-<div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
-    <div class="bg-gradient-to-r from-gray-50 to-white px-6 py-4 border-b border-gray-200">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <i class="fas fa-table text-primary-500"></i>
-                <span class="font-medium text-gray-700">Responsables registrados</span>
+<!-- Tipo tabs -->
+<div class="tipo-tabs">
+    <a href="?{% if search_query %}q={{ search_query }}&{% endif %}{% if request.GET.activo %}activo={{ request.GET.activo }}{% endif %}"
+       class="tt {% if not request.GET.tipo %}active{% endif %}">
+        <i class="fas fa-users"></i> Todos ({{ page_obj.paginator.count }})
+    </a>
+    {% for codigo, nombre in tipos_responsable %}
+    <a href="?tipo={{ codigo }}{% if search_query %}&q={{ search_query }}{% endif %}{% if request.GET.activo %}&activo={{ request.GET.activo }}{% endif %}"
+       class="tt {% if request.GET.tipo == codigo %}active{% endif %}">
+        <i class="fas {% if codigo == 'INTERNO' %}fa-building{% elif codigo == 'EXTERNO' %}fa-handshake{% else %}fa-hard-hat{% endif %}"></i>
+        {{ nombre }}
+    </a>
+    {% endfor %}
+</div>
+
+{% if responsables %}
+<div class="people-grid">
+    {% for resp in responsables %}
+    {% with tl=resp.tipo|lower %}
+    <div class="person-card" style="animation-delay:{{ forloop.counter0 }}0ms;">
+        <div class="pc-bar pb-{{ tl }}"></div>
+
+        <div class="pc-head">
+            <div class="pc-avatar av-{{ tl }}">
+                {% if resp.foto %}<img src="{{ resp.foto.url }}" alt="{{ resp.nombre_completo }}">
+                {% else %}<i class="fas fa-user-tie"></i>{% endif %}
+                {% if resp.activo %}<div class="av-online"></div>{% endif %}
             </div>
-            <span class="text-sm bg-primary-100 text-primary-700 px-3 py-1 rounded-full">
-                {{ page_obj.paginator.count }} registros
+            <div class="pc-info">
+                <div class="pc-code">{{ resp.codigo }}</div>
+                <div class="pc-name">{{ resp.nombre_completo }}</div>
+                <div class="pc-puesto">{{ resp.puesto|default:"Sin puesto" }}</div>
+            </div>
+        </div>
+
+        <div class="pc-chips">
+            <span class="chip ch-{{ tl }}">
+                <i class="fas {% if resp.tipo == 'INTERNO' %}fa-building{% elif resp.tipo == 'EXTERNO' %}fa-handshake{% else %}fa-hard-hat{% endif %}"></i>
+                {{ resp.get_tipo_display }}
+            </span>
+            <span class="chip {% if resp.activo %}ch-on{% else %}ch-off{% endif %}">
+                <i class="fas fa-circle" style="font-size:.35rem;"></i>
+                {% if resp.activo %}Activo{% else %}Inactivo{% endif %}
             </span>
         </div>
-    </div>
-    
-    <div class="overflow-x-auto">
-        <table class="w-full">
-            <thead>
-                <tr class="bg-gray-50">
-                    <th class="px-6 py-4 text-left">
-                        <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">#</span>
-                    </th>
-                    <th class="px-6 py-4 text-left">
-                        <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Código</span>
-                    </th>
-                    <th class="px-6 py-4 text-left">
-                        <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Responsable</span>
-                    </th>
-                    <th class="px-6 py-4 text-left">
-                        <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Tipo</span>
-                    </th>
-                    <th class="px-6 py-4 text-left">
-                        <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Contacto</span>
-                    </th>
-                    <th class="px-6 py-4 text-left">
-                        <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Puesto</span>
-                    </th>
-                    <th class="px-6 py-4 text-left">
-                        <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Estado</span>
-                    </th>
-                    <th class="px-6 py-4 text-center">
-                        <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Acciones</span>
-                    </th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-                {% for responsable in responsables %}
-                <tr class="hover:bg-gray-50/80 transition-colors group">
-                    <td class="px-6 py-4">
-                        <span class="inline-flex items-center justify-center w-8 h-8 bg-gray-100 group-hover:bg-white rounded-lg text-sm font-medium text-gray-600 border border-gray-200">
-                            {{ page_obj.start_index|add:forloop.counter0 }}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4">
-                        <span class="font-mono font-medium text-gray-900">{{ responsable.codigo }}</span>
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="flex items-center gap-3">
-                            <div class="relative">
-                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-100 to-secondary-100 flex items-center justify-center shadow-sm overflow-hidden">
-                                    {% if responsable.foto %}
-                                    <img src="{{ responsable.foto.url }}" alt="{{ responsable.nombre_completo }}" class="w-full h-full object-cover">
-                                    {% else %}
-                                    <i class="fas fa-user-tie text-primary-600 text-lg"></i>
-                                    {% endif %}
-                                </div>
-                                {% if responsable.activo %}
-                                <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
-                                {% endif %}
-                            </div>
-                            <div>
-                                <p class="font-semibold text-gray-900">{{ responsable.nombre_completo }}</p>
-                                <p class="text-xs text-gray-500">{{ responsable.puesto|default:"Sin puesto" }}</p>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4">
-                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium
-                            {% if responsable.tipo == 'INTERNO' %}bg-blue-50 text-blue-700 border border-blue-200
-                            {% elif responsable.tipo == 'EXTERNO' %}bg-purple-50 text-purple-700 border border-purple-200
-                            {% elif responsable.tipo == 'CONTRATISTA' %}bg-orange-50 text-orange-700 border border-orange-200
-                            {% endif %}">
-                            <i class="fas 
-                                {% if responsable.tipo == 'INTERNO' %}fa-building
-                                {% elif responsable.tipo == 'EXTERNO' %}fa-handshake
-                                {% elif responsable.tipo == 'CONTRATISTA' %}fa-hard-hat
-                                {% endif %} text-xs">
-                            </i>
-                            {{ responsable.get_tipo_display }}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="space-y-1">
-                            {% if responsable.email %}
-                            <div class="flex items-center gap-2 text-sm">
-                                <i class="fas fa-envelope text-gray-400 w-4"></i>
-                                <span class="text-gray-600 truncate max-w-[150px]">{{ responsable.email }}</span>
-                            </div>
-                            {% endif %}
-                            {% if responsable.telefono %}
-                            <div class="flex items-center gap-2 text-sm">
-                                <i class="fas fa-phone text-gray-400 w-4"></i>
-                                <span class="text-gray-600">{{ responsable.telefono }}</span>
-                            </div>
-                            {% endif %}
-                        </div>
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="text-sm text-gray-600">
-                            {{ responsable.puesto|default:"-" }}
-                        </div>
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="flex items-center gap-2">
-                            <div class="relative">
-                                <div class="w-10 h-5 {% if responsable.activo %}bg-green-500{% else %}bg-gray-300{% endif %} rounded-full transition-colors">
-                                    <div class="absolute w-4 h-4 bg-white rounded-full shadow-sm top-0.5 {% if responsable.activo %}right-0.5{% else %}left-0.5{% endif %} transition-all"></div>
-                                </div>
-                            </div>
-                            <span class="text-xs font-medium {% if responsable.activo %}text-green-600{% else %}text-gray-500{% endif %}">
-                                {% if responsable.activo %}Activo{% else %}Inactivo{% endif %}
-                            </span>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="flex items-center justify-center gap-2">
-                            <a href="{% url 'organizacion:responsable_detail' responsable.pk %}" 
-                               class="w-9 h-9 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center transition-all hover:scale-110"
-                               title="Ver detalle">
-                                <i class="fas fa-eye"></i>
-                            </a>
-                            <a href="{% url 'organizacion:responsable_update' responsable.pk %}" 
-                               class="w-9 h-9 bg-green-50 hover:bg-green-100 text-green-600 rounded-lg flex items-center justify-center transition-all hover:scale-110"
-                               title="Editar responsable">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                            <a href="{% url 'organizacion:responsable_delete' responsable.pk %}" 
-                               class="w-9 h-9 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg flex items-center justify-center transition-all hover:scale-110"
-                               title="Eliminar responsable">
-                                <i class="fas fa-trash-alt"></i>
-                            </a>
-                        </div>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="8" class="px-6 py-16">
-                        <div class="flex flex-col items-center justify-center text-center">
-                            <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                                <i class="fas fa-user-tie text-gray-400 text-4xl"></i>
-                            </div>
-                            <h3 class="text-lg font-semibold text-gray-700 mb-2">No hay responsables</h3>
-                            <p class="text-gray-500 mb-4">No se encontraron responsables con los filtros aplicados.</p>
-                            {% if search_query %}
-                            <a href="{% url 'organizacion:responsable_list' %}" class="text-primary-600 hover:text-primary-700 font-medium">
-                                ← Volver a la lista completa
-                            </a>
-                            {% endif %}
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    
-    <!-- Información de resultados -->
-    <div class="bg-gray-50 px-6 py-3 border-t border-gray-200">
-        <p class="text-sm text-gray-600">
-            Mostrando {{ page_obj.start_index }} - {{ page_obj.end_index }} de {{ page_obj.paginator.count }} responsables
-        </p>
-    </div>
-</div>
 
-<!-- Paginación -->
-{% if is_paginated %}
-<div class="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-    <div class="text-sm text-gray-600 bg-white px-4 py-2 rounded-lg shadow-sm">
-        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+        <div class="pc-contact">
+            {% if resp.email %}<div class="pc-ci"><i class="fas fa-envelope"></i><span>{{ resp.email }}</span></div>{% endif %}
+            {% if resp.telefono %}<div class="pc-ci"><i class="fas fa-phone"></i><span>{{ resp.telefono }}</span></div>{% endif %}
+            {% if resp.telefono_movil %}<div class="pc-ci"><i class="fas fa-mobile-screen"></i><span>{{ resp.telefono_movil }}</span></div>{% endif %}
+            {% if not resp.email and not resp.telefono and not resp.telefono_movil %}<div class="no-contact">Sin datos de contacto</div>{% endif %}
+        </div>
+
+        <div class="pc-foot">
+            <span class="pc-dept"><i class="fas fa-sitemap"></i>{{ resp.departamento|default:"Sin departamento" }}</span>
+            <div class="pc-actions">
+                <a href="{% url 'organizacion:responsable_detail' resp.pk %}" class="ab" title="Ver"><i class="fas fa-eye"></i></a>
+                {% if perms.organizacion.change_responsable %}
+                <a href="{% url 'organizacion:responsable_update' resp.pk %}" class="ab" title="Editar"><i class="fas fa-pen"></i></a>
+                {% endif %}
+                {% if perms.organizacion.delete_responsable %}
+                <a href="{% url 'organizacion:responsable_delete' resp.pk %}" class="ab d" title="Eliminar"><i class="fas fa-trash"></i></a>
+                {% endif %}
+            </div>
+        </div>
     </div>
-    
-    <div class="flex items-center gap-2">
-        {% if page_obj.has_previous %}
-        <a href="?page=1{% if search_query %}&q={{ search_query }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}{% if request.GET.activo %}&activo={{ request.GET.activo }}{% endif %}" 
-           class="w-10 h-10 bg-white border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-50 transition-all hover:border-primary-400"
-           title="Primera página">
-            <i class="fas fa-chevron-left"></i>
-            <i class="fas fa-chevron-left -ml-2"></i>
-        </a>
-        <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}{% if request.GET.activo %}&activo={{ request.GET.activo }}{% endif %}" 
-           class="w-10 h-10 bg-white border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-50 transition-all hover:border-primary-400"
-           title="Página anterior">
-            <i class="fas fa-chevron-left"></i>
-        </a>
-        {% endif %}
-        
-        <span class="w-10 h-10 bg-primary-600 text-white rounded-lg flex items-center justify-center font-semibold shadow-md">
-            {{ page_obj.number }}
-        </span>
-        
-        {% if page_obj.has_next %}
-        <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}{% if request.GET.activo %}&activo={{ request.GET.activo }}{% endif %}" 
-           class="w-10 h-10 bg-white border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-50 transition-all hover:border-primary-400"
-           title="Página siguiente">
-            <i class="fas fa-chevron-right"></i>
-        </a>
-        <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&q={{ search_query }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}{% if request.GET.activo %}&activo={{ request.GET.activo }}{% endif %}" 
-           class="w-10 h-10 bg-white border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-50 transition-all hover:border-primary-400"
-           title="Última página">
-            <i class="fas fa-chevron-right"></i>
-            <i class="fas fa-chevron-right -ml-2"></i>
-        </a>
-        {% endif %}
-    </div>
+    {% endwith %}
+    {% endfor %}
 </div>
+{% else %}
+<div class="empty-state">
+    <i class="fas fa-user-tie"></i>
+    <p style="font-size:.95rem;font-weight:500;margin-bottom:.35rem;">No se encontraron responsables</p>
+    <p style="font-size:.82rem;">{% if search_query %}Prueba otro término de búsqueda.{% else %}Comienza creando el primer responsable.{% endif %}</p>
+    {% if perms.organizacion.add_responsable %}
+    <a href="{% url 'organizacion:responsable_create' %}" class="btn-primary" style="display:inline-flex;margin-top:1.25rem;"><i class="fas fa-plus"></i> Nuevo Responsable</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if is_paginated %}
+{% with q=search_query tipo=request.GET.tipo activo=request.GET.activo %}
+<div class="pag">
+    {% if page_obj.has_previous %}
+    <a href="?page=1{% if q %}&q={{ q }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}{% if activo %}&activo={{ activo }}{% endif %}" class="pb-p"><i class="fas fa-angles-left"></i></a>
+    <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}{% if activo %}&activo={{ activo }}{% endif %}" class="pb-p"><i class="fas fa-angle-left"></i></a>
+    {% else %}
+    <span class="pb-p dis"><i class="fas fa-angles-left"></i></span>
+    <span class="pb-p dis"><i class="fas fa-angle-left"></i></span>
+    {% endif %}
+    <span class="pb-p act">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}{% if activo %}&activo={{ activo }}{% endif %}" class="pb-p"><i class="fas fa-angle-right"></i></a>
+    <a href="?page={{ page_obj.paginator.num_pages }}{% if q %}&q={{ q }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}{% if activo %}&activo={{ activo }}{% endif %}" class="pb-p"><i class="fas fa-angles-right"></i></a>
+    {% else %}
+    <span class="pb-p dis"><i class="fas fa-angle-right"></i></span>
+    <span class="pb-p dis"><i class="fas fa-angles-right"></i></span>
+    {% endif %}
+</div>
+{% endwith %}
 {% endif %}
 {% endblock %}

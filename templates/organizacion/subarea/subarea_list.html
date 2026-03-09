@@ -1,181 +1,277 @@
 {% extends 'base.html' %}
-
 {% block title %}Subáreas - SIGAP{% endblock %}
-
 {% block page_title %}Subáreas{% endblock %}
 
 {% block breadcrumbs %}
-<nav class="mb-4">
-    <ol class="flex items-center space-x-2 text-sm text-gray-500">
-        <li><a href="{% url 'core:dashboard' %}" class="hover:text-primary-600"><i class="fas fa-home"></i></a></li>
-        <li><i class="fas fa-chevron-right text-xs"></i></li>
-        <li><a href="{% url 'organizacion:subarea_list' %}" class="hover:text-primary-600">Organización</a></li>
-        <li><i class="fas fa-chevron-right text-xs"></i></li>
-        <li class="text-gray-700">Subáreas</li>
-    </ol>
+<nav class="breadcrumb">
+    <a href="{% url 'core:dashboard' %}"><i class="fas fa-house"></i> Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'organizacion:planta_list' %}">Plantas</a>
+    <i class="fas fa-chevron-right"></i>
+    <span>Subáreas</span>
 </nav>
 {% endblock %}
 
-{% block content %}
-<!-- Header con acciones -->
-<div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-    <div class="mb-4 md:mb-0">
-        <h2 class="text-2xl font-bold text-gray-800">Subáreas</h2>
-        <p class="text-gray-500 mt-1">Gestión de subáreas y departamentos internos</p>
-    </div>
-    <div class="flex space-x-3">
-        {% if perms.organizacion.add_subarea %}
-        <a href="{% url 'organizacion:subarea_create' %}" class="btn-primary">
-            <i class="fas fa-plus mr-2"></i>Nueva Subárea
-        </a>
-        {% endif %}
-    </div>
-</div>
+{% block extra_css %}
+<style>
+.toolbar{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;margin-bottom:1.25rem}
+.toolbar-left{flex:1;display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+.toolbar-right{display:flex;gap:.5rem;flex-shrink:0;align-items:center}
+.search-wrap{position:relative;min-width:170px;max-width:220px;flex:1}
+.search-wrap input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:.55rem 1rem .55rem 2.4rem;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.875rem;outline:none;transition:border-color .2s,background .2s}
+.search-wrap input::placeholder{color:var(--text-muted)}
+.search-wrap input:focus{border-color:var(--accent);background:rgba(37,99,235,.06)}
+.search-wrap i{position:absolute;left:.8rem;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:.8rem;pointer-events:none}
+.f-sel{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:.52rem 2rem .52rem .875rem;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.82rem;outline:none;appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7280'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right .65rem center;transition:border-color .2s}
+.f-sel:focus{border-color:var(--accent);outline:none}
+.f-sel option{background:#1a2236}
 
-<!-- Filtros -->
-<div class="card mb-6">
-    <div class="card-body">
-        <form method="get" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-            <div>
-                <label class="form-label">Área</label>
-                <select name="area" class="form-select">
-                    <option value="">Todas las áreas</option>
-                    {% for area in areas %}
-                    <option value="{{ area.id }}" {% if request.GET.area == area.id|stringformat:"s" %}selected{% endif %}>
-                        {{ area.nombre }} ({{ area.nivel.planta.nombre }})
-                    </option>
-                    {% endfor %}
-                </select>
+/* ─── Tree / hierarchy layout ─── */
+/* Each row = a subarea. Visual tree connector shows Planta → Nivel → Área → Subárea */
+.tree-wrap{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+
+.tree-head{display:grid;grid-template-columns:2fr 200px 150px 150px 90px 76px;gap:0;border-bottom:1px solid var(--border);background:var(--surface2);padding:0 1.25rem}
+.th-cell{padding:.7rem .5rem;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted)}
+.th-cell:last-child{text-align:right}
+
+.tree-row{display:grid;grid-template-columns:2fr 200px 150px 150px 90px 76px;gap:0;border-bottom:1px solid rgba(255,255,255,.04);padding:0 1.25rem;align-items:center;transition:background .15s;animation:fadeUp .3s ease both}
+.tree-row:last-child{border-bottom:none}
+.tree-row:hover{background:rgba(255,255,255,.022)}
+.tc{padding:.8rem .5rem}
+
+/* ─── Identity cell: subarea name with path trail ─── */
+.id-cell{display:flex;align-items:center;gap:.875rem}
+
+/* Path trail — vertical line + dots simulating tree */
+.path-trail{display:flex;flex-direction:column;align-items:center;gap:0;flex-shrink:0;width:18px;position:relative}
+.pt-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.pt-dot.d1{background:rgba(37,99,235,.4);box-shadow:0 0 0 2px rgba(37,99,235,.1)}  /* planta */
+.pt-dot.d2{background:rgba(56,189,248,.4);box-shadow:0 0 0 2px rgba(56,189,248,.1)}  /* nivel */
+.pt-dot.d3{background:rgba(99,102,241,.4);box-shadow:0 0 0 2px rgba(99,102,241,.1)}  /* area */
+.pt-dot.d4{background:var(--accent);width:10px;height:10px;box-shadow:0 0 0 3px rgba(37,99,235,.2)}  /* subarea */
+.pt-line{width:1.5px;height:6px;background:rgba(255,255,255,.07);flex-shrink:0}
+
+.id-info{min-width:0;flex:1}
+.id-path{font-size:.63rem;color:var(--text-muted);display:flex;align-items:center;gap:.2rem;flex-wrap:wrap;margin-bottom:.2rem;line-height:1.4}
+.id-path a{color:var(--accent2);text-decoration:none;font-weight:500;transition:color .15s}
+.id-path a:hover{color:var(--text)}
+.id-path .sep{color:rgba(255,255,255,.12);font-size:.55rem}
+.id-code{font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--accent2)}
+.id-name{font-family:'Syne',sans-serif;font-size:.9rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:none}
+.id-name:hover{color:var(--accent2)}
+.id-desc{font-size:.72rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:.05rem}
+
+/* ─── Responsible cell ─── */
+.resp-cell{display:flex;align-items:center;gap:.45rem}
+.resp-av{width:26px;height:26px;border-radius:50%;flex-shrink:0;background:rgba(37,99,235,.12);border:1px solid rgba(37,99,235,.2);display:flex;align-items:center;justify-content:center;font-size:.62rem;color:#60a5fa}
+.resp-name{font-size:.78rem;color:var(--text-subtle);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.resp-none{font-size:.78rem;color:rgba(107,114,128,.4);font-style:italic}
+
+/* ─── Planta / nivel / area chips ─── */
+.loc-chip{display:inline-flex;align-items:center;gap:.3rem;padding:.18rem .55rem;border-radius:7px;font-size:.72rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
+.lc-planta{background:rgba(37,99,235,.08);color:#60a5fa;border:1px solid rgba(37,99,235,.15)}
+.lc-nivel{background:rgba(56,189,248,.08);color:#38bdf8;border:1px solid rgba(56,189,248,.15)}
+.lc-area{background:rgba(99,102,241,.08);color:#a5b4fc;border:1px solid rgba(99,102,241,.15)}
+.loc-chip i{font-size:.58rem;flex-shrink:0}
+
+/* ─── Status ─── */
+.sc{display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .6rem;border-radius:9999px;font-size:.7rem;font-weight:600}
+.sc-on{background:rgba(34,197,94,.1);color:#4ade80;border:1px solid rgba(34,197,94,.2)}
+.sc-off{background:rgba(107,114,128,.1);color:#6b7280;border:1px solid rgba(107,114,128,.15)}
+
+/* ─── Actions ─── */
+.act-col{display:flex;gap:.3rem;justify-content:flex-end}
+.ab{width:28px;height:28px;border-radius:7px;background:rgba(255,255,255,.04);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:.7rem;text-decoration:none;transition:background .15s,color .15s,border-color .15s}
+.ab:hover{background:rgba(255,255,255,.08);color:var(--text);border-color:var(--border2)}
+.ab.d:hover{background:rgba(239,68,68,.1);color:#f87171;border-color:rgba(239,68,68,.3)}
+
+/* Empty */
+.empty-tree{padding:3.5rem 2rem;text-align:center;color:var(--text-muted)}
+.empty-tree i{font-size:2.5rem;opacity:.12;display:block;margin-bottom:.75rem}
+
+/* Pagination */
+.pag{display:flex;align-items:center;justify-content:center;gap:.4rem;margin-top:1.25rem}
+.pb{min-width:34px;height:34px;border-radius:8px;padding:0 .6rem;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-subtle);font-size:.82rem;text-decoration:none;transition:background .15s,color .15s}
+.pb:hover{background:rgba(255,255,255,.08);color:var(--text)}
+.pb.act{background:var(--accent);border-color:transparent;color:#fff;font-weight:600}
+.pb.dis{opacity:.35;pointer-events:none}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media(max-width:1100px){.tree-wrap{overflow-x:auto}.tree-head,.tree-row{min-width:860px}}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="toolbar">
+    <div class="toolbar-left">
+        <form method="get" id="ff" style="display:contents;">
+            <div class="search-wrap">
+                <i class="fas fa-search"></i>
+                <input type="text" name="q" value="{{ request.GET.q|default:'' }}"
+                       placeholder="Código o nombre…"
+                       onchange="document.getElementById('ff').submit()">
             </div>
-            <div class="flex items-end space-x-2 md:col-span-2">
-                <button type="submit" class="btn-primary">
-                    <i class="fas fa-filter mr-2"></i>Filtrar
-                </button>
-                {% if request.GET.area %}
-                <a href="{% url 'organizacion:subarea_list' %}" class="btn-secondary">
-                    <i class="fas fa-times mr-2"></i>Limpiar
-                </a>
-                {% endif %}
-            </div>
+            <select name="area" class="f-sel" onchange="document.getElementById('ff').submit()">
+                <option value="">Todas las áreas</option>
+                {% for a in areas %}
+                <option value="{{ a.id }}" {% if request.GET.area == a.id|stringformat:"s" %}selected{% endif %}>
+                    {{ a.nombre }}{% if a.nivel and a.nivel.planta %} · {{ a.nivel.planta.nombre }}{% endif %}
+                </option>
+                {% endfor %}
+            </select>
+            {% if request.GET.area or request.GET.q %}
+            <a href="{% url 'organizacion:subarea_list' %}" style="display:flex;align-items:center;gap:.4rem;padding:.5rem .75rem;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text-muted);font-size:.82rem;text-decoration:none;">
+                <i class="fas fa-xmark"></i> Limpiar
+            </a>
+            {% endif %}
         </form>
     </div>
-</div>
-
-<!-- Tabla -->
-<div class="card">
-    <div class="card-body p-0">
-        <div class="table-container">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Código</th>
-                        <th>Nombre</th>
-                        <th>Área / Nivel / Planta</th>
-                        <th>Responsable</th>
-                        <th>Estado</th>
-                        <th class="text-right">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for subarea in subareas %}
-                    <tr class="hover:bg-gray-50">
-                        <td class="font-medium">{{ subarea.codigo }}</td>
-                        <td>
-                            <a href="{% url 'organizacion:subarea_detail' subarea.pk %}" class="text-primary-600 hover:text-primary-800 font-medium">
-                                {{ subarea.nombre }}
-                            </a>
-                        </td>
-                        <td>
-                            <div class="text-sm">
-                                <p>{{ subarea.area.nombre }}</p>
-                                <p class="text-gray-500">{{ subarea.area.nivel.nombre }} (Nivel {{ subarea.area.nivel.numero_nivel }})</p>
-                                <p class="text-gray-400 text-xs">{{ subarea.area.nivel.planta.nombre }}</p>
-                            </div>
-                        </td>
-                        <td>{{ subarea.responsable.get_full_name|default:subarea.responsable.username|default:"-" }}</td>
-                        <td>
-                            {% if subarea.activa %}
-                            <span class="badge badge-green">Activa</span>
-                            {% else %}
-                            <span class="badge badge-gray">Inactiva</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-right">
-                            <div class="flex items-center justify-end space-x-2">
-                                <a href="{% url 'organizacion:subarea_detail' subarea.pk %}" 
-                                   class="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50"
-                                   title="Ver detalle">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                {% if perms.organizacion.change_subarea %}
-                                <a href="{% url 'organizacion:subarea_update' subarea.pk %}" 
-                                   class="text-yellow-600 hover:text-yellow-800 p-2 rounded-lg hover:bg-yellow-50"
-                                   title="Editar">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                {% endif %}
-                                {% if perms.organizacion.delete_subarea %}
-                                <a href="{% url 'organizacion:subarea_delete' subarea.pk %}" 
-                                   class="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50"
-                                   title="Eliminar"
-                                   onclick="return confirm('¿Está seguro de eliminar esta subárea?')">
-                                    <i class="fas fa-trash"></i>
-                                </a>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" class="text-center py-8">
-                            <div class="text-gray-500">
-                                <i class="fas fa-sitemap text-4xl mb-3"></i>
-                                <p>No se encontraron subáreas</p>
-                                {% if request.GET.area %}
-                                <p class="text-sm mt-1">Intente con otro filtro</p>
-                                {% else %}
-                                <p class="text-sm mt-1">Comience creando una nueva subárea</p>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+    <div class="toolbar-right">
+        {% if perms.organizacion.add_subarea %}
+        <a href="{% url 'organizacion:subarea_create' %}" class="btn-primary"><i class="fas fa-plus"></i> Nueva Subárea</a>
+        {% endif %}
     </div>
 </div>
 
-<!-- Paginación (si está paginada) -->
-{% if is_paginated %}
-<div class="mt-6 flex justify-center">
-    <nav class="flex items-center space-x-2">
-        {% if page_obj.has_previous %}
-        <a href="?page=1{% if request.GET.area %}&area={{ request.GET.area }}{% endif %}" 
-           class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50">
-            <i class="fas fa-angle-double-left"></i>
-        </a>
-        <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.area %}&area={{ request.GET.area }}{% endif %}" 
-           class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50">
-            <i class="fas fa-angle-left"></i>
-        </a>
+<div class="tree-wrap">
+    <div class="tree-head">
+        <div class="th-cell">Subárea</div>
+        <div class="th-cell">Área</div>
+        <div class="th-cell">Nivel</div>
+        <div class="th-cell">Responsable</div>
+        <div class="th-cell">Estado</div>
+        <div class="th-cell">Acciones</div>
+    </div>
+
+    {% for subarea in subareas %}
+    <div class="tree-row" style="animation-delay:{{ forloop.counter0 }}0ms;">
+
+        <!-- Identity + path trail -->
+        <div class="tc">
+            <div class="id-cell">
+                <!-- Visual tree connector -->
+                <div class="path-trail">
+                    <div class="pt-dot d1"></div>
+                    <div class="pt-line"></div>
+                    <div class="pt-dot d2"></div>
+                    <div class="pt-line"></div>
+                    <div class="pt-dot d3"></div>
+                    <div class="pt-line"></div>
+                    <div class="pt-dot d4"></div>
+                </div>
+                <div class="id-info">
+                    <!-- Breadcrumb path mini -->
+                    <div class="id-path">
+                        {% if subarea.area and subarea.area.nivel and subarea.area.nivel.planta %}
+                        <a href="{{ subarea.area.nivel.planta.get_absolute_url }}">{{ subarea.area.nivel.planta.nombre }}</a>
+                        <span class="sep"><i class="fas fa-chevron-right"></i></span>
+                        <a href="{% url 'organizacion:nivel_detail' subarea.area.nivel.pk %}">{{ subarea.area.nivel.nombre }}</a>
+                        <span class="sep"><i class="fas fa-chevron-right"></i></span>
+                        <a href="{% url 'organizacion:area_detail' subarea.area.pk %}">{{ subarea.area.nombre }}</a>
+                        {% elif subarea.area %}
+                        <a href="{% url 'organizacion:area_detail' subarea.area.pk %}">{{ subarea.area.nombre }}</a>
+                        {% else %}
+                        <span style="color:rgba(239,68,68,.5);font-style:italic;">Sin área</span>
+                        {% endif %}
+                    </div>
+                    <div class="id-code">{{ subarea.codigo }}</div>
+                    <a href="{% url 'organizacion:subarea_detail' subarea.pk %}" class="id-name">{{ subarea.nombre }}</a>
+                    {% if subarea.descripcion %}<div class="id-desc">{{ subarea.descripcion }}</div>{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Área chip -->
+        <div class="tc">
+            {% if subarea.area %}
+            <span class="loc-chip lc-area">
+                <i class="fas fa-map-signs"></i>
+                {{ subarea.area.nombre }}
+            </span>
+            {% else %}
+            <span style="font-size:.78rem;color:rgba(107,114,128,.35);font-style:italic;">—</span>
+            {% endif %}
+        </div>
+
+        <!-- Nivel chip -->
+        <div class="tc">
+            {% if subarea.area and subarea.area.nivel %}
+            <span class="loc-chip lc-nivel">
+                <i class="fas fa-layer-group"></i>
+                {{ subarea.area.nivel.nombre }}
+                <span style="opacity:.6;font-size:.62rem;">({% if subarea.area.nivel.numero_nivel > 0 %}+{% endif %}{{ subarea.area.nivel.numero_nivel }})</span>
+            </span>
+            {% else %}
+            <span style="font-size:.78rem;color:rgba(107,114,128,.35);font-style:italic;">—</span>
+            {% endif %}
+        </div>
+
+        <!-- Responsable -->
+        <div class="tc">
+            {% if subarea.responsable %}
+            <div class="resp-cell">
+                <div class="resp-av"><i class="fas fa-user"></i></div>
+                <span class="resp-name">{{ subarea.responsable.nombre_completo|default:subarea.responsable.get_full_name }}</span>
+            </div>
+            {% else %}
+            <span class="resp-none">Sin responsable</span>
+            {% endif %}
+        </div>
+
+        <!-- Estado -->
+        <div class="tc">
+            <span class="sc {% if subarea.activa %}sc-on{% else %}sc-off{% endif %}">
+                <i class="fas fa-circle" style="font-size:.38rem;"></i>
+                {% if subarea.activa %}Activa{% else %}Inactiva{% endif %}
+            </span>
+        </div>
+
+        <!-- Acciones -->
+        <div class="tc">
+            <div class="act-col">
+                <a href="{% url 'organizacion:subarea_detail' subarea.pk %}" class="ab" title="Ver"><i class="fas fa-eye"></i></a>
+                {% if perms.organizacion.change_subarea %}
+                <a href="{% url 'organizacion:subarea_update' subarea.pk %}" class="ab" title="Editar"><i class="fas fa-pen"></i></a>
+                {% endif %}
+                {% if perms.organizacion.delete_subarea %}
+                <a href="{% url 'organizacion:subarea_delete' subarea.pk %}" class="ab d" title="Eliminar"><i class="fas fa-trash"></i></a>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+    {% empty %}
+    <div class="empty-tree">
+        <i class="fas fa-sitemap"></i>
+        <p>No se encontraron subáreas{% if request.GET.q or request.GET.area %} con los filtros aplicados{% endif %}.</p>
+        {% if perms.organizacion.add_subarea %}
+        <a href="{% url 'organizacion:subarea_create' %}" class="btn-primary" style="display:inline-flex;margin-top:1rem;"><i class="fas fa-plus"></i> Crear primera subárea</a>
         {% endif %}
-        
-        <span class="px-4 py-2 bg-primary-600 text-white rounded-lg">
-            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
-        </span>
-        
-        {% if page_obj.has_next %}
-        <a href="?page={{ page_obj.next_page_number }}{% if request.GET.area %}&area={{ request.GET.area }}{% endif %}" 
-           class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50">
-            <i class="fas fa-angle-right"></i>
-        </a>
-        <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.area %}&area={{ request.GET.area }}{% endif %}" 
-           class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50">
-            <i class="fas fa-angle-double-right"></i>
-        </a>
-        {% endif %}
-    </nav>
+    </div>
+    {% endfor %}
 </div>
+
+{% if is_paginated %}
+{% with q=request.GET.q area=request.GET.area %}
+<div class="pag">
+    {% if page_obj.has_previous %}
+    <a href="?page=1{% if q %}&q={{ q }}{% endif %}{% if area %}&area={{ area }}{% endif %}" class="pb"><i class="fas fa-angles-left"></i></a>
+    <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if area %}&area={{ area }}{% endif %}" class="pb"><i class="fas fa-angle-left"></i></a>
+    {% else %}
+    <span class="pb dis"><i class="fas fa-angles-left"></i></span>
+    <span class="pb dis"><i class="fas fa-angle-left"></i></span>
+    {% endif %}
+    <span class="pb act">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if area %}&area={{ area }}{% endif %}" class="pb"><i class="fas fa-angle-right"></i></a>
+    <a href="?page={{ page_obj.paginator.num_pages }}{% if q %}&q={{ q }}{% endif %}{% if area %}&area={{ area }}{% endif %}" class="pb"><i class="fas fa-angles-right"></i></a>
+    {% else %}
+    <span class="pb dis"><i class="fas fa-angle-right"></i></span>
+    <span class="pb dis"><i class="fas fa-angles-right"></i></span>
+    {% endif %}
+</div>
+{% endwith %}
 {% endif %}
+
 {% endblock %}

@@ -1,56 +1,361 @@
 {% extends 'base.html' %}
-{% load crispy_forms_tags %}
-
-{% block title %}{{ titulo }} - SIGAP{% endblock %}
-
-{% block page_title %}{{ titulo }}{% endblock %}
+{% block title %}{% if object %}Editar {{ object.nombre_completo }}{% else %}Nuevo Responsable{% endif %} - SIGAP{% endblock %}
+{% block page_title %}{% if object %}Editar Responsable{% else %}Nuevo Responsable{% endif %}{% endblock %}
 
 {% block breadcrumbs %}
-<nav class="mb-4 text-sm">
-    <ol class="list-none p-0 inline-flex">
-        <li class="flex items-center">
-            <a href="/" class="text-primary-600 hover:text-primary-800">Inicio</a>
-            <i class="fas fa-chevron-right mx-2 text-gray-400 text-xs"></i>
-        </li>
-        <li class="flex items-center">
-            <a href="{% url 'organizacion:responsable_list' %}" class="text-primary-600 hover:text-primary-800">Responsables</a>
-            <i class="fas fa-chevron-right mx-2 text-gray-400 text-xs"></i>
-        </li>
-        <li class="text-gray-600">{{ titulo }}</li>
-    </ol>
+<nav class="breadcrumb">
+    <a href="{% url 'core:dashboard' %}"><i class="fas fa-house"></i> Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'organizacion:responsable_list' %}">Responsables</a>
+    <i class="fas fa-chevron-right"></i>
+    {% if object %}<a href="{% url 'organizacion:responsable_detail' object.pk %}">{{ object.nombre_completo }}</a><i class="fas fa-chevron-right"></i><span>Editar</span>
+    {% else %}<span>Nuevo</span>{% endif %}
 </nav>
 {% endblock %}
 
+{% block extra_css %}
+<style>
+.form-layout{display:grid;grid-template-columns:1fr 260px;gap:1.25rem;align-items:start}
+
+/* Section card */
+.fc{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:1rem}
+.fch{padding:.875rem 1.5rem;border-bottom:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;gap:.65rem}
+.fch-n{width:26px;height:26px;border-radius:50%;background:rgba(37,99,235,.2);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:#60a5fa;flex-shrink:0}
+.fch h3{font-family:'Syne',sans-serif;font-size:.9rem;font-weight:600;color:var(--text)}
+.fcb{padding:1.5rem}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.g12{display:grid;grid-template-columns:1fr 2fr;gap:1rem}
+.mb{margin-bottom:1rem}
+
+/* Fields */
+.fg{display:flex;flex-direction:column;gap:.35rem}
+.fg label{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted)}
+.fg label .req{color:#f87171}
+.ferr{font-size:.75rem;color:#f87171;margin-top:.2rem}
+.fhint{font-size:.72rem;color:var(--text-muted);margin-top:.2rem}
+.fi,.fs,.ft{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:9px;padding:.6rem .875rem;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.875rem;outline:none;width:100%;transition:border-color .2s,background .2s,box-shadow .2s}
+.fi::placeholder,.ft::placeholder{color:rgba(107,114,128,.5)}
+.fi:focus,.fs:focus,.ft:focus{border-color:var(--accent);background:rgba(37,99,235,.05);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.fs{appearance:none;cursor:pointer;padding-right:2.25rem;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7280'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right .875rem center;background-color:rgba(255,255,255,.04)}
+.fs option{background:#1a2236}
+.ft{resize:vertical;min-height:72px}
+
+/* Tipo radio grid */
+.tipo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem}
+.tipo-option{position:relative;cursor:pointer}
+.tipo-option input{position:absolute;opacity:0;width:0;height:0}
+.tipo-card{
+    padding:1rem .875rem;border-radius:10px;border:1.5px solid var(--border);background:rgba(255,255,255,.03);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem;text-align:center;
+    transition:all .18s;cursor:pointer;
+}
+.tipo-card:hover{border-color:var(--border2);background:rgba(255,255,255,.06)}
+.tipo-card i{font-size:1.3rem}
+.tipo-card span{font-size:.78rem;font-weight:600;color:var(--text-subtle)}
+.tipo-option input:checked + .tipo-card{border-color:rgba(37,99,235,.5);background:rgba(37,99,235,.1)}
+/* per-tipo glow */
+.tipo-interno  input:checked + .tipo-card{border-color:rgba(29,78,216,.6);background:rgba(29,78,216,.12);box-shadow:0 0 0 3px rgba(29,78,216,.1)}
+.tipo-interno  .tipo-card i{color:#60a5fa}
+.tipo-externo  input:checked + .tipo-card{border-color:rgba(109,40,217,.6);background:rgba(109,40,217,.12);box-shadow:0 0 0 3px rgba(109,40,217,.1)}
+.tipo-externo  .tipo-card i{color:#a78bfa}
+.tipo-contratista input:checked + .tipo-card{border-color:rgba(180,83,9,.6);background:rgba(180,83,9,.12);box-shadow:0 0 0 3px rgba(180,83,9,.1)}
+.tipo-contratista .tipo-card i{color:#fcd34d}
+
+/* Photo upload */
+.photo-zone{border:2px dashed var(--border);border-radius:12px;padding:1.5rem;display:flex;flex-direction:column;align-items:center;gap:.75rem;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;position:relative}
+.photo-zone:hover{border-color:var(--accent2);background:rgba(37,99,235,.04)}
+.photo-preview{width:90px;height:90px;border-radius:12px;object-fit:cover;display:none;border:2px solid var(--border)}
+.photo-icon{font-size:2rem;color:var(--text-muted);opacity:.3}
+.photo-label{font-size:.8rem;color:var(--text-muted)}
+.photo-hint{font-size:.7rem;color:rgba(107,114,128,.4)}
+#photo-input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+
+/* Toggle */
+.ti{display:flex;flex-direction:column;gap:.5rem;padding:.875rem;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;transition:border-color .2s,background .2s}
+.ts{display:flex;align-items:center;gap:.5rem;cursor:pointer}
+.ts input{display:none}
+.ts-track{width:36px;height:20px;background:rgba(107,114,128,.25);border-radius:10px;position:relative;transition:background .2s;flex-shrink:0}
+.ts-thumb{width:14px;height:14px;background:#fff;border-radius:50%;position:absolute;top:3px;left:3px;transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.ti-label{font-size:.78rem;color:var(--text-subtle);font-weight:500}
+.ti-sub{font-size:.68rem;color:var(--text-muted)}
+
+/* Info tip */
+.info-tip{background:rgba(37,99,235,.06);border:1px solid rgba(37,99,235,.15);border-radius:10px;padding:.875rem 1rem;display:flex;align-items:flex-start;gap:.65rem;margin-bottom:1rem}
+.info-tip i{color:#60a5fa;font-size:.85rem;margin-top:.1rem;flex-shrink:0}
+.info-tip p{font-size:.8rem;color:var(--text-muted);line-height:1.55}
+.info-tip strong{color:var(--text-subtle)}
+
+/* Steps sidebar */
+.steps-sidebar{position:sticky;top:1.5rem}
+.steps-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.steps-hd{padding:.875rem 1.1rem;border-bottom:1px solid var(--border);background:var(--surface2);font-family:'Syne',sans-serif;font-size:.78rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em}
+.si{display:flex;align-items:center;gap:.75rem;padding:.75rem 1.1rem;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;transition:background .15s}
+.si:last-child{border-bottom:none}
+.si:hover{background:rgba(255,255,255,.03)}
+.si-num{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;flex-shrink:0;background:rgba(255,255,255,.06);color:var(--text-muted);border:1px solid var(--border);transition:all .2s}
+.si.active .si-num{background:rgba(37,99,235,.2);color:#60a5fa;border-color:rgba(37,99,235,.4)}
+.si-name{font-size:.82rem;color:var(--text-muted);transition:color .2s}
+.si.active .si-name{color:var(--text);font-weight:500}
+
+/* Submit bar */
+.sub-bar{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem;background:var(--surface);border:1px solid var(--border);border-radius:14px;position:sticky;bottom:1rem;z-index:10}
+.sub-info{font-size:.82rem;color:var(--text-muted);display:flex;align-items:center;gap:.4rem}
+.sub-actions{display:flex;gap:.6rem}
+.btn-cancel{display:inline-flex;align-items:center;gap:.4rem;padding:.55rem 1.1rem;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text-subtle);font-size:.875rem;text-decoration:none;transition:background .15s,color .15s}
+.btn-cancel:hover{background:rgba(255,255,255,.08);color:var(--text)}
+
+@media(max-width:720px){.form-layout{grid-template-columns:1fr}.steps-sidebar{display:none}.g2,.g12,.tipo-grid{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="w-full px-4">
-    <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
-        <div class="bg-gradient-to-r from-primary-600 to-secondary-600 px-6 py-4">
-            <h2 class="text-xl font-semibold text-white flex items-center gap-2">
-                <i class="fas {% if es_creacion %}fa-user-plus{% else %}fa-user-edit{% endif %}"></i>
-                {{ titulo }}
-            </h2>
-        </div>
-        
-        <div class="p-6">
-            {% crispy form %}
-        </div>
-    </div>
-    
-    <!-- Información adicional -->
-    {% if es_creacion %}
-    <div class="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
-        <div class="flex gap-3">
-            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                <i class="fas fa-info-circle text-blue-600 text-xl"></i>
-            </div>
-            <div>
-                <h4 class="font-semibold text-blue-800">Información importante</h4>
-                <p class="text-sm text-blue-700">El código debe ser único. Puedes usar un formato como RESP-001, EXT-001, etc.</p>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-    
-    <div class="h-8"></div>
+
+{% if not object %}
+<div class="info-tip">
+    <i class="fas fa-circle-info"></i>
+    <p>El <strong>código</strong> debe ser único. Recomendamos un formato como <strong>RESP-001</strong>, <strong>EXT-002</strong> o <strong>CONT-003</strong> según el tipo de responsable.</p>
 </div>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data" novalidate>
+{% csrf_token %}
+<div class="form-layout">
+  <div>
+
+    <!-- § 1 Identificación -->
+    <div class="fc" id="sec-id">
+        <div class="fch"><div class="fch-n">1</div><h3>Identificación</h3></div>
+        <div class="fcb">
+            <div class="g12 mb">
+                <div class="fg">
+                    <label>Código <span class="req">*</span></label>
+                    {{ form.codigo }}
+                    {% if form.codigo.errors %}<p class="ferr">{{ form.codigo.errors.0 }}</p>{% endif %}
+                    <span class="fhint">Único · Ej: RESP-001</span>
+                </div>
+                <div class="g2">
+                    <div class="fg">
+                        <label>Nombres <span class="req">*</span></label>
+                        {{ form.nombres }}
+                        {% if form.nombres.errors %}<p class="ferr">{{ form.nombres.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div class="fg">
+                        <label>Apellidos <span class="req">*</span></label>
+                        {{ form.apellidos }}
+                        {% if form.apellidos.errors %}<p class="ferr">{{ form.apellidos.errors.0 }}</p>{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- § 2 Tipo -->
+    <div class="fc" id="sec-tipo">
+        <div class="fch"><div class="fch-n">2</div><h3>Tipo de Responsable</h3></div>
+        <div class="fcb">
+            <div class="tipo-grid">
+                {% for val, label in form.tipo.field.choices %}
+                {% if val %}
+                <label class="tipo-option tipo-{{ val|lower }}">
+                    <input type="radio" name="tipo" value="{{ val }}"
+                           {% if form.tipo.value == val %}checked{% endif %}>
+                    <div class="tipo-card">
+                        <i class="fas {% if val == 'INTERNO' %}fa-building{% elif val == 'EXTERNO' %}fa-handshake{% else %}fa-hard-hat{% endif %}"></i>
+                        <span>{{ label }}</span>
+                    </div>
+                </label>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% if form.tipo.errors %}<p class="ferr" style="margin-top:.5rem;">{{ form.tipo.errors.0 }}</p>{% endif %}
+        </div>
+    </div>
+
+    <!-- § 3 Cargo -->
+    <div class="fc" id="sec-cargo">
+        <div class="fch"><div class="fch-n">3</div><h3>Cargo y Organización</h3></div>
+        <div class="fcb">
+            <div class="g2 mb">
+                <div class="fg">
+                    <label>Puesto</label>
+                    {{ form.puesto }}
+                </div>
+                <div class="fg">
+                    <label>Departamento</label>
+                    {{ form.departamento }}
+                </div>
+            </div>
+            <div class="g2 mb">
+                <div class="fg">
+                    <label>Fecha de Ingreso</label>
+                    {{ form.fecha_ingreso }}
+                </div>
+                <div class="fg">
+                    <label>Usuario del sistema</label>
+                    {{ form.usuario }}
+                    <span class="fhint">Vincula este responsable a una cuenta de usuario</span>
+                </div>
+            </div>
+            <div class="fg">
+                <label>Notas</label>
+                {{ form.notas }}
+            </div>
+        </div>
+    </div>
+
+    <!-- § 4 Contacto -->
+    <div class="fc" id="sec-contacto">
+        <div class="fch"><div class="fch-n">4</div><h3>Contacto</h3></div>
+        <div class="fcb">
+            <div class="g2 mb">
+                <div class="fg">
+                    <label>Email</label>
+                    {{ form.email }}
+                    {% if form.email.errors %}<p class="ferr">{{ form.email.errors.0 }}</p>{% endif %}
+                </div>
+                <div class="fg">
+                    <label>Teléfono</label>
+                    {{ form.telefono }}
+                </div>
+            </div>
+            <div class="g2 mb">
+                <div class="fg">
+                    <label>Teléfono Móvil</label>
+                    {{ form.telefono_movil }}
+                </div>
+                <div></div>
+            </div>
+            <div class="fg">
+                <label>Dirección</label>
+                {{ form.direccion }}
+            </div>
+        </div>
+    </div>
+
+    <!-- § 5 Foto + Estado -->
+    <div class="fc" id="sec-foto">
+        <div class="fch"><div class="fch-n">5</div><h3>Foto y Estado</h3></div>
+        <div class="fcb">
+            <div class="g2">
+                <!-- Photo upload zone -->
+                <div class="fg">
+                    <label>Foto del Responsable</label>
+                    <div class="photo-zone" onclick="document.getElementById('photo-input').click()">
+                        <img id="photo-preview" class="photo-preview" alt="Preview">
+                        <i class="fas fa-camera photo-icon" id="photo-icon"></i>
+                        <span class="photo-label">Haz clic para subir foto</span>
+                        <span class="photo-hint">JPG, PNG · máx. 5MB</span>
+                        <input type="file" id="photo-input" name="{{ form.foto.html_name }}" accept="image/*">
+                    </div>
+                    {% if object and object.foto %}
+                    <span class="fhint"><i class="fas fa-image"></i> Foto actual: {{ object.foto.name|truncatechars:30 }}</span>
+                    {% endif %}
+                </div>
+                <!-- Estado toggle -->
+                <div class="fg">
+                    <label>Estado</label>
+                    <div class="ti" id="ti-activo">
+                        <label class="ts" for="{{ form.activo.id_for_label }}">
+                            {{ form.activo }}
+                            <div class="ts-track"><div class="ts-thumb"></div></div>
+                        </label>
+                        <div class="ti-label">Responsable activo</div>
+                        <div class="ti-sub">Disponible para ser asignado a activos y equipos funcionales</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="sub-bar">
+        <div class="sub-info">
+            <i class="fas fa-circle-info"></i>
+            {% if object %}Editando <strong>{{ object.nombre_completo }}</strong>{% else %}Nuevo responsable{% endif %}
+        </div>
+        <div class="sub-actions">
+            <a href="{% if object %}{% url 'organizacion:responsable_detail' object.pk %}{% else %}{% url 'organizacion:responsable_list' %}{% endif %}" class="btn-cancel">
+                <i class="fas fa-xmark"></i> Cancelar
+            </a>
+            <button type="submit" class="btn-primary">
+                <i class="fas fa-floppy-disk"></i>
+                {% if object %}Guardar cambios{% else %}Crear Responsable{% endif %}
+            </button>
+        </div>
+    </div>
+
+  </div>
+
+  <!-- Steps sidebar -->
+  <div class="steps-sidebar">
+    <div class="steps-card">
+        <div class="steps-hd">Secciones</div>
+        <div class="si active" onclick="goTo('sec-id')"><div class="si-num">1</div><div class="si-name">Identificación</div></div>
+        <div class="si" onclick="goTo('sec-tipo')"><div class="si-num">2</div><div class="si-name">Tipo</div></div>
+        <div class="si" onclick="goTo('sec-cargo')"><div class="si-num">3</div><div class="si-name">Cargo y organización</div></div>
+        <div class="si" onclick="goTo('sec-contacto')"><div class="si-num">4</div><div class="si-name">Contacto</div></div>
+        <div class="si" onclick="goTo('sec-foto')"><div class="si-num">5</div><div class="si-name">Foto y estado</div></div>
+    </div>
+  </div>
+</div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Style all native inputs
+document.querySelectorAll('input[type=text],input[type=email],input[type=tel],input[type=date],input[type=number]').forEach(e=>e.classList.add('fi'));
+document.querySelectorAll('select').forEach(e=>{if(!e.closest('.tipo-option'))e.classList.add('fs')});
+document.querySelectorAll('textarea').forEach(e=>e.classList.add('ft'));
+
+// Toggle switch
+document.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    cb.style.cssText='position:absolute;opacity:0;width:0;height:0';
+    const track=cb.closest('.ts')?.querySelector('.ts-track');
+    const thumb=track?.querySelector('.ts-thumb');
+    const item=cb.closest('.ti');
+    const sync=()=>{
+        if(!track)return;
+        track.style.background=cb.checked?'var(--accent)':'rgba(107,114,128,.25)';
+        if(thumb)thumb.style.left=cb.checked?'19px':'3px';
+        if(item){item.style.borderColor=cb.checked?'rgba(37,99,235,.35)':'';item.style.background=cb.checked?'rgba(37,99,235,.06)':'rgba(255,255,255,.03)';}
+    };
+    sync(); cb.addEventListener('change',sync);
+});
+
+// Photo preview
+document.getElementById('photo-input').addEventListener('change',function(){
+    const file=this.files[0];
+    if(!file)return;
+    const reader=new FileReader();
+    reader.onload=e=>{
+        const img=document.getElementById('photo-preview');
+        const icon=document.getElementById('photo-icon');
+        img.src=e.target.result;
+        img.style.display='block';
+        icon.style.display='none';
+    };
+    reader.readAsDataURL(file);
+});
+
+// Sidebar IntersectionObserver
+function goTo(id){document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'});}
+const secs=['sec-id','sec-tipo','sec-cargo','sec-contacto','sec-foto'];
+const steps=document.querySelectorAll('.si');
+const obs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+        if(e.isIntersecting){
+            const i=secs.indexOf(e.target.id);
+            if(i>=0) steps.forEach((s,j)=>s.classList.toggle('active',i===j));
+        }
+    });
+},{threshold:.4});
+secs.forEach(id=>{const el=document.getElementById(id);if(el)obs.observe(el);});
+
+// Tipo radio visual sync on load
+document.querySelectorAll('.tipo-option input').forEach(r=>{
+    r.addEventListener('change',()=>{
+        document.querySelectorAll('.tipo-card').forEach(c=>c.style.fontWeight='');
+    });
+});
+</script>
 {% endblock %}

@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block title %}Registro Rápido · SIGAP{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb">
+    <a href="">Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'mantenimiento:mantenimiento_list' %}">Mantenimientos</a>
+    <i class="fas fa-chevron-right"></i>
+    <span>Registro Rápido</span>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.simple-form { max-width: 520px; margin: 0 auto; }
+.sf-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.sf-card-header { padding: 1rem 1.5rem; background: var(--surface2); border-bottom: 1px solid var(--border); }
+.sf-card-header h2 { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: .5rem; }
+.sf-card-header h2 i { color: #fcd34d; }
+.sf-body { padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+.field label { display: block; font-size: .75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: .35rem; }
+.field input, .field select, .field textarea {
+    width: 100%; background: var(--bg); border: 1px solid var(--border2);
+    color: var(--text); border-radius: 8px; padding: .5rem .85rem;
+    font-size: .875rem; font-family: 'DM Sans', sans-serif; outline: none;
+    transition: border-color .2s, box-shadow .2s;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+    border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+}
+.field-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: .85rem; }
+@media (max-width: 480px) { .field-row-2 { grid-template-columns: 1fr; } }
+.sf-footer { display: flex; justify-content: flex-end; gap: .75rem; padding: 1rem 1.5rem; border-top: 1px solid var(--border); background: var(--surface2); }
+.btn-secondary { display: inline-flex; align-items: center; gap: .4rem; padding: .5rem 1rem; background: var(--surface); color: var(--text-subtle); font-family: 'Syne', sans-serif; font-size: .875rem; font-weight: 600; border-radius: 8px; border: 1px solid var(--border2); cursor: pointer; text-decoration: none; transition: background .15s; }
+.btn-secondary:hover { background: var(--surface2); color: var(--text); }
+.quick-note { background: rgba(245,158,11,.08); border: 1px solid rgba(245,158,11,.2); color: #fcd34d; border-radius: 8px; padding: .7rem 1rem; font-size: .82rem; display: flex; align-items: flex-start; gap: .5rem; margin-bottom: .75rem; }
+.quick-note i { flex-shrink: 0; margin-top: 2px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="simple-form">
+    <div class="quick-note">
+        <i class="fas fa-bolt"></i>
+        <span>Formulario rápido — solo los campos esenciales. Puedes completarlo después desde el detalle.</span>
+    </div>
+    <form method="post">
+        {% csrf_token %}
+        <div class="sf-card">
+            <div class="sf-card-header">
+                <h2><i class="fas fa-bolt"></i> Registro Rápido</h2>
+            </div>
+            <div class="sf-body">
+                <div class="field">
+                    <label>Activo *</label>
+                    {{ form.activo }}
+                    {% if form.activo.errors %}<span style="color:#f87171;font-size:.75rem;">{{ form.activo.errors.0 }}</span>{% endif %}
+                </div>
+                <div class="field-row-2">
+                    <div class="field">
+                        <label>Tipo *</label>
+                        {{ form.tipo }}
+                    </div>
+                    <div class="field">
+                        <label>Prioridad</label>
+                        {{ form.prioridad }}
+                    </div>
+                </div>
+                <div class="field">
+                    <label>Fecha *</label>
+                    {{ form.fecha }}
+                </div>
+                <div class="field">
+                    <label>Descripción *</label>
+                    {{ form.descripcion }}
+                </div>
+            </div>
+            <div class="sf-footer">
+                <a href="{% url 'mantenimiento:mantenimiento_list' %}" class="btn-secondary">
+                    <i class="fas fa-xmark"></i> Cancelar
+                </a>
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-bolt"></i> Crear rápido
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,239 +1,344 @@
 {% extends 'base.html' %}
-
 {% block title %}{{ subarea.nombre }} - SIGAP{% endblock %}
-
-{% block page_title %}Detalle de Subárea{% endblock %}
+{% block page_title %}Subárea{% endblock %}
 
 {% block breadcrumbs %}
-<nav class="mb-4">
-    <ol class="flex items-center space-x-2 text-sm text-gray-500">
-        <li><a href="{% url 'core:dashboard' %}" class="hover:text-primary-600"><i class="fas fa-home"></i></a></li>
-        <li><i class="fas fa-chevron-right text-xs"></i></li>
-        <li><a href="{% url 'organizacion:planta_list' %}" class="hover:text-primary-600">Organización</a></li>
-        <li><i class="fas fa-chevron-right text-xs"></i></li>
-        <li><a href="{% url 'organizacion:subarea_list' %}" class="hover:text-primary-600">Subáreas</a></li>
-        <li><i class="fas fa-chevron-right text-xs"></i></li>
-        <li class="text-gray-700">{{ subarea.nombre }}</li>
-    </ol>
+<nav class="breadcrumb">
+    <a href="{% url 'core:dashboard' %}"><i class="fas fa-house"></i> Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    {% if subarea.area and subarea.area.nivel and subarea.area.nivel.planta %}
+    <a href="{{ subarea.area.nivel.planta.get_absolute_url }}">{{ subarea.area.nivel.planta.nombre }}</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'organizacion:nivel_detail' subarea.area.nivel.pk %}">{{ subarea.area.nivel.nombre }}</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'organizacion:area_detail' subarea.area.pk %}">{{ subarea.area.nombre }}</a>
+    <i class="fas fa-chevron-right"></i>
+    {% endif %}
+    <a href="{% url 'organizacion:subarea_list' %}">Subáreas</a>
+    <i class="fas fa-chevron-right"></i>
+    <span>{{ subarea.nombre }}</span>
 </nav>
 {% endblock %}
 
+{% block extra_css %}
+<style>
+    /* ─── Hero ─── */
+    .sub-hero{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:1.25rem}
+
+    /* Hierarchy strip at top — visual breadcrumb */
+    .hier-strip{
+        display:flex;align-items:center;gap:0;
+        border-bottom:1px solid var(--border);
+        overflow-x:auto;scrollbar-width:none;
+    }
+    .hier-strip::-webkit-scrollbar{display:none}
+    .hs-node{
+        display:flex;align-items:center;gap:.5rem;padding:.6rem 1rem;
+        font-size:.72rem;font-weight:500;flex-shrink:0;
+        border-right:1px solid var(--border);
+        transition:background .15s;
+        text-decoration:none;
+    }
+    .hs-node:hover{background:rgba(255,255,255,.04)}
+    .hs-node:last-child{border-right:none;cursor:default;pointer-events:none}
+    .hs-node i{font-size:.62rem;flex-shrink:0}
+    .hs-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .hsd-p{background:#3b82f6;color:#93c5fd}     /* planta */
+    .hsd-n{background:#38bdf8;color:#7dd3fc}     /* nivel */
+    .hsd-a{background:#818cf8;color:#c4b5fd}     /* area */
+    .hsd-s{background:var(--accent);color:#bfdbfe} /* subarea — active */
+    .hs-label{color:var(--text-subtle)}
+    .hs-name{color:var(--text);font-weight:600}
+    .hs-node.active .hs-name{color:var(--accent2)}
+
+    /* Hero body */
+    .hero-body{padding:1.5rem 1.75rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+    .hero-left{display:flex;align-items:center;gap:1.25rem}
+    .hero-icon{width:60px;height:60px;border-radius:14px;flex-shrink:0;background:rgba(37,99,235,.1);border:1px solid rgba(37,99,235,.2);display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#60a5fa}
+    .hero-text{}
+    .hero-code{font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--accent2);margin-bottom:.2rem}
+    .hero-name{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:700;color:var(--text)}
+    .hero-chips{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.6rem}
+    .hchip{display:inline-flex;align-items:center;gap:.35rem;padding:.22rem .7rem;border-radius:9999px;font-size:.75rem;font-weight:600}
+    .hc-on{background:rgba(34,197,94,.12);color:#4ade80;border:1px solid rgba(34,197,94,.25)}
+    .hc-off{background:rgba(107,114,128,.1);color:#9ca3af;border:1px solid rgba(107,114,128,.2)}
+    .hero-actions{display:flex;gap:.5rem}
+    .ha-btn{display:inline-flex;align-items:center;gap:.4rem;padding:.5rem .9rem;border-radius:8px;font-size:.82rem;font-weight:500;text-decoration:none;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text-subtle);transition:background .15s,color .15s;cursor:pointer}
+    .ha-btn:hover{background:rgba(255,255,255,.08);color:var(--text)}
+    .ha-btn.pri{background:linear-gradient(135deg,var(--accent),#1d4ed8);border-color:transparent;color:#fff;box-shadow:0 3px 14px rgba(37,99,235,.35)}
+    .ha-btn.dan{color:#f87171;border-color:rgba(239,68,68,.25)}
+    .ha-btn.dan:hover{background:rgba(239,68,68,.1)}
+
+    /* ─── Stats ─── */
+    .stats-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:1.25rem}
+    .sm{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:.875rem 1rem;display:flex;align-items:center;gap:.75rem}
+    .sm-ico{width:36px;height:36px;border-radius:8px;background:rgba(37,99,235,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.85rem;color:#60a5fa}
+    .sm-val{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;color:var(--text)}
+    .sm-lbl{font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted)}
+
+    /* ─── Detail grid ─── */
+    .detail-grid{display:grid;grid-template-columns:1fr 270px;gap:1.25rem;align-items:start}
+
+    .sc-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:1rem}
+    .sc-hd{padding:.875rem 1.25rem;border-bottom:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:space-between}
+    .sc-hd-l{display:flex;align-items:center;gap:.5rem;font-family:'Syne',sans-serif;font-size:.875rem;font-weight:600;color:var(--text)}
+    .sc-hd-l i{color:var(--accent2);font-size:.8rem}
+    .sc-body{padding:1.1rem 1.25rem}
+
+    .fr{display:flex;justify-content:space-between;align-items:center;padding:.45rem 0;border-bottom:1px solid rgba(255,255,255,.04);gap:1rem}
+    .fr:last-child{border-bottom:none;padding-bottom:0}
+    .fl{font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;flex-shrink:0}
+    .fv{font-size:.875rem;color:var(--text);text-align:right}
+    .fv.em{color:var(--text-muted);font-style:italic}
+    .fv a{color:var(--accent2);text-decoration:none}
+    .fv a:hover{color:var(--text)}
+
+    /* Equipos table */
+    .eq-table{width:100%;border-collapse:collapse}
+    .eq-table th{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);padding:.5rem .875rem;border-bottom:1px solid var(--border);text-align:left}
+    .eq-table td{padding:.6rem .875rem;border-bottom:1px solid rgba(255,255,255,.04);font-size:.84rem;color:var(--text);vertical-align:middle}
+    .eq-table tr:last-child td{border-bottom:none}
+    .eq-table tr:hover td{background:rgba(255,255,255,.02)}
+
+    /* Responsable card */
+    .resp-card{background:rgba(37,99,235,.05);border:1px solid rgba(37,99,235,.15);border-radius:10px;padding:.875rem;display:flex;align-items:center;gap:.875rem}
+    .resp-av{width:40px;height:40px;border-radius:50%;flex-shrink:0;background:rgba(37,99,235,.15);border:1px solid rgba(37,99,235,.25);display:flex;align-items:center;justify-content:center;font-size:.9rem;color:#60a5fa}
+    .resp-n{font-size:.9rem;font-weight:600;color:var(--text)}
+    .resp-e{font-size:.72rem;color:var(--text-muted)}
+
+    /* Hierarchy visual card (sidebar) */
+    .hier-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:1rem}
+    .hc-body{padding:1rem 1.25rem}
+    .hc-row{display:flex;align-items:center;gap:.65rem;padding:.45rem 0;position:relative}
+    .hc-row:not(:last-child)::after{content:'';position:absolute;left:9px;top:calc(100% - 4px);width:1.5px;height:12px;background:rgba(255,255,255,.08)}
+    .hc-dot{width:18px;height:18px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.55rem}
+    .hcd-p{background:rgba(37,99,235,.15);color:#60a5fa;border:1px solid rgba(37,99,235,.25)}
+    .hcd-n{background:rgba(56,189,248,.1);color:#38bdf8;border:1px solid rgba(56,189,248,.2)}
+    .hcd-a{background:rgba(99,102,241,.1);color:#a5b4fc;border:1px solid rgba(99,102,241,.2)}
+    .hcd-s{background:rgba(37,99,235,.2);color:#93c5fd;border:1px solid rgba(37,99,235,.35);width:22px;height:22px}
+    .hc-info{}
+    .hc-lbl{font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted)}
+    .hc-val{font-size:.82rem;font-weight:500;color:var(--text)}
+    .hc-val a{color:var(--accent2);text-decoration:none}
+    .hc-val a:hover{color:var(--text)}
+
+    /* Audit */
+    .ar{display:flex;align-items:baseline;gap:.5rem;padding:.28rem 0;font-size:.82rem}
+    .al{color:var(--text-muted);font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;flex-shrink:0;width:84px}
+    .av{color:var(--text-subtle)}
+
+    /* Contact */
+    .ci{display:flex;align-items:center;gap:.55rem;padding:.35rem 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.875rem;color:var(--text-subtle)}
+    .ci:last-child{border-bottom:none}
+    .ci i{color:var(--accent2);font-size:.78rem;width:14px;text-align:center;flex-shrink:0}
+
+    @media(max-width:768px){.detail-grid{grid-template-columns:1fr}.stats-strip{grid-template-columns:1fr 1fr}.hero-body{flex-direction:column;align-items:flex-start}}
+</style>
+{% endblock %}
+
 {% block content %}
-<!-- Header con acciones -->
-<div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-    <div class="mb-4 md:mb-0">
-        <h2 class="text-2xl font-bold text-gray-800">{{ subarea.nombre }}</h2>
-        <p class="text-gray-500 mt-1">Código: {{ subarea.codigo }}</p>
+
+<!-- Hero with hierarchy strip -->
+<div class="sub-hero">
+    <!-- Hierarchy breadcrumb strip -->
+    <div class="hier-strip">
+        {% if subarea.area and subarea.area.nivel and subarea.area.nivel.planta %}
+        <a href="{{ subarea.area.nivel.planta.get_absolute_url }}" class="hs-node">
+            <div class="hs-dot hsd-p"></div>
+            <div><div class="hs-label">Planta</div><div class="hs-name">{{ subarea.area.nivel.planta.nombre }}</div></div>
+        </a>
+        <a href="{% url 'organizacion:nivel_detail' subarea.area.nivel.pk %}" class="hs-node">
+            <div class="hs-dot hsd-n"></div>
+            <div><div class="hs-label">Nivel</div><div class="hs-name">{{ subarea.area.nivel.nombre }} ({% if subarea.area.nivel.numero_nivel > 0 %}+{% endif %}{{ subarea.area.nivel.numero_nivel }})</div></div>
+        </a>
+        <a href="{% url 'organizacion:area_detail' subarea.area.pk %}" class="hs-node">
+            <div class="hs-dot hsd-a"></div>
+            <div><div class="hs-label">Área</div><div class="hs-name">{{ subarea.area.nombre }}</div></div>
+        </a>
+        {% endif %}
+        <div class="hs-node active">
+            <div class="hs-dot hsd-s"></div>
+            <div><div class="hs-label">Subárea</div><div class="hs-name" style="color:var(--accent2);">{{ subarea.nombre }}</div></div>
+        </div>
     </div>
-    <div class="flex space-x-3">
-        {% if perms.organizacion.change_subarea %}
-        <a href="{% url 'organizacion:subarea_update' subarea.pk %}" class="btn-primary">
-            <i class="fas fa-edit mr-2"></i>Editar
-        </a>
-        {% endif %}
-        {% if perms.organizacion.delete_subarea %}
-        <a href="{% url 'organizacion:subarea_delete' subarea.pk %}" class="btn-danger">
-            <i class="fas fa-trash mr-2"></i>Eliminar
-        </a>
-        {% endif %}
+
+    <!-- Hero body -->
+    <div class="hero-body">
+        <div class="hero-left">
+            <div class="hero-icon"><i class="fas fa-sitemap"></i></div>
+            <div class="hero-text">
+                <div class="hero-code">{{ subarea.codigo }}</div>
+                <div class="hero-name">{{ subarea.nombre }}</div>
+                <div class="hero-chips">
+                    <span class="hchip {% if subarea.activa %}hc-on{% else %}hc-off{% endif %}">
+                        <i class="fas {% if subarea.activa %}fa-circle-check{% else %}fa-circle-xmark{% endif %}"></i>
+                        {% if subarea.activa %}Activa{% else %}Inactiva{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="hero-actions">
+            {% if perms.organizacion.change_subarea %}
+            <a href="{% url 'organizacion:subarea_update' subarea.pk %}" class="ha-btn pri"><i class="fas fa-pen"></i> Editar</a>
+            {% endif %}
+            {% if perms.organizacion.delete_subarea %}
+            <a href="{% url 'organizacion:subarea_delete' subarea.pk %}" class="ha-btn dan"><i class="fas fa-trash"></i></a>
+            {% endif %}
+        </div>
     </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Información Principal -->
-    <div class="lg:col-span-2 space-y-6">
-        <!-- Información General -->
-        <div class="card">
-            <div class="card-header">
-                <h3 class="text-lg font-semibold text-gray-800">
-                    <i class="fas fa-info-circle mr-2 text-primary-600"></i>
-                    Información General
-                </h3>
-            </div>
-            <div class="card-body">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <p class="text-sm text-gray-500 mb-1">Descripción</p>
-                        <p class="text-gray-800">{{ subarea.descripcion|default:"Sin descripción" }}</p>
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-500 mb-1">Estado</p>
-                        {% if subarea.activa %}
-                        <span class="badge badge-green">Activa</span>
-                        {% else %}
-                        <span class="badge badge-gray">Inactiva</span>
-                        {% endif %}
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-500 mb-1">Responsable</p>
-                        <p class="text-gray-800">{{ subarea.responsable.get_full_name|default:subarea.responsable.username|default:"No asignado" }}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Ubicación (Área/Nivel/Planta) -->
-        <div class="card">
-            <div class="card-header">
-                <h3 class="text-lg font-semibold text-gray-800">
-                    <i class="fas fa-map-marker-alt mr-2 text-primary-600"></i>
-                    Ubicación
-                </h3>
-            </div>
-            <div class="card-body">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <p class="text-sm text-gray-500 mb-1">Área</p>
-                        <p class="text-gray-800">
-                            <a href="{{ subarea.area.get_absolute_url }}" class="text-primary-600 hover:text-primary-800">
-                                {{ subarea.area.nombre }}
-                            </a>
-                        </p>
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-500 mb-1">Nivel</p>
-                        <p class="text-gray-800">
-                            <a href="{{ subarea.area.nivel.get_absolute_url }}" class="text-primary-600 hover:text-primary-800">
-                                {{ subarea.area.nivel.nombre }} (Nivel {{ subarea.area.nivel.numero_nivel }})
-                            </a>
-                        </p>
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-500 mb-1">Planta</p>
-                        <p class="text-gray-800">
-                            <a href="{{ subarea.area.nivel.planta.get_absolute_url }}" class="text-primary-600 hover:text-primary-800">
-                                {{ subarea.area.nivel.planta.nombre }}
-                            </a>
-                        </p>
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-500 mb-1">Dirección de Planta</p>
-                        <p class="text-gray-800">{{ subarea.area.nivel.planta.direccion|default:"No especificada" }}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Información adicional (podrías agregar equipos, etc.) -->
-        {% if subarea.equipos.exists %}
-        <div class="card">
-            <div class="card-header">
-                <h3 class="text-lg font-semibold text-gray-800">
-                    <i class="fas fa-tools mr-2 text-primary-600"></i>
-                    Equipos Asociados
-                </h3>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-container">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Código</th>
-                                <th>Nombre</th>
-                                <th>Tipo</th>
-                                <th>Estado</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for equipo in subarea.equipos.all %}
-                            <tr>
-                                <td>{{ equipo.codigo }}</td>
-                                <td>{{ equipo.nombre }}</td>
-                                <td>{{ equipo.get_tipo_display }}</td>
-                                <td>
-                                    {% if equipo.activo %}
-                                    <span class="badge badge-green">Activo</span>
-                                    {% else %}
-                                    <span class="badge badge-gray">Inactivo</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        {% endif %}
+<!-- Stats -->
+<div class="stats-strip">
+    <div class="sm">
+        <div class="sm-ico"><i class="fas fa-boxes-stacked"></i></div>
+        <div><div class="sm-val">{{ subarea.equipos.count|default:"0" }}</div><div class="sm-lbl">Equipos</div></div>
     </div>
-
-    <!-- Sidebar -->
-    <div class="space-y-6">
-        <!-- Estadísticas -->
-        <div class="card">
-            <div class="card-header">
-                <h3 class="text-lg font-semibold text-gray-800">
-                    <i class="fas fa-chart-bar mr-2 text-primary-600"></i>
-                    Estadísticas
-                </h3>
+    <div class="sm">
+        <div class="sm-ico" style="background:rgba(34,197,94,.1);color:#4ade80;"><i class="fas fa-user-check"></i></div>
+        <div>
+            <div class="sm-val" style="font-size:.9rem;color:#4ade80;">
+                {% if subarea.responsable %}{{ subarea.responsable.nombre_completo|default:subarea.responsable.get_full_name|truncatechars:14 }}{% else %}—{% endif %}
             </div>
-            <div class="card-body">
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="text-center p-4 bg-blue-50 rounded-lg">
-                        <p class="text-2xl font-bold text-blue-600">{{ subarea.equipos.count|default:"0" }}</p>
-                        <p class="text-sm text-gray-600">Equipos</p>
-                    </div>
-                    <div class="text-center p-4 bg-green-50 rounded-lg">
-                        <p class="text-2xl font-bold text-green-600">{{ subarea.equipos.activos.count|default:"0" }}</p>
-                        <p class="text-sm text-gray-600">Activos</p>
-                    </div>
+            <div class="sm-lbl">Responsable</div>
+        </div>
+    </div>
+    <div class="sm">
+        <div class="sm-ico" style="background:rgba(99,102,241,.1);color:#a5b4fc;"><i class="fas fa-map-signs"></i></div>
+        <div>
+            <div class="sm-val" style="font-size:.9rem;color:#a5b4fc;">{% if subarea.area %}{{ subarea.area.nombre|truncatechars:14 }}{% else %}—{% endif %}</div>
+            <div class="sm-lbl">Área</div>
+        </div>
+    </div>
+</div>
+
+<div class="detail-grid">
+    <!-- LEFT -->
+    <div>
+        <!-- General -->
+        <div class="sc-card">
+            <div class="sc-hd"><div class="sc-hd-l"><i class="fas fa-circle-info"></i> Información General</div></div>
+            <div class="sc-body">
+                {% if subarea.descripcion %}
+                <p style="font-size:.875rem;color:var(--text-subtle);line-height:1.65;margin-bottom:1rem;">{{ subarea.descripcion }}</p>
+                {% endif %}
+                <div class="fr"><span class="fl">Código</span><span class="fv">{{ subarea.codigo }}</span></div>
+                <div class="fr"><span class="fl">Estado</span><span class="fv"><span class="hchip {% if subarea.activa %}hc-on{% else %}hc-off{% endif %}">{% if subarea.activa %}Activa{% else %}Inactiva{% endif %}</span></span></div>
+                <div class="fr"><span class="fl">Responsable</span>
+                    <span class="fv {% if not subarea.responsable %}em{% endif %}">
+                        {% if subarea.responsable %}{{ subarea.responsable.nombre_completo|default:subarea.responsable.get_full_name }}{% else %}No asignado{% endif %}
+                    </span>
                 </div>
-                {% if subarea.responsable %}
-                <div class="mt-4 p-3 bg-gray-50 rounded-lg">
-                    <p class="text-sm text-gray-500">Responsable</p>
-                    <p class="font-medium">{{ subarea.responsable.get_full_name|default:subarea.responsable.username }}</p>
-                    <p class="text-xs text-gray-400">{{ subarea.responsable.email }}</p>
-                </div>
+            </div>
+        </div>
+
+        <!-- Ubicación -->
+        <div class="sc-card">
+            <div class="sc-hd"><div class="sc-hd-l"><i class="fas fa-map-location-dot"></i> Ubicación</div></div>
+            <div class="sc-body">
+                <div class="fr"><span class="fl">Área</span><span class="fv">{% if subarea.area %}<a href="{% url 'organizacion:area_detail' subarea.area.pk %}">{{ subarea.area.nombre }}</a>{% else %}<span class="em">Sin área</span>{% endif %}</span></div>
+                {% if subarea.area and subarea.area.nivel %}
+                <div class="fr"><span class="fl">Nivel</span><span class="fv"><a href="{% url 'organizacion:nivel_detail' subarea.area.nivel.pk %}">{{ subarea.area.nivel.nombre }} (Piso {% if subarea.area.nivel.numero_nivel > 0 %}+{% endif %}{{ subarea.area.nivel.numero_nivel }})</a></span></div>
+                {% endif %}
+                {% if subarea.area and subarea.area.nivel and subarea.area.nivel.planta %}
+                <div class="fr"><span class="fl">Planta</span><span class="fv"><a href="{{ subarea.area.nivel.planta.get_absolute_url }}">{{ subarea.area.nivel.planta.nombre }}</a></span></div>
+                <div class="fr"><span class="fl">Ciudad</span><span class="fv">{{ subarea.area.nivel.planta.ciudad|default:"—" }}, {{ subarea.area.nivel.planta.pais }}</span></div>
                 {% endif %}
             </div>
         </div>
 
-        <!-- Contacto de la Planta (opcional) -->
-        <div class="card">
-            <div class="card-header">
-                <h3 class="text-lg font-semibold text-gray-800">
-                    <i class="fas fa-address-card mr-2 text-primary-600"></i>
-                    Contacto de Planta
-                </h3>
-            </div>
-            <div class="card-body">
-                <div class="space-y-3">
-                    {% if subarea.area.nivel.planta.telefono %}
-                    <div class="flex items-center">
-                        <i class="fas fa-phone text-gray-400 w-6"></i>
-                        <span>{{ subarea.area.nivel.planta.telefono }}</span>
-                    </div>
-                    {% endif %}
-                    {% if subarea.area.nivel.planta.email %}
-                    <div class="flex items-center">
-                        <i class="fas fa-envelope text-gray-400 w-6"></i>
-                        <span>{{ subarea.area.nivel.planta.email }}</span>
-                    </div>
-                    {% endif %}
-                    {% if not subarea.area.nivel.planta.telefono and not subarea.area.nivel.planta.email %}
-                    <p class="text-gray-500">No hay información de contacto</p>
-                    {% endif %}
+        <!-- Equipos asociados -->
+        {% if subarea.equipos.exists %}
+        <div class="sc-card">
+            <div class="sc-hd"><div class="sc-hd-l"><i class="fas fa-screwdriver-wrench"></i> Equipos Asociados</div></div>
+            <table class="eq-table">
+                <thead><tr><th>Código</th><th>Nombre</th><th>Tipo</th><th>Estado</th></tr></thead>
+                <tbody>
+                    {% for eq in subarea.equipos.all %}
+                    <tr>
+                        <td style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--accent2);">{{ eq.codigo }}</td>
+                        <td>{{ eq.nombre }}</td>
+                        <td style="font-size:.8rem;color:var(--text-muted);">{{ eq.get_tipo_display }}</td>
+                        <td><span class="hchip {% if eq.activo %}hc-on{% else %}hc-off{% endif %}" style="font-size:.67rem;padding:.13rem .45rem;">{% if eq.activo %}Activo{% else %}Inactivo{% endif %}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- RIGHT -->
+    <div>
+        <!-- Hierarchy visual -->
+        <div class="hier-card">
+            <div class="sc-hd"><div class="sc-hd-l"><i class="fas fa-diagram-project"></i> Jerarquía</div></div>
+            <div class="hc-body">
+                {% if subarea.area and subarea.area.nivel and subarea.area.nivel.planta %}
+                <div class="hc-row">
+                    <div class="hc-dot hcd-p"><i class="fas fa-industry"></i></div>
+                    <div class="hc-info"><div class="hc-lbl">Planta</div><div class="hc-val"><a href="{{ subarea.area.nivel.planta.get_absolute_url }}">{{ subarea.area.nivel.planta.nombre }}</a></div></div>
+                </div>
+                <div class="hc-row">
+                    <div class="hc-dot hcd-n"><i class="fas fa-layer-group"></i></div>
+                    <div class="hc-info"><div class="hc-lbl">Nivel</div><div class="hc-val"><a href="{% url 'organizacion:nivel_detail' subarea.area.nivel.pk %}">{{ subarea.area.nivel.nombre }}</a></div></div>
+                </div>
+                {% endif %}
+                {% if subarea.area %}
+                <div class="hc-row">
+                    <div class="hc-dot hcd-a"><i class="fas fa-map-signs"></i></div>
+                    <div class="hc-info"><div class="hc-lbl">Área</div><div class="hc-val"><a href="{% url 'organizacion:area_detail' subarea.area.pk %}">{{ subarea.area.nombre }}</a></div></div>
+                </div>
+                {% endif %}
+                <div class="hc-row">
+                    <div class="hc-dot hcd-s"><i class="fas fa-sitemap"></i></div>
+                    <div class="hc-info"><div class="hc-lbl">Subárea (actual)</div><div class="hc-val" style="color:var(--accent2);">{{ subarea.nombre }}</div></div>
                 </div>
             </div>
         </div>
 
-        <!-- Auditoría -->
-        <div class="card">
-            <div class="card-header">
-                <h3 class="text-lg font-semibold text-gray-800">
-                    <i class="fas fa-history mr-2 text-primary-600"></i>
-                    Auditoría
-                </h3>
-            </div>
-            <div class="card-body">
-                <div class="space-y-2 text-sm">
-                    <p><span class="text-gray-500">Creado:</span> {{ subarea.creado|date:"d/m/Y H:i" }}</p>
-                    <p><span class="text-gray-500">Por:</span> {{ subarea.creado_por|default:"Sistema" }}</p>
-                    <p><span class="text-gray-500">Modificado:</span> {{ subarea.modificado|date:"d/m/Y H:i" }}</p>
-                    <p><span class="text-gray-500">Por:</span> {{ subarea.modificado_por|default:"Sistema" }}</p>
+        <!-- Responsable -->
+        {% if subarea.responsable %}
+        <div class="sc-card">
+            <div class="sc-hd"><div class="sc-hd-l"><i class="fas fa-user-tie"></i> Responsable</div></div>
+            <div class="sc-body">
+                <div class="resp-card">
+                    <div class="resp-av"><i class="fas fa-user"></i></div>
+                    <div>
+                        <div class="resp-n">{{ subarea.responsable.nombre_completo|default:subarea.responsable.get_full_name }}</div>
+                        {% if subarea.responsable.email %}<div class="resp-e">{{ subarea.responsable.email }}</div>{% endif %}
+                    </div>
                 </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Contacto planta -->
+        {% if subarea.area and subarea.area.nivel and subarea.area.nivel.planta %}
+        {% with planta=subarea.area.nivel.planta %}
+        {% if planta.telefono or planta.email %}
+        <div class="sc-card">
+            <div class="sc-hd"><div class="sc-hd-l"><i class="fas fa-address-card"></i> Contacto planta</div></div>
+            <div class="sc-body">
+                {% if planta.telefono %}<div class="ci"><i class="fas fa-phone"></i>{{ planta.telefono }}</div>{% endif %}
+                {% if planta.email %}<div class="ci"><i class="fas fa-envelope"></i>{{ planta.email }}</div>{% endif %}
+            </div>
+        </div>
+        {% endif %}
+        {% endwith %}
+        {% endif %}
+
+        <!-- Audit -->
+        <div class="sc-card">
+            <div class="sc-hd"><div class="sc-hd-l"><i class="fas fa-clock-rotate-left"></i> Auditoría</div></div>
+            <div class="sc-body">
+                <div class="ar"><span class="al">Creado</span><span class="av">{{ subarea.creado|date:"d/m/Y H:i" }}</span></div>
+                <div class="ar"><span class="al">Por</span><span class="av">{{ subarea.creado_por|default:"Sistema" }}</span></div>
+                <div class="ar"><span class="al">Modificado</span><span class="av">{{ subarea.modificado|date:"d/m/Y H:i" }}</span></div>
+                <div class="ar"><span class="al">Por</span><span class="av">{{ subarea.modificado_por|default:"Sistema" }}</span></div>
             </div>
         </div>
     </div>
 </div>
+
 {% endblock %}

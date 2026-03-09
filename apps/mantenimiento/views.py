@@ -1,330 +1,383 @@
 """
 Vistas para la app mantenimiento del proyecto SIGAP.
 """
-from django.shortcuts import render, get_object_or_404, redirect
-from django.urls import reverse_lazy
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.views.generic import (
-    ListView, DetailView, CreateView, UpdateView, DeleteView
-)
+from django.contrib.messages.views import SuccessMessageMixin
 from django.contrib import messages
+from django.urls import reverse_lazy
+from django.shortcuts import get_object_or_404
 from django.db.models import Q, Count, Sum
 from django.utils import timezone
 
 from .models import TipoMantenimiento, Mantenimiento, RepuestoUtilizado
 from .forms import (
-    TipoMantenimientoForm, MantenimientoForm, 
-    MantenimientoQuickForm, RepuestoUtilizadoForm
+    TipoMantenimientoForm, MantenimientoForm,
+    MantenimientoQuickForm, RepuestoUtilizadoForm,
 )
 from apps.activos.models import Activo
 
 
+# ─── Mixins base ───────────────────────────────────────────────────────────────
 
-class BaseListView(LoginRequiredMixin, ListView):
-    """Vista base para listados con búsqueda."""
-    paginate_by = 25
-    
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        search = self.request.GET.get('q')
-        if search:
-            queryset = queryset.filter(
-                Q(codigo__icontains=search) | 
-                Q(nombre__icontains=search)
-            )
-        return queryset
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['search_query'] = self.request.GET.get('q', '')
-        return context
+class AuthMixin(LoginRequiredMixin, PermissionRequiredMixin):
+    """Login + permiso en un solo mixin."""
 
 
-class BaseCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
-    """Vista base para crear registros."""
-    
+class BaseCreateView(SuccessMessageMixin, AuthMixin, CreateView):
     def form_valid(self, form):
-        form.instance.creado_por = self.request.user
-        form.instance.modificado_por = self.request.user
-        messages.success(
-            self.request, 
-            f'{self.model._meta.verbose_name} creado exitosamente.'
-        )
+        if hasattr(form.instance, 'creado_por'):
+            form.instance.creado_por = self.request.user
+        if hasattr(form.instance, 'modificado_por'):
+            form.instance.modificado_por = self.request.user
         return super().form_valid(form)
 
 
-class BaseUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
-    """Vista base para actualizar registros."""
-    
+class BaseUpdateView(SuccessMessageMixin, AuthMixin, UpdateView):
     def form_valid(self, form):
-        form.instance.modificado_por = self.request.user
+        if hasattr(form.instance, 'modificado_por'):
+            form.instance.modificado_por = self.request.user
+        return super().form_valid(form)
+
+
+class BaseDeleteView(AuthMixin, DeleteView):
+    def form_valid(self, form):
         messages.success(
             self.request,
-            f'{self.model._meta.verbose_name} actualizado exitosamente.'
+            f'{self.model._meta.verbose_name} eliminado exitosamente.'
         )
         return super().form_valid(form)
 
 
-class BaseDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
-    """Vista base para eliminar registros."""
-    
-    def delete(self, request, *args, **kwargs):
-        messages.success(
-            request,
-            f'{self.model._meta.verbose_name} eliminado exitosamente.'
-        )
-        return super().delete(request, *args, **kwargs)
+# ─── TipoMantenimiento ──────────────────────────────────────────────────────────
 
-
-# =============================================================================
-# VISTAS PARA TIPOMANTENIMIENTO
-# =============================================================================
-
-class TipoMantenimientoListView(BaseListView):
-    """Vista de lista para Tipos de Mantenimiento."""
+class TipoMantenimientoListView(AuthMixin, ListView):
     model = TipoMantenimiento
     template_name = 'mantenimiento/tipomantenimiento_list.html'
     context_object_name = 'tipos'
     permission_required = 'mantenimiento.view_tipomantenimiento'
+    paginate_by = 25
+
+    def get_queryset(self):
+        qs = super().get_queryset().annotate(
+            total_mantenimientos=Count('mantenimiento')
+        )
+        q = self.request.GET.get('q', '').strip()
+        if q:
+            qs = qs.filter(Q(codigo__icontains=q) | Q(nombre__icontains=q))
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['page_title'] = 'Tipos de Mantenimiento'
+        ctx['search_query'] = self.request.GET.get('q', '')
+        return ctx
 
 
-class TipoMantenimientoDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
-    """Vista de detalle para Tipo de Mantenimiento."""
+class TipoMantenimientoDetailView(AuthMixin, DetailView):
     model = TipoMantenimiento
     template_name = 'mantenimiento/tipomantenimiento_detail.html'
     context_object_name = 'tipo'
     permission_required = 'mantenimiento.view_tipomantenimiento'
 
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['page_title'] = str(self.object)
+        ctx['mantenimientos'] = (
+            self.object.mantenimiento_set
+            .select_related('activo')
+            .order_by('-fecha')[:10]
+        )
+        return ctx
+
 
 class TipoMantenimientoCreateView(BaseCreateView):
-    """Vista para crear Tipo de Mantenimiento."""
     model = TipoMantenimiento
     form_class = TipoMantenimientoForm
     template_name = 'mantenimiento/tipomantenimiento_form.html'
     permission_required = 'mantenimiento.add_tipomantenimiento'
     success_url = reverse_lazy('mantenimiento:tipomantenimiento_list')
+    success_message = 'Tipo de mantenimiento creado exitosamente.'
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['page_title'] = 'Nuevo Tipo de Mantenimiento'
+        ctx['action'] = 'crear'
+        return ctx
 
 
 class TipoMantenimientoUpdateView(BaseUpdateView):
-    """Vista para actualizar Tipo de Mantenimiento."""
     model = TipoMantenimiento
     form_class = TipoMantenimientoForm
     template_name = 'mantenimiento/tipomantenimiento_form.html'
     permission_required = 'mantenimiento.change_tipomantenimiento'
     success_url = reverse_lazy('mantenimiento:tipomantenimiento_list')
+    success_message = 'Tipo de mantenimiento actualizado exitosamente.'
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['page_title'] = f'Editar: {self.object}'
+        ctx['action'] = 'editar'
+        return ctx
 
 
 class TipoMantenimientoDeleteView(BaseDeleteView):
-    """Vista para eliminar Tipo de Mantenimiento."""
     model = TipoMantenimiento
-    template_name = 'mantenimiento/tipomantenimiento_confirm_delete.html'
+    template_name = 'mantenimiento/confirm_delete.html'
     permission_required = 'mantenimiento.delete_tipomantenimiento'
     success_url = reverse_lazy('mantenimiento:tipomantenimiento_list')
 
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['page_title'] = 'Eliminar Tipo de Mantenimiento'
+        ctx['cancel_url'] = reverse_lazy('mantenimiento:tipomantenimiento_list')
+        return ctx
 
-# =============================================================================
-# VISTAS PARA MANTENIMIENTO
-# =============================================================================
 
-class MantenimientoListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
-    """Vista de lista para Mantenimientos."""
+# ─── Mantenimiento ──────────────────────────────────────────────────────────────
+
+class MantenimientoListView(AuthMixin, ListView):
     model = Mantenimiento
     template_name = 'mantenimiento/mantenimiento_list.html'
     context_object_name = 'mantenimientos'
     permission_required = 'mantenimiento.view_mantenimiento'
     paginate_by = 25
-    
+
     def get_queryset(self):
-        queryset = Mantenimiento.objects.select_related(
+        qs = Mantenimiento.objects.select_related(
             'activo', 'solicitado_por', 'realizado_por'
         )
-        
-        # Filtros
-        search = self.request.GET.get('q')
-        tipo = self.request.GET.get('tipo')
-        estado = self.request.GET.get('estado')
-        prioridad = self.request.GET.get('prioridad')
-        activo = self.request.GET.get('activo')
-        fecha_desde = self.request.GET.get('fecha_desde')
-        fecha_hasta = self.request.GET.get('fecha_hasta')
-        
-        if search:
-            queryset = queryset.filter(
-                Q(codigo__icontains=search) | 
-                Q(activo__nombre__icontains=search) |
-                Q(activo__codigo__icontains=search) |
-                Q(descripcion__icontains=search)
+        f = self.request.GET
+
+        q           = f.get('q', '').strip()
+        tipo        = f.get('tipo', '')
+        estado      = f.get('estado', '')
+        prioridad   = f.get('prioridad', '')
+        activo_id   = f.get('activo', '')
+        fecha_desde = f.get('fecha_desde', '')
+        fecha_hasta = f.get('fecha_hasta', '')
+
+        if q:
+            qs = qs.filter(
+                Q(codigo__icontains=q) |
+                Q(descripcion__icontains=q) |
+                Q(activo__nombre__icontains=q) |
+                Q(activo__codigo__icontains=q)
             )
         if tipo:
-            queryset = queryset.filter(tipo=tipo)
+            qs = qs.filter(tipo=tipo)
         if estado:
-            queryset = queryset.filter(estado=estado)
+            qs = qs.filter(estado=estado)
         if prioridad:
-            queryset = queryset.filter(prioridad=prioridad)
-        if activo:
-            queryset = queryset.filter(activo_id=activo)
+            qs = qs.filter(prioridad=prioridad)
+        if activo_id:
+            qs = qs.filter(activo_id=activo_id)
         if fecha_desde:
-            queryset = queryset.filter(fecha__gte=fecha_desde)
+            qs = qs.filter(fecha__gte=fecha_desde)
         if fecha_hasta:
-            queryset = queryset.filter(fecha__lte=fecha_hasta)
-        
-        return queryset.order_by('-fecha')
-    
+            qs = qs.filter(fecha__lte=fecha_hasta)
+
+        return qs.order_by('-fecha')
+
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['tipos'] = Mantenimiento.TIPO_MANTENIMIENTO
-        context['estados'] = Mantenimiento.ESTADO_MANTENIMIENTO
-        context['prioridades'] = Mantenimiento.PRIORIDAD
-        context['activos'] = Activo.objects.filter(activo_registro=True)
-        
-        # Estadísticas
-        hoy = timezone.now().date()
-        context['stats'] = {
-            'pendientes': Mantenimiento.objects.filter(estado='PENDIENTE').count(),
-            'en_progreso': Mantenimiento.objects.filter(estado='EN_PROGRESO').count(),
-            'completados_mes': Mantenimiento.objects.filter(
+        ctx = super().get_context_data(**kwargs)
+        ctx['page_title'] = 'Mantenimientos'
+
+        # Opciones para los selects del filtro
+        ctx['tipo_choices']      = Mantenimiento.TIPO_MANTENIMIENTO
+        ctx['estado_choices']    = Mantenimiento.ESTADO_MANTENIMIENTO
+        ctx['prioridad_choices'] = Mantenimiento.PRIORIDAD
+        ctx['activos']           = Activo.objects.filter(activo_registro=True).only('id', 'nombre')
+
+        # Filtros activos (para repoblar el formulario y paginación)
+        ctx['filtros'] = {k: self.request.GET.get(k, '') for k in (
+            'q', 'tipo', 'estado', 'prioridad', 'activo', 'fecha_desde', 'fecha_hasta'
+        )}
+
+        # KPIs
+        hoy  = timezone.now().date()
+        base = Mantenimiento.objects
+        ctx['kpi'] = {
+            'total':           base.count(),
+            'pendiente':       base.filter(estado='PENDIENTE').count(),
+            'en_progreso':     base.filter(estado='EN_PROGRESO').count(),
+            'completado':      base.filter(estado='COMPLETADO').count(),
+            'vencidos':        base.filter(estado='PENDIENTE', fecha__lt=hoy).count(),
+            'completados_mes': base.filter(
                 estado='COMPLETADO',
                 fecha_realizacion__month=hoy.month,
-                fecha_realizacion__year=hoy.year
-            ).count(),
-            'vencidos': Mantenimiento.objects.filter(
-                estado='PENDIENTE',
-                fecha__lt=hoy
+                fecha_realizacion__year=hoy.year,
             ).count(),
         }
-        
-        # Preservar filtros
-        context['filtros'] = {
-            'q': self.request.GET.get('q', ''),
-            'tipo': self.request.GET.get('tipo', ''),
-            'estado': self.request.GET.get('estado', ''),
-            'prioridad': self.request.GET.get('prioridad', ''),
-            'activo': self.request.GET.get('activo', ''),
-            'fecha_desde': self.request.GET.get('fecha_desde', ''),
-            'fecha_hasta': self.request.GET.get('fecha_hasta', ''),
-        }
-        return context
+        return ctx
 
 
-class MantenimientoDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
-    """Vista de detalle para Mantenimiento."""
+class MantenimientoDetailView(AuthMixin, DetailView):
     model = Mantenimiento
     template_name = 'mantenimiento/mantenimiento_detail.html'
-    context_object_name = 'mantenimiento'
+    context_object_name = 'mnt'
     permission_required = 'mantenimiento.view_mantenimiento'
-    
+
     def get_queryset(self):
-        return super().get_queryset().select_related(
-            'activo', 'solicitado_por', 'realizado_por'
-        ).prefetch_related('repuestos')
+        return (
+            super().get_queryset()
+            .select_related('activo', 'solicitado_por', 'realizado_por')
+            .prefetch_related('repuestos')
+        )
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['page_title'] = str(self.object)
+        ctx['repuestos'] = self.object.repuestos.all()
+        ctx['costo_repuestos_total'] = (
+            self.object.repuestos.aggregate(t=Sum('costo_total'))['t'] or 0
+        )
+        ctx['historial'] = (
+            Mantenimiento.objects
+            .filter(activo=self.object.activo)
+            .exclude(pk=self.object.pk)
+            .order_by('-fecha')[:5]
+        )
+        return ctx
 
 
 class MantenimientoCreateView(BaseCreateView):
-    """Vista para crear Mantenimiento."""
     model = Mantenimiento
     form_class = MantenimientoForm
     template_name = 'mantenimiento/mantenimiento_form.html'
     permission_required = 'mantenimiento.add_mantenimiento'
-    success_url = reverse_lazy('mantenimiento:mantenimiento_list')
+    success_message = 'Mantenimiento registrado exitosamente.'
+
+    def get_success_url(self):
+        return self.object.get_absolute_url()
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['page_title'] = 'Registrar Mantenimiento'
+        ctx['action'] = 'crear'
+        return ctx
 
 
 class MantenimientoUpdateView(BaseUpdateView):
-    """Vista para actualizar Mantenimiento."""
     model = Mantenimiento
     form_class = MantenimientoForm
     template_name = 'mantenimiento/mantenimiento_form.html'
     permission_required = 'mantenimiento.change_mantenimiento'
-    success_url = reverse_lazy('mantenimiento:mantenimiento_list')
+    success_message = 'Mantenimiento actualizado exitosamente.'
+
+    def get_success_url(self):
+        return self.object.get_absolute_url()
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['page_title'] = f'Editar: {self.object}'
+        ctx['action'] = 'editar'
+        return ctx
 
 
 class MantenimientoDeleteView(BaseDeleteView):
-    """Vista para eliminar Mantenimiento."""
     model = Mantenimiento
-    template_name = 'mantenimiento/mantenimiento_confirm_delete.html'
+    template_name = 'mantenimiento/confirm_delete.html'
     permission_required = 'mantenimiento.delete_mantenimiento'
     success_url = reverse_lazy('mantenimiento:mantenimiento_list')
 
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['page_title'] = 'Eliminar Mantenimiento'
+        ctx['cancel_url'] = self.object.get_absolute_url()
+        return ctx
 
-class MantenimientoQuickCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
-    """Vista para crear mantenimiento rápido."""
+
+class MantenimientoQuickCreateView(SuccessMessageMixin, AuthMixin, CreateView):
     model = Mantenimiento
     form_class = MantenimientoQuickForm
     template_name = 'mantenimiento/mantenimiento_quick_form.html'
     permission_required = 'mantenimiento.add_mantenimiento'
     success_url = reverse_lazy('mantenimiento:mantenimiento_list')
-    
+    success_message = 'Mantenimiento creado exitosamente.'
+
     def form_valid(self, form):
-        form.instance.creado_por = self.request.user
-        form.instance.modificado_por = self.request.user
-        messages.success(
-            self.request, 
-            'Mantenimiento creado exitosamente.'
-        )
+        if hasattr(form.instance, 'creado_por'):
+            form.instance.creado_por = self.request.user
+        if hasattr(form.instance, 'modificado_por'):
+            form.instance.modificado_por = self.request.user
         return super().form_valid(form)
 
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['page_title'] = 'Registro Rápido'
+        return ctx
 
-# =============================================================================
-# VISTAS PARA REPUESTOS
-# =============================================================================
 
-class RepuestoUtilizadoCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
-    """Vista para agregar repuesto a un mantenimiento."""
+# ─── RepuestoUtilizado ──────────────────────────────────────────────────────────
+
+class RepuestoUtilizadoCreateView(SuccessMessageMixin, AuthMixin, CreateView):
     model = RepuestoUtilizado
     form_class = RepuestoUtilizadoForm
     template_name = 'mantenimiento/repuesto_form.html'
     permission_required = 'mantenimiento.add_repuestoutilizado'
-    
+    success_message = 'Repuesto agregado exitosamente.'
+
     def dispatch(self, request, *args, **kwargs):
         self.mantenimiento = get_object_or_404(Mantenimiento, pk=kwargs['mantenimiento_pk'])
         return super().dispatch(request, *args, **kwargs)
-    
+
     def form_valid(self, form):
         form.instance.mantenimiento = self.mantenimiento
-        form.instance.creado_por = self.request.user
-        form.instance.modificado_por = self.request.user
-        messages.success(self.request, 'Repuesto agregado exitosamente.')
+        if hasattr(form.instance, 'creado_por'):
+            form.instance.creado_por = self.request.user
+        if hasattr(form.instance, 'modificado_por'):
+            form.instance.modificado_por = self.request.user
         return super().form_valid(form)
-    
+
     def get_success_url(self):
-        return reverse_lazy('mantenimiento:mantenimiento_detail', kwargs={'pk': self.mantenimiento.pk})
-    
+        return self.object.mantenimiento.get_absolute_url()
+
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['mantenimiento'] = self.mantenimiento
-        return context
+        ctx = super().get_context_data(**kwargs)
+        ctx['mantenimiento'] = self.mantenimiento
+        ctx['page_title'] = 'Agregar Repuesto'
+        ctx['action'] = 'crear'
+        return ctx
 
 
-class RepuestoUtilizadoUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
-    """Vista para actualizar repuesto."""
+class RepuestoUtilizadoUpdateView(SuccessMessageMixin, AuthMixin, UpdateView):
     model = RepuestoUtilizado
     form_class = RepuestoUtilizadoForm
     template_name = 'mantenimiento/repuesto_form.html'
     permission_required = 'mantenimiento.change_repuestoutilizado'
-    
+    success_message = 'Repuesto actualizado exitosamente.'
+
     def form_valid(self, form):
-        form.instance.modificado_por = self.request.user
-        messages.success(self.request, 'Repuesto actualizado exitosamente.')
+        if hasattr(form.instance, 'modificado_por'):
+            form.instance.modificado_por = self.request.user
         return super().form_valid(form)
-    
+
     def get_success_url(self):
-        return reverse_lazy('mantenimiento:mantenimiento_detail', kwargs={'pk': self.object.mantenimiento.pk})
-    
+        return self.object.mantenimiento.get_absolute_url()
+
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['mantenimiento'] = self.object.mantenimiento
-        return context
+        ctx = super().get_context_data(**kwargs)
+        ctx['mantenimiento'] = self.object.mantenimiento
+        ctx['page_title'] = 'Editar Repuesto'
+        ctx['action'] = 'editar'
+        return ctx
 
 
-class RepuestoUtilizadoDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
-    """Vista para eliminar repuesto."""
+class RepuestoUtilizadoDeleteView(AuthMixin, DeleteView):
     model = RepuestoUtilizado
-    template_name = 'mantenimiento/repuesto_confirm_delete.html'
+    template_name = 'mantenimiento/confirm_delete.html'
     permission_required = 'mantenimiento.delete_repuestoutilizado'
-    
-    def delete(self, request, *args, **kwargs):
-        self.mantenimiento_pk = self.get_object().mantenimiento.pk
-        messages.success(request, 'Repuesto eliminado exitosamente.')
-        return super().delete(request, *args, **kwargs)
-    
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Repuesto eliminado exitosamente.')
+        return super().form_valid(form)
+
     def get_success_url(self):
-        return reverse_lazy('mantenimiento:mantenimiento_detail', kwargs={'pk': self.mantenimiento_pk})
+        return self.object.mantenimiento.get_absolute_url()
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['page_title'] = 'Eliminar Repuesto'
+        ctx['cancel_url'] = self.object.mantenimiento.get_absolute_url()
+        return ctx

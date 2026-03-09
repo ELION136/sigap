@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }} · SIGAP{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb">
+    <a href="">Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <span>{{ page_title }}</span>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.delete-card {
+    max-width: 480px;
+    margin: 3rem auto;
+    background: var(--surface);
+    border: 1px solid rgba(239,68,68,.3);
+    border-radius: 14px;
+    overflow: hidden;
+    text-align: center;
+}
+.delete-card-header {
+    padding: 2rem 1.5rem 1.5rem;
+    background: rgba(239,68,68,.07);
+    border-bottom: 1px solid rgba(239,68,68,.15);
+}
+.delete-card-header i { font-size: 2.2rem; color: #f87171; margin-bottom: .75rem; display: block; }
+.delete-card-header h2 { font-family: 'Syne', sans-serif; font-size: 1.15rem; font-weight: 700; color: var(--text); }
+.delete-card-body { padding: 1.5rem; color: var(--text-subtle); font-size: .9rem; line-height: 1.6; }
+.delete-card-body strong { color: var(--text); }
+.delete-card-footer {
+    display: flex; justify-content: center; gap: .75rem;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border);
+    background: var(--surface2);
+}
+.btn-danger {
+    display: inline-flex; align-items: center; gap: .4rem;
+    padding: .5rem 1.2rem;
+    background: var(--danger); color: #fff;
+    font-family: 'Syne', sans-serif; font-size: .875rem; font-weight: 600;
+    border-radius: 8px; border: none; cursor: pointer;
+    transition: opacity .15s;
+}
+.btn-danger:hover { opacity: .85; }
+.btn-secondary {
+    display: inline-flex; align-items: center; gap: .4rem;
+    padding: .5rem 1.1rem;
+    background: var(--surface); color: var(--text-subtle);
+    font-family: 'Syne', sans-serif; font-size: .875rem; font-weight: 600;
+    border-radius: 8px; border: 1px solid var(--border2);
+    cursor: pointer; text-decoration: none; transition: background .15s;
+}
+.btn-secondary:hover { background: var(--surface2); color: var(--text); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="delete-card">
+    <div class="delete-card-header">
+        <i class="fas fa-triangle-exclamation"></i>
+        <h2>{{ page_title }}</h2>
+    </div>
+    <div class="delete-card-body">
+        <p>¿Estás seguro de que deseas eliminar <strong>{{ object }}</strong>?</p>
+        <p style="margin-top:.6rem;font-size:.82rem;color:var(--text-muted);">Esta acción no se puede deshacer.</p>
+    </div>
+    <div class="delete-card-footer">
+        <a href="{{ cancel_url }}" class="btn-secondary">
+            <i class="fas fa-xmark"></i> Cancelar
+        </a>
+        <form method="post" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn-danger">
+                <i class="fas fa-trash"></i> Sí, eliminar
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

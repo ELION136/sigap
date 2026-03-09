@@ -1,204 +1,321 @@
 {% extends 'base.html' %}
-
 {% block title %}Áreas - SIGAP{% endblock %}
-
 {% block page_title %}Áreas{% endblock %}
 
 {% block breadcrumbs %}
-<nav class="mb-4">
-    <ol class="flex items-center space-x-2 text-sm text-gray-500">
-        <li><a href="{% url 'core:dashboard' %}" class="hover:text-primary-600"><i class="fas fa-home"></i></a></li>
-        <li><i class="fas fa-chevron-right text-xs"></i></li>
-        <li><a href="{% url 'organizacion:area_list' %}" class="hover:text-primary-600">Organización</a></li>
-        <li><i class="fas fa-chevron-right text-xs"></i></li>
-        <li class="text-gray-700">Áreas</li>
-    </ol>
+<nav class="breadcrumb">
+    <a href="{% url 'core:dashboard' %}"><i class="fas fa-house"></i> Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'organizacion:planta_list' %}">Plantas</a>
+    <i class="fas fa-chevron-right"></i>
+    <span>Áreas</span>
 </nav>
 {% endblock %}
 
-{% block content %}
-<!-- Header con acciones -->
-<div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-    <div class="mb-4 md:mb-0">
-        <h2 class="text-2xl font-bold text-gray-800">Áreas</h2>
-        <p class="text-gray-500 mt-1">Gestión de áreas y departamentos</p>
-    </div>
-    <div class="flex space-x-3">
-        {% if perms.organizacion.add_area %}
-        <a href="{% url 'organizacion:area_create' %}" class="btn-primary">
-            <i class="fas fa-plus mr-2"></i>Nueva Área
-        </a>
-        {% endif %}
-    </div>
-</div>
+{% block extra_css %}
+<style>
+.toolbar{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;margin-bottom:1.25rem}
+.toolbar-left{flex:1;display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+.toolbar-right{display:flex;gap:.5rem;flex-shrink:0;align-items:center}
+.search-wrap{position:relative;min-width:170px;max-width:230px;flex:1}
+.search-wrap input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:.55rem 1rem .55rem 2.4rem;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.875rem;outline:none;transition:border-color .2s,background .2s}
+.search-wrap input::placeholder{color:var(--text-muted)}
+.search-wrap input:focus{border-color:var(--accent);background:rgba(37,99,235,.06)}
+.search-wrap i{position:absolute;left:.8rem;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:.8rem;pointer-events:none}
+.f-sel{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:.52rem 2rem .52rem .875rem;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.82rem;outline:none;appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7280'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right .65rem center;transition:border-color .2s}
+.f-sel:focus{border-color:var(--accent);outline:none}
+.f-sel option{background:#1a2236}
 
-<!-- Filtros -->
-<div class="card mb-6">
-    <div class="card-body">
-        <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-            <div>
-                <label class="form-label">Planta</label>
-                <select name="planta" class="form-select">
-                    <option value="">Todas las plantas</option>
-                    {% for planta in plantas %}
-                    <option value="{{ planta.id }}" {% if request.GET.planta == planta.id|stringformat:"s" %}selected{% endif %}>
-                        {{ planta.nombre }}
-                    </option>
-                    {% endfor %}
-                </select>
+/* ─── Blueprint Table ─── */
+.bp-wrap{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+
+/* 6 columns: plano-thumb | name-path | tipo | supervisor | estado | actions */
+.bp-cols{grid-template-columns:210px 1fr 150px 170px 100px 80px}
+
+.bp-head{display:grid;border-bottom:1px solid var(--border);background:var(--surface2);padding:0 1rem}
+.bp-head.bp-cols div{padding:.7rem .5rem;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted)}
+.bp-head.bp-cols div:last-child{text-align:right}
+
+.bp-row{display:grid;border-bottom:1px solid rgba(255,255,255,.04);padding:0 1rem;align-items:center;transition:background .15s;animation:fadeUp .3s ease both}
+.bp-row.bp-cols{}
+.bp-row:last-child{border-bottom:none}
+.bp-row:hover{background:rgba(255,255,255,.022)}
+.bp-cell{padding:.875rem .5rem}
+
+/* ─── Plano thumbnail (the star) ─── */
+.pt{
+    width:180px;height:100px;border-radius:9px;
+    background:#080c14;border:1px solid var(--border);
+    overflow:hidden;position:relative;cursor:pointer;
+    transition:border-color .2s,box-shadow .2s;flex-shrink:0;
+}
+.pt:hover{border-color:rgba(37,99,235,.5);box-shadow:0 4px 18px rgba(0,0,0,.55)}
+/* Blueprint grid overlay */
+.pt::before{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;
+    background-image:linear-gradient(rgba(37,99,235,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,.07) 1px,transparent 1px);
+    background-size:18px 18px}
+.pt img{width:100%;height:100%;object-fit:contain;padding:5px;
+    filter:brightness(.88) contrast(1.06) saturate(.9);
+    transition:transform .35s,filter .25s;position:relative;z-index:2}
+.pt:hover img{transform:scale(1.07);filter:brightness(1) contrast(1.12) saturate(1)}
+/* Zoom icon */
+.pt-zoom{position:absolute;bottom:.35rem;right:.35rem;z-index:3;width:18px;height:18px;border-radius:4px;
+    background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.15);
+    display:flex;align-items:center;justify-content:center;
+    color:rgba(255,255,255,.55);font-size:.5rem;opacity:0;transition:opacity .2s}
+.pt:hover .pt-zoom{opacity:1}
+/* No plano */
+.pt-empty{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.3rem;
+    background:repeating-linear-gradient(0deg,transparent,transparent 17px,rgba(37,99,235,.06) 17px,rgba(37,99,235,.06) 18px),
+               repeating-linear-gradient(90deg,transparent,transparent 17px,rgba(37,99,235,.06) 17px,rgba(37,99,235,.06) 18px)}
+.pt-empty i{font-size:1.4rem;color:rgba(96,165,250,.1)}
+.pt-empty span{font-size:.58rem;text-transform:uppercase;letter-spacing:.1em;color:rgba(96,165,250,.18)}
+
+/* ─── Name cell ─── */
+.nc{display:flex;flex-direction:column;gap:.18rem;min-width:0}
+.nc-code{font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--accent2)}
+.nc-name{font-family:'Syne',sans-serif;font-size:.9rem;font-weight:600;color:var(--text);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nc-name:hover{color:var(--accent2)}
+.nc-desc{font-size:.73rem;color:var(--text-muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:.05rem}
+.loc-line{display:flex;align-items:center;gap:.3rem;font-size:.73rem;color:var(--text-subtle);margin-top:.3rem;flex-wrap:wrap}
+.loc-line i{font-size:.58rem;color:var(--accent2);flex-shrink:0}
+.loc-line a{color:var(--accent2);text-decoration:none;font-weight:500}
+.loc-line a:hover{color:var(--text)}
+.floor-bx{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:4px;font-family:'Syne',sans-serif;font-size:.68rem;font-weight:700;background:rgba(37,99,235,.1);color:#60a5fa;border:1px solid rgba(37,99,235,.2);flex-shrink:0}
+
+/* ─── Tipo ─── */
+.tipo-tag{display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .55rem;border-radius:7px;font-size:.72rem;font-weight:500;background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--text-subtle)}
+.tipo-tag i{font-size:.58rem;color:var(--accent2)}
+
+/* ─── Supervisor ─── */
+.sup-row{display:flex;align-items:center;gap:.45rem}
+.sup-av{width:26px;height:26px;border-radius:50%;flex-shrink:0;background:rgba(37,99,235,.12);border:1px solid rgba(37,99,235,.2);display:flex;align-items:center;justify-content:center;font-size:.62rem;color:#60a5fa}
+.sup-name{font-size:.78rem;color:var(--text-subtle)}
+.sup-code{font-size:.67rem;color:var(--text-muted)}
+
+/* ─── Status ─── */
+.sc{display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .6rem;border-radius:9999px;font-size:.7rem;font-weight:600}
+.sc-on{background:rgba(34,197,94,.1);color:#4ade80;border:1px solid rgba(34,197,94,.2)}
+.sc-off{background:rgba(107,114,128,.1);color:#6b7280;border:1px solid rgba(107,114,128,.15)}
+.sub-count{font-size:.67rem;color:var(--text-muted);margin-top:.3rem;display:flex;align-items:center;gap:.22rem}
+.sub-count i{font-size:.58rem;color:var(--accent2)}
+
+/* ─── Actions ─── */
+.act-col{display:flex;gap:.3rem;justify-content:flex-end}
+.ab{width:28px;height:28px;border-radius:7px;background:rgba(255,255,255,.04);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:.7rem;text-decoration:none;transition:background .15s,color .15s,border-color .15s}
+.ab:hover{background:rgba(255,255,255,.08);color:var(--text);border-color:var(--border2)}
+.ab.d:hover{background:rgba(239,68,68,.1);color:#f87171;border-color:rgba(239,68,68,.3)}
+
+/* ─── Empty ─── */
+.empty-bp{padding:3.5rem 2rem;text-align:center;color:var(--text-muted)}
+.empty-bp i{font-size:2.5rem;opacity:.12;display:block;margin-bottom:.75rem}
+
+/* Pagination */
+.pag{display:flex;align-items:center;justify-content:center;gap:.4rem;margin-top:1.25rem}
+.pb{min-width:34px;height:34px;border-radius:8px;padding:0 .6rem;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-subtle);font-size:.82rem;text-decoration:none;transition:background .15s,color .15s}
+.pb:hover{background:rgba(255,255,255,.08);color:var(--text)}
+.pb.act{background:var(--accent);border-color:transparent;color:#fff;font-weight:600}
+.pb.dis{opacity:.35;pointer-events:none}
+
+/* Lightbox */
+.lb{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.93);display:flex;align-items:center;justify-content:center;animation:fadeIn .18s ease}
+.lb img{max-width:92vw;max-height:88vh;border-radius:10px;object-fit:contain;border:1px solid rgba(255,255,255,.07);/* blueprint tint on lightbox */filter:brightness(.95) contrast(1.05)}
+.lb-close{position:fixed;top:1rem;right:1rem;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10000}
+.lb-name{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.65);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.1);padding:.4rem 1.1rem;border-radius:9999px;font-size:.78rem;color:rgba(255,255,255,.7);white-space:nowrap;display:flex;align-items:center;gap:.5rem}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@media(max-width:1100px){.bp-wrap{overflow-x:auto}.bp-head,.bp-row{min-width:860px}}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="toolbar">
+    <div class="toolbar-left">
+        <form method="get" id="ff" style="display:contents;">
+            <div class="search-wrap">
+                <i class="fas fa-search"></i>
+                <input type="text" name="q" value="{{ request.GET.q|default:'' }}"
+                       placeholder="Código o nombre…"
+                       onchange="document.getElementById('ff').submit()">
             </div>
-            <div>
-                <label class="form-label">Tipo de Área</label>
-                <select name="tipo" class="form-select">
-                    <option value="">Todos los tipos</option>
-                    {% for value, label in tipos_area %}
-                    <option value="{{ value }}" {% if request.GET.tipo == value %}selected{% endif %}>
-                        {{ label }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="flex items-end space-x-2 md:col-span-2">
-                <button type="submit" class="btn-primary">
-                    <i class="fas fa-filter mr-2"></i>Filtrar
-                </button>
-                {% if request.GET.planta or request.GET.tipo %}
-                <a href="{% url 'organizacion:area_list' %}" class="btn-secondary">
-                    <i class="fas fa-times mr-2"></i>Limpiar
-                </a>
-                {% endif %}
-            </div>
+            <select name="planta" class="f-sel" onchange="document.getElementById('ff').submit()">
+                <option value="">Todas las plantas</option>
+                {% for p in plantas %}
+                <option value="{{ p.id }}" {% if request.GET.planta == p.id|stringformat:"s" %}selected{% endif %}>{{ p.nombre }}</option>
+                {% endfor %}
+            </select>
+            <select name="tipo" class="f-sel" onchange="document.getElementById('ff').submit()">
+                <option value="">Todos los tipos</option>
+                {% for v,l in tipos_area %}
+                <option value="{{ v }}" {% if request.GET.tipo == v %}selected{% endif %}>{{ l }}</option>
+                {% endfor %}
+            </select>
+            {% if request.GET.planta or request.GET.tipo or request.GET.q %}
+            <a href="{% url 'organizacion:area_list' %}" style="display:flex;align-items:center;gap:.4rem;padding:.5rem .75rem;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text-muted);font-size:.82rem;text-decoration:none;">
+                <i class="fas fa-xmark"></i> Limpiar
+            </a>
+            {% endif %}
         </form>
     </div>
-</div>
-
-<!-- Tabla -->
-<div class="card">
-    <div class="card-body p-0">
-        <div class="table-container">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Código</th>
-                        <th>Nombre</th>
-                        <th>Planta / Nivel</th>
-                        <th>Tipo</th>
-                        <th>Supervisor</th>
-                        <th>Estado</th>
-                        <th class="text-right">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for area in areas %}
-                    <tr class="hover:bg-gray-50">
-                        <td class="font-medium">{{ area.codigo }}</td>
-                        <td>
-                            <div class="flex items-center">
-                                {% if area.plano %}
-                                <img src="{{ area.plano.url }}" alt="" class="w-8 h-8 rounded-lg object-cover mr-3">
-                                {% else %}
-                                <div class="w-8 h-8 bg-gray-200 rounded-lg flex items-center justify-center mr-3">
-                                    <i class="fas fa-map-signs text-gray-400 text-sm"></i>
-                                </div>
-                                {% endif %}
-                                <a href="{% url 'organizacion:area_detail' area.pk %}" class="text-primary-600 hover:text-primary-800 font-medium">
-                                    {{ area.nombre }}
-                                </a>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="text-sm">
-                                <p>{{ area.nivel.planta.nombre }}</p>
-                                <p class="text-gray-500">{{ area.nivel.nombre }} (Nivel {{ area.nivel.numero_nivel }})</p>
-                            </div>
-                        </td>
-                        <td>{{ area.get_tipo_area_display|default:"-" }}</td>
-                        <td>
-                            {{ area.supervisor.nombre_completo }}
-                        </td>
-                        <td>
-                            {% if area.activa %}
-                            <span class="badge badge-green">Activa</span>
-                            {% else %}
-                            <span class="badge badge-gray">Inactiva</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-right">
-                            <div class="flex items-center justify-end space-x-2">
-                                <a href="{% url 'organizacion:area_detail' area.pk %}" 
-                                   class="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50"
-                                   title="Ver detalle">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                {% if perms.organizacion.change_area %}
-                                <a href="{% url 'organizacion:area_update' area.pk %}" 
-                                   class="text-yellow-600 hover:text-yellow-800 p-2 rounded-lg hover:bg-yellow-50"
-                                   title="Editar">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                {% endif %}
-                                {% if perms.organizacion.delete_area %}
-                                <a href="{% url 'organizacion:area_delete' area.pk %}" 
-                                   class="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50"
-                                   title="Eliminar"
-                                   onclick="return confirm('¿Está seguro de eliminar esta área?')">
-                                    <i class="fas fa-trash"></i>
-                                </a>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="7" class="text-center py-8">
-                            <div class="text-gray-500">
-                                <i class="fas fa-map-signs text-4xl mb-3"></i>
-                                <p>No se encontraron áreas</p>
-                                {% if request.GET.planta or request.GET.tipo %}
-                                <p class="text-sm mt-1">Intente con otros filtros</p>
-                                {% else %}
-                                <p class="text-sm mt-1">Comience creando una nueva área</p>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+    <div class="toolbar-right">
+        {% if perms.organizacion.add_area %}
+        <a href="{% url 'organizacion:area_create' %}" class="btn-primary"><i class="fas fa-plus"></i> Nueva Área</a>
+        {% endif %}
     </div>
 </div>
 
-<!-- Paginación (si está paginada) -->
-{% if is_paginated %}
-<div class="mt-6 flex justify-center">
-    <nav class="flex items-center space-x-2">
-        {% if page_obj.has_previous %}
-        <a href="?page=1{% if request.GET.planta %}&planta={{ request.GET.planta }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}" 
-           class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50">
-            <i class="fas fa-angle-double-left"></i>
-        </a>
-        <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.planta %}&planta={{ request.GET.planta }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}" 
-           class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50">
-            <i class="fas fa-angle-left"></i>
-        </a>
+<div class="bp-wrap">
+    <div class="bp-head bp-cols">
+        <div>Plano</div>
+        <div>Área / Ubicación</div>
+        <div>Tipo</div>
+        <div>Supervisor</div>
+        <div>Estado</div>
+        <div>Acciones</div>
+    </div>
+
+    {% for area in areas %}
+    <div class="bp-row bp-cols" style="animation-delay:{{ forloop.counter0 }}0ms;">
+
+        <!-- Plano -->
+        <div class="bp-cell">
+            <div class="pt" onclick="{% if area.plano %}openLb('{{ area.plano.url }}','{{ area.nombre }}'){% endif %}">
+                {% if area.plano %}
+                <img src="{{ area.plano.url }}" alt="Plano {{ area.nombre }}" loading="lazy">
+                <div class="pt-zoom"><i class="fas fa-expand"></i></div>
+                {% else %}
+                <div class="pt-empty"><i class="fas fa-drafting-compass"></i><span>Sin plano</span></div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Nombre + ruta -->
+        <div class="bp-cell">
+            <div class="nc">
+                <span class="nc-code">{{ area.codigo }}</span>
+                <a href="{% url 'organizacion:area_detail' area.pk %}" class="nc-name">{{ area.nombre }}</a>
+                {% if area.descripcion %}<span class="nc-desc">{{ area.descripcion }}</span>{% endif %}
+                {% if area.nivel %}
+                <div class="loc-line">
+                    <i class="fas fa-industry"></i>
+                    {% if area.nivel.planta %}<a href="{{ area.nivel.planta.get_absolute_url }}">{{ area.nivel.planta.nombre }}</a>{% endif %}
+                    <i class="fas fa-chevron-right" style="font-size:.5rem;opacity:.4;"></i>
+                    <i class="fas fa-layer-group"></i>
+                    <a href="{% url 'organizacion:nivel_detail' area.nivel.pk %}">{{ area.nivel.nombre }}</a>
+                    <span class="floor-bx">{% if area.nivel.numero_nivel > 0 %}+{% endif %}{{ area.nivel.numero_nivel }}</span>
+                </div>
+                {% else %}
+                <div class="loc-line" style="color:rgba(239,68,68,.5);font-style:italic;"><i class="fas fa-triangle-exclamation" style="font-size:.6rem;"></i> Sin nivel asignado</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Tipo -->
+        <div class="bp-cell">
+            {% if area.tipo_area %}
+            <span class="tipo-tag"><i class="fas fa-tag"></i>{{ area.get_tipo_area_display }}</span>
+            {% else %}
+            <span style="font-size:.78rem;color:rgba(107,114,128,.35);font-style:italic;">—</span>
+            {% endif %}
+        </div>
+
+        <!-- Supervisor -->
+        <div class="bp-cell">
+            {% if area.supervisor %}
+            <div class="sup-row">
+                <div class="sup-av"><i class="fas fa-user"></i></div>
+                <div>
+                    <div class="sup-name">{{ area.supervisor.nombre_completo }}</div>
+                    <div class="sup-code">{{ area.supervisor.codigo }}</div>
+                </div>
+            </div>
+            {% else %}
+            <span style="font-size:.78rem;color:rgba(107,114,128,.4);font-style:italic;">Sin supervisor</span>
+            {% endif %}
+        </div>
+
+        <!-- Estado -->
+        <div class="bp-cell">
+            <span class="sc {% if area.activa %}sc-on{% else %}sc-off{% endif %}">
+                <i class="fas fa-circle" style="font-size:.38rem;"></i>
+                {% if area.activa %}Activa{% else %}Inactiva{% endif %}
+            </span>
+            {% if area.subareas.count %}
+            <div class="sub-count"><i class="fas fa-sitemap"></i>{{ area.subareas.count }} sub</div>
+            {% endif %}
+        </div>
+
+        <!-- Acciones -->
+        <div class="bp-cell">
+            <div class="act-col">
+                <a href="{% url 'organizacion:area_detail' area.pk %}" class="ab" title="Ver"><i class="fas fa-eye"></i></a>
+                {% if perms.organizacion.change_area %}
+                <a href="{% url 'organizacion:area_update' area.pk %}" class="ab" title="Editar"><i class="fas fa-pen"></i></a>
+                {% endif %}
+                {% if perms.organizacion.delete_area %}
+                <a href="{% url 'organizacion:area_delete' area.pk %}" class="ab d" title="Eliminar"><i class="fas fa-trash"></i></a>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+    {% empty %}
+    <div class="empty-bp">
+        <i class="fas fa-drafting-compass"></i>
+        <p>No se encontraron áreas{% if request.GET.q or request.GET.planta or request.GET.tipo %} con los filtros aplicados{% endif %}.</p>
+        {% if perms.organizacion.add_area %}
+        <a href="{% url 'organizacion:area_create' %}" class="btn-primary" style="display:inline-flex;margin-top:1rem;"><i class="fas fa-plus"></i> Crear primera área</a>
         {% endif %}
-        
-        <span class="px-4 py-2 bg-primary-600 text-white rounded-lg">
-            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
-        </span>
-        
-        {% if page_obj.has_next %}
-        <a href="?page={{ page_obj.next_page_number }}{% if request.GET.planta %}&planta={{ request.GET.planta }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}" 
-           class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50">
-            <i class="fas fa-angle-right"></i>
-        </a>
-        <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.planta %}&planta={{ request.GET.planta }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}" 
-           class="px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50">
-            <i class="fas fa-angle-double-right"></i>
-        </a>
-        {% endif %}
-    </nav>
+    </div>
+    {% endfor %}
 </div>
+
+{% if is_paginated %}
+{% with q=request.GET.q planta=request.GET.planta tipo=request.GET.tipo %}
+<div class="pag">
+    {% if page_obj.has_previous %}
+    <a href="?page=1{% if q %}&q={{ q }}{% endif %}{% if planta %}&planta={{ planta }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}" class="pb"><i class="fas fa-angles-left"></i></a>
+    <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if planta %}&planta={{ planta }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}" class="pb"><i class="fas fa-angle-left"></i></a>
+    {% else %}
+    <span class="pb dis"><i class="fas fa-angles-left"></i></span>
+    <span class="pb dis"><i class="fas fa-angle-left"></i></span>
+    {% endif %}
+    <span class="pb act">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if planta %}&planta={{ planta }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}" class="pb"><i class="fas fa-angle-right"></i></a>
+    <a href="?page={{ page_obj.paginator.num_pages }}{% if q %}&q={{ q }}{% endif %}{% if planta %}&planta={{ planta }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}" class="pb"><i class="fas fa-angles-right"></i></a>
+    {% else %}
+    <span class="pb dis"><i class="fas fa-angle-right"></i></span>
+    <span class="pb dis"><i class="fas fa-angles-right"></i></span>
+    {% endif %}
+</div>
+{% endwith %}
 {% endif %}
+
+<!-- Lightbox -->
+<div id="lb" class="lb" style="display:none;" onclick="closeLb(event)">
+    <button class="lb-close" onclick="closeLb()"><i class="fas fa-xmark"></i></button>
+    <img id="lb-img" src="" alt="">
+    <div class="lb-name"><i class="fas fa-drafting-compass" style="color:var(--accent2);font-size:.75rem;"></i><span id="lb-lbl"></span></div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openLb(src,name){
+    document.getElementById('lb-img').src=src;
+    document.getElementById('lb-lbl').textContent=name;
+    document.getElementById('lb').style.display='flex';
+    document.body.style.overflow='hidden';
+}
+function closeLb(e){
+    if(e&&!e.target.closest('.lb-close')&&e.target.id!=='lb')return;
+    document.getElementById('lb').style.display='none';
+    document.body.style.overflow='';
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.getElementById('lb').style.display='none';document.body.style.overflow='';}});
+</script>
 {% endblock %}

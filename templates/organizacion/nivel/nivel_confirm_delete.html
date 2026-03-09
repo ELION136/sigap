@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% block title %}Eliminar {{ nivel.nombre }} - SIGAP{% endblock %}
+{% block page_title %}Eliminar Nivel{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb">
+    <a href="{% url 'core:dashboard' %}"><i class="fas fa-house"></i> Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'organizacion:nivel_list' %}">Niveles</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'organizacion:nivel_detail' nivel.pk %}">{{ nivel.nombre }}</a>
+    <i class="fas fa-chevron-right"></i>
+    <span style="color:#f87171;">Eliminar</span>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .delete-wrap { max-width:560px; margin:2rem auto; }
+    .delete-card { background:var(--surface); border:1px solid rgba(239,68,68,.3); border-radius:16px; overflow:hidden; }
+
+    /* Top section */
+    .delete-top  { padding:2rem; text-align:center; border-bottom:1px solid var(--border); }
+    .del-icon-wrap { width:72px; height:72px; border-radius:50%; background:rgba(239,68,68,.1); border:2px solid rgba(239,68,68,.25); display:flex; align-items:center; justify-content:center; margin:0 auto 1.25rem; animation:shake .5s ease; }
+    .del-icon-wrap i { font-size:1.75rem; color:#f87171; }
+    .delete-title { font-family:'Syne',sans-serif; font-size:1.3rem; font-weight:700; color:var(--text); margin-bottom:.5rem; }
+    .delete-msg   { font-size:.875rem; color:var(--text-muted); line-height:1.6; }
+
+    /* Nivel preview card */
+    .nivel-preview {
+        display:flex; align-items:center; gap:1rem;
+        background:rgba(239,68,68,.05); border:1px solid rgba(239,68,68,.15);
+        border-radius:11px; padding:1rem 1.25rem; margin:1.25rem auto 0; max-width:360px; text-align:left;
+    }
+    .np-num {
+        width:52px; height:52px; border-radius:11px; flex-shrink:0;
+        display:flex; flex-direction:column; align-items:center; justify-content:center;
+        background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.2);
+        color:#f87171;
+    }
+    .np-num .n-lbl { font-size:.55rem; text-transform:uppercase; letter-spacing:.08em; opacity:.7; }
+    .np-num .n-val { font-family:'Syne',sans-serif; font-size:1.3rem; font-weight:800; line-height:1; }
+    .np-code { font-size:.68rem; text-transform:uppercase; letter-spacing:.1em; color:#f87171; }
+    .np-name { font-family:'Syne',sans-serif; font-size:1rem; font-weight:600; color:var(--text); }
+    .np-plant{ font-size:.75rem; color:var(--text-muted); margin-top:.15rem; }
+
+    /* Body */
+    .delete-body { padding:1.5rem 2rem; }
+
+    /* Count row */
+    .count-row { display:flex; align-items:center; gap:.5rem; margin-bottom:1rem; font-size:.82rem; color:var(--text-muted); flex-wrap:wrap; }
+    .c-badge-has   { display:inline-flex; align-items:center; gap:.35rem; padding:.25rem .7rem; border-radius:9999px; font-size:.78rem; font-weight:600; background:rgba(239,68,68,.12); color:#f87171; border:1px solid rgba(239,68,68,.25); }
+    .c-badge-empty { display:inline-flex; align-items:center; gap:.35rem; padding:.25rem .7rem; border-radius:9999px; font-size:.78rem; font-weight:600; background:rgba(34,197,94,.12); color:#4ade80; border:1px solid rgba(34,197,94,.25); }
+
+    /* Affected items list */
+    .affected-list { background:rgba(239,68,68,.04); border:1px solid rgba(239,68,68,.12); border-radius:9px; padding:.75rem 1rem; margin-bottom:1rem; }
+    .affected-title { font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; color:#f87171; margin-bottom:.6rem; font-weight:600; }
+    .affected-item { display:flex; align-items:center; gap:.5rem; padding:.3rem 0; border-bottom:1px solid rgba(255,255,255,.04); font-size:.82rem; color:var(--text-muted); }
+    .affected-item:last-child { border-bottom:none; }
+    .affected-item i { color:rgba(239,68,68,.5); font-size:.7rem; flex-shrink:0; }
+    .affected-more { font-size:.75rem; color:rgba(239,68,68,.6); padding-top:.4rem; text-align:center; }
+
+    /* Warn boxes */
+    .warn-box    { display:flex; gap:.75rem; padding:.875rem 1rem; border-radius:9px; margin-bottom:1.25rem; font-size:.82rem; line-height:1.55; }
+    .warn-box i  { flex-shrink:0; margin-top:2px; }
+    .warn-danger { background:rgba(239,68,68,.08); border:1px solid rgba(239,68,68,.2); color:#fca5a5; }
+    .warn-yellow { background:rgba(245,158,11,.08); border:1px solid rgba(245,158,11,.2); color:#fcd34d; }
+
+    /* Actions */
+    .delete-actions { display:flex; gap:.75rem; justify-content:flex-end; flex-wrap:wrap; }
+    .btn-danger { display:inline-flex; align-items:center; gap:.4rem; padding:.65rem 1.25rem; background:linear-gradient(135deg,#dc2626,#b91c1c); color:#fff; font-family:'Syne',sans-serif; font-size:.9rem; font-weight:600; border-radius:9px; border:none; cursor:pointer; box-shadow:0 4px 16px rgba(220,38,38,.35); transition:transform .15s,box-shadow .2s; }
+    .btn-danger:hover { transform:translateY(-1px); box-shadow:0 6px 22px rgba(220,38,38,.5); }
+    .btn-cancel-del { display:inline-flex; align-items:center; gap:.4rem; padding:.65rem 1.25rem; background:rgba(255,255,255,.04); border:1px solid var(--border); border-radius:9px; color:var(--text-subtle); font-size:.9rem; text-decoration:none; transition:background .15s,color .15s; }
+    .btn-cancel-del:hover { background:rgba(255,255,255,.08); color:var(--text); }
+
+    @keyframes shake { 0%,100%{transform:rotate(0)} 20%{transform:rotate(-8deg)} 40%{transform:rotate(8deg)} 60%{transform:rotate(-4deg)} 80%{transform:rotate(4deg)} }
+</style>
+{% endblock %}
+
+{% block content %}
+{% with areas_count=nivel.areas.count %}
+<div class="delete-wrap">
+    <div class="delete-card">
+
+        <!-- Top -->
+        <div class="delete-top">
+            <div class="del-icon-wrap"><i class="fas fa-trash-can"></i></div>
+            <h2 class="delete-title">¿Eliminar este nivel?</h2>
+            <p class="delete-msg">Estás a punto de eliminar el nivel <strong>{{ nivel.nombre }}</strong> de la planta <strong>{{ nivel.planta.nombre }}</strong>.</p>
+
+            <!-- Visual preview -->
+            <div class="nivel-preview">
+                <div class="np-num">
+                    <span class="n-lbl">Piso</span>
+                    <span class="n-val">{% if nivel.numero_nivel > 0 %}+{% endif %}{{ nivel.numero_nivel }}</span>
+                </div>
+                <div>
+                    <div class="np-code">{{ nivel.codigo }}</div>
+                    <div class="np-name">{{ nivel.nombre }}</div>
+                    <div class="np-plant"><i class="fas fa-industry" style="margin-right:.3rem;font-size:.65rem;"></i>{{ nivel.planta.nombre }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Body -->
+        <div class="delete-body">
+
+            <!-- Areas count -->
+            <div class="count-row">
+                <span>Áreas en este nivel:</span>
+                <span class="{% if areas_count > 0 %}c-badge-has{% else %}c-badge-empty{% endif %}">
+                    <i class="fas {% if areas_count > 0 %}fa-triangle-exclamation{% else %}fa-circle-check{% endif %}"></i>
+                    {{ areas_count }} área{% if areas_count != 1 %}s{% endif %}
+                </span>
+            </div>
+
+            {% if areas_count > 0 %}
+
+            <!-- List affected areas -->
+            <div class="affected-list">
+                <div class="affected-title"><i class="fas fa-triangle-exclamation" style="margin-right:.4rem;"></i>Áreas que se eliminarán</div>
+                {% for area in nivel.areas.all|slice:":6" %}
+                <div class="affected-item">
+                    <i class="fas fa-circle"></i>
+                    <strong style="color:var(--accent2);font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;width:60px;flex-shrink:0;">{{ area.codigo }}</strong>
+                    {{ area.nombre }}
+                    {% if area.subareas.count > 0 %}
+                    <span style="margin-left:auto;font-size:.7rem;color:rgba(239,68,68,.6);">+ {{ area.subareas.count }} subáreas</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                {% if areas_count > 6 %}
+                <div class="affected-more">y {{ areas_count|add:"-6" }} área{{ areas_count|add:"-6"|pluralize:"s" }} más…</div>
+                {% endif %}
+            </div>
+
+            <div class="warn-box warn-danger">
+                <i class="fas fa-circle-xmark"></i>
+                <span>Eliminar este nivel borrará también <strong>{{ areas_count }} área{{ areas_count|pluralize }}</strong> y todas sus subáreas y activos ubicados en ellas. Esta acción es <strong>irreversible</strong>.</span>
+            </div>
+
+            <div class="delete-actions">
+                <a href="{% url 'organizacion:nivel_detail' nivel.pk %}" class="btn-cancel-del"><i class="fas fa-arrow-left"></i> Cancelar</a>
+                <a href="{% url 'organizacion:nivel_list' %}" class="btn-cancel-del"><i class="fas fa-map-signs"></i> Ver áreas</a>
+                <form method="post" style="display:contents;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-danger"><i class="fas fa-trash-can"></i> Eliminar de todas formas</button>
+                </form>
+            </div>
+
+            {% else %}
+
+            <div class="warn-box warn-yellow">
+                <i class="fas fa-triangle-exclamation"></i>
+                <span>Este nivel no tiene áreas asociadas. Puede eliminarse de forma segura. La acción es <strong>irreversible</strong>.</span>
+            </div>
+
+            <div class="delete-actions">
+                <a href="{% url 'organizacion:nivel_detail' nivel.pk %}" class="btn-cancel-del"><i class="fas fa-arrow-left"></i> Cancelar</a>
+                <form method="post" style="display:contents;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-danger"><i class="fas fa-trash-can"></i> Sí, eliminar</button>
+                </form>
+            </div>
+
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endwith %}
+{% endblock %}

@@ -1,273 +1,298 @@
 {% extends 'base.html' %}
-
 {% block title %}{{ nivel.nombre }} - SIGAP{% endblock %}
-
-{% block page_title %}Detalle de Nivel{% endblock %}
+{% block page_title %}Nivel{% endblock %}
 
 {% block breadcrumbs %}
-<nav class="mb-4">
-    <ol class="flex items-center space-x-2 text-sm text-gray-500">
-        <li><a href="{% url 'core:dashboard' %}" class="hover:text-primary-600"><i class="fas fa-home"></i></a></li>
-        <li><i class="fas fa-chevron-right text-xs"></i></li>
-        <li><a href="{% url 'organizacion:planta_list' %}" class="hover:text-primary-600">Organización</a></li>
-        <li><i class="fas fa-chevron-right text-xs"></i></li>
-        <li><a href="{% url 'organizacion:nivel_list' %}" class="hover:text-primary-600">Niveles</a></li>
-        <li><i class="fas fa-chevron-right text-xs"></i></li>
-        <li class="text-gray-700">{{ nivel.nombre }}</li>
-    </ol>
+<nav class="breadcrumb">
+    <a href="{% url 'core:dashboard' %}"><i class="fas fa-house"></i> Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'organizacion:planta_list' %}">Plantas</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{{ nivel.planta.get_absolute_url }}">{{ nivel.planta.nombre }}</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'organizacion:nivel_list' %}">Niveles</a>
+    <i class="fas fa-chevron-right"></i>
+    <span>{{ nivel.nombre }}</span>
 </nav>
 {% endblock %}
 
-{% block content %}
-<!-- Header con acciones -->
-<div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-    <div class="mb-4 md:mb-0">
-        <h2 class="text-2xl font-bold text-gray-800">{{ nivel.nombre }}</h2>
-        <p class="text-gray-500 mt-1">Código: {{ nivel.codigo }}</p>
-    </div>
-    <div class="flex space-x-3">
-        {% if perms.organizacion.change_nivel %}
-        <a href="{% url 'organizacion:nivel_update' nivel.pk %}" class="btn-primary">
-            <i class="fas fa-edit mr-2"></i>Editar
-        </a>
-        {% endif %}
-        {% if perms.organizacion.delete_nivel %}
-        <a href="{% url 'organizacion:nivel_delete' nivel.pk %}" class="btn-danger">
-            <i class="fas fa-trash mr-2"></i>Eliminar
-        </a>
-        {% endif %}
-    </div>
-</div>
+{% block extra_css %}
+<style>
+    .detail-grid { display:grid; grid-template-columns:1fr 280px; gap:1.25rem; align-items:start; }
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Información Principal -->
-    <div class="lg:col-span-2 space-y-6">
-        <!-- Información General -->
-        <div class="card">
-            <div class="card-header">
-                <h3 class="text-lg font-semibold text-gray-800">
-                    <i class="fas fa-info-circle mr-2 text-primary-600"></i>
-                    Información General
-                </h3>
+    /* ── Hero ── */
+    .nivel-hero {
+        background:var(--surface); border:1px solid var(--border);
+        border-radius:16px; overflow:hidden; margin-bottom:1.25rem;
+    }
+    .hero-top { display:flex; align-items:center; gap:1.25rem; padding:1.5rem 1.75rem; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+
+    /* Big floor number display */
+    .floor-display {
+        width:76px; height:76px; border-radius:14px; flex-shrink:0;
+        display:flex; flex-direction:column; align-items:center; justify-content:center;
+        border:2px solid;
+    }
+    .floor-display.positive { background:rgba(37,99,235,.1); border-color:rgba(37,99,235,.3); color:#60a5fa; }
+    .floor-display.ground   { background:rgba(34,197,94,.1);  border-color:rgba(34,197,94,.3);  color:#4ade80; }
+    .floor-display.negative { background:rgba(245,158,11,.1); border-color:rgba(245,158,11,.3); color:#fcd34d; }
+    .fd-label { font-size:.58rem; text-transform:uppercase; letter-spacing:.1em; opacity:.7; }
+    .fd-num   { font-family:'Syne',sans-serif; font-size:1.75rem; font-weight:800; line-height:1; }
+
+    .hero-text { flex:1; min-width:0; }
+    .hero-code { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:var(--accent2); margin-bottom:.25rem; }
+    .hero-name { font-family:'Syne',sans-serif; font-size:1.5rem; font-weight:700; color:var(--text); }
+    .hero-plant { font-size:.82rem; color:var(--text-muted); margin-top:.3rem; display:flex; align-items:center; gap:.4rem; }
+    .hero-plant a { color:var(--accent2); text-decoration:none; }
+    .hero-plant a:hover { color:var(--text); }
+    .hero-chips { display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.65rem; }
+
+    .toggle-chip { display:inline-flex; align-items:center; gap:.4rem; padding:.25rem .75rem; border-radius:9999px; font-size:.78rem; font-weight:600; }
+    .tc-on  { background:rgba(34,197,94,.12);  color:#4ade80; border:1px solid rgba(34,197,94,.25); }
+    .tc-off { background:rgba(107,114,128,.1); color:#6b7280; border:1px solid rgba(107,114,128,.2); }
+
+    .hero-actions { display:flex; gap:.5rem; flex-shrink:0; }
+    .act-btn {
+        display:inline-flex; align-items:center; gap:.4rem; padding:.5rem .9rem;
+        border-radius:8px; font-size:.82rem; font-weight:500; text-decoration:none;
+        border:1px solid var(--border); background:rgba(255,255,255,.04); color:var(--text-subtle);
+        transition:background .15s,color .15s,border-color .15s; cursor:pointer; white-space:nowrap;
+    }
+    .act-btn:hover { background:rgba(255,255,255,.08); color:var(--text); border-color:var(--border2); }
+    .act-btn.primary { background:linear-gradient(135deg,var(--accent),#1d4ed8); border-color:transparent; color:#fff; box-shadow:0 3px 14px rgba(37,99,235,.35); }
+    .act-btn.danger  { color:#f87171; border-color:rgba(239,68,68,.25); }
+    .act-btn.danger:hover { background:rgba(239,68,68,.1); }
+
+    /* Stats row */
+    .stats-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:.75rem; margin-bottom:1.25rem; }
+    .stat-mini { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:.875rem 1rem; display:flex; align-items:center; gap:.75rem; }
+    .stat-mini-icon { width:36px; height:36px; border-radius:8px; background:rgba(37,99,235,.1); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:.85rem; color:#60a5fa; }
+    .stat-mini-val { font-family:'Syne',sans-serif; font-size:1.3rem; font-weight:700; color:var(--text); }
+    .stat-mini-label { font-size:.68rem; text-transform:uppercase; letter-spacing:.08em; color:var(--text-muted); }
+
+    /* Plano */
+    .plano-img { width:100%; max-height:180px; object-fit:cover; border-radius:10px; border:1px solid var(--border); }
+
+    /* Section card */
+    .section-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; margin-bottom:1rem; }
+    .sc-header {
+        padding:.875rem 1.25rem; border-bottom:1px solid var(--border);
+        background:var(--surface2); display:flex; align-items:center; justify-content:space-between;
+    }
+    .sc-header-left { display:flex; align-items:center; gap:.5rem; font-family:'Syne',sans-serif; font-size:.875rem; font-weight:600; color:var(--text); }
+    .sc-header-left i { color:var(--accent2); font-size:.8rem; }
+    .sc-body { padding:1.1rem 1.25rem; }
+
+    .field-row { display:flex; justify-content:space-between; align-items:center; padding:.5rem 0; border-bottom:1px solid rgba(255,255,255,.04); gap:1rem; }
+    .field-row:last-child { border-bottom:none; padding-bottom:0; }
+    .fl { font-size:.73rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; flex-shrink:0; }
+    .fv { font-size:.875rem; color:var(--text); text-align:right; }
+    .fv.empty { color:var(--text-muted); font-style:italic; }
+    .fv a { color:var(--accent2); text-decoration:none; }
+    .fv a:hover { color:var(--text); }
+
+    /* Areas table */
+    .areas-table { width:100%; border-collapse:collapse; }
+    .areas-table th { font-size:.7rem; text-transform:uppercase; letter-spacing:.08em; color:var(--text-muted); padding:.5rem .875rem; border-bottom:1px solid var(--border); text-align:left; }
+    .areas-table td { padding:.65rem .875rem; border-bottom:1px solid rgba(255,255,255,.04); font-size:.85rem; color:var(--text); vertical-align:middle; }
+    .areas-table tr:last-child td { border-bottom:none; }
+    .areas-table tr:hover td { background:rgba(255,255,255,.02); }
+    .area-link { color:var(--accent2); text-decoration:none; font-weight:500; }
+    .area-link:hover { color:var(--text); }
+    .area-code { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--accent2); }
+
+    /* Audit */
+    .audit-row { display:flex; align-items:baseline; gap:.5rem; padding:.3rem 0; font-size:.82rem; }
+    .audit-label { color:var(--text-muted); font-size:.72rem; text-transform:uppercase; letter-spacing:.06em; flex-shrink:0; width:86px; }
+    .audit-val   { color:var(--text-subtle); }
+
+    /* contact */
+    .contact-item { display:flex; align-items:center; gap:.6rem; padding:.4rem 0; border-bottom:1px solid rgba(255,255,255,.04); font-size:.875rem; color:var(--text-subtle); }
+    .contact-item:last-child { border-bottom:none; }
+    .contact-item i { color:var(--accent2); font-size:.8rem; width:16px; text-align:center; flex-shrink:0; }
+
+    @media(max-width:768px){ .detail-grid{grid-template-columns:1fr} .stats-strip{grid-template-columns:1fr 1fr} .hero-top{flex-direction:column} .hero-actions{width:100%} }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Hero -->
+<div class="nivel-hero">
+    <div class="hero-top">
+        <!-- Big floor number -->
+        <div class="floor-display {% if nivel.numero_nivel > 0 %}positive{% elif nivel.numero_nivel == 0 %}ground{% else %}negative{% endif %}">
+            <span class="fd-label">Piso</span>
+            <span class="fd-num">{% if nivel.numero_nivel > 0 %}+{% endif %}{{ nivel.numero_nivel }}</span>
+        </div>
+
+        <div class="hero-text">
+            <div class="hero-code">{{ nivel.codigo }}</div>
+            <div class="hero-name">{{ nivel.nombre }}</div>
+            <div class="hero-plant">
+                <i class="fas fa-industry" style="font-size:.72rem;color:var(--accent2);"></i>
+                <a href="{{ nivel.planta.get_absolute_url }}">{{ nivel.planta.nombre }}</a>
+                <span style="color:rgba(255,255,255,.15);">·</span>
+                <span>{{ nivel.planta.ciudad }}</span>
             </div>
-            <div class="card-body">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <p class="text-sm text-gray-500 mb-1">Descripción</p>
-                        <p class="text-gray-800">{{ nivel.descripcion|default:"Sin descripción" }}</p>
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-500 mb-1">Estado</p>
-                        {% if nivel.activo %}
-                        <span class="badge badge-green">Activo</span>
-                        {% else %}
-                        <span class="badge badge-gray">Inactivo</span>
-                        {% endif %}
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-500 mb-1">Número de Nivel</p>
-                        <p class="text-gray-800">{{ nivel.numero_nivel }}</p>
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-500 mb-1">Altura (metros)</p>
-                        <p class="text-gray-800">{{ nivel.altura|default:"-" }}</p>
-                    </div>
-                </div>
+            <div class="hero-chips">
+                <span class="toggle-chip {% if nivel.activo %}tc-on{% else %}tc-off{% endif %}">
+                    <i class="fas {% if nivel.activo %}fa-circle-check{% else %}fa-circle-xmark{% endif %}"></i>
+                    {% if nivel.activo %}Activo{% else %}Inactivo{% endif %}
+                </span>
+                {% if nivel.altura %}
+                <span class="toggle-chip" style="background:rgba(56,189,248,.1);color:#38bdf8;border:1px solid rgba(56,189,248,.25);">
+                    <i class="fas fa-ruler-vertical"></i> {{ nivel.altura }} m
+                </span>
+                {% endif %}
             </div>
         </div>
 
-        <!-- Planta Asociada -->
-        <div class="card">
-            <div class="card-header">
-                <h3 class="text-lg font-semibold text-gray-800">
-                    <i class="fas fa-building mr-2 text-primary-600"></i>
-                    Planta
-                </h3>
+        <div class="hero-actions">
+            {% if perms.organizacion.change_nivel %}
+            <a href="{% url 'organizacion:nivel_update' nivel.pk %}" class="act-btn primary">
+                <i class="fas fa-pen"></i> Editar
+            </a>
+            {% endif %}
+            {% if perms.organizacion.delete_nivel %}
+            <a href="{% url 'organizacion:nivel_delete' nivel.pk %}" class="act-btn danger">
+                <i class="fas fa-trash"></i>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Stats -->
+<div class="stats-strip">
+    <div class="stat-mini">
+        <div class="stat-mini-icon"><i class="fas fa-th-large"></i></div>
+        <div><div class="stat-mini-val">{{ nivel.areas.count }}</div><div class="stat-mini-label">Áreas</div></div>
+    </div>
+    <div class="stat-mini">
+        <div class="stat-mini-icon" style="background:rgba(34,197,94,.1);color:#4ade80;"><i class="fas fa-circle-check"></i></div>
+        <div><div class="stat-mini-val" style="color:#4ade80;">{{ nivel.areas.filter.activa }}</div><div class="stat-mini-label">Áreas activas</div></div>
+    </div>
+    <div class="stat-mini">
+        <div class="stat-mini-icon" style="background:rgba(245,158,11,.1);color:#fcd34d;"><i class="fas fa-ruler-vertical"></i></div>
+        <div><div class="stat-mini-val">{{ nivel.altura|default:"—" }}</div><div class="stat-mini-label">Metros altura</div></div>
+    </div>
+</div>
+
+<div class="detail-grid">
+    <!-- LEFT -->
+    <div>
+        <!-- Plano -->
+        {% if nivel.plano %}
+        <div class="section-card" style="margin-bottom:1rem;">
+            <div class="sc-header"><div class="sc-header-left"><i class="fas fa-map"></i> Plano del nivel</div></div>
+            <div class="sc-body" style="padding:.75rem;">
+                <img src="{{ nivel.plano.url }}" alt="Plano {{ nivel.nombre }}" class="plano-img">
             </div>
-            <div class="card-body">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <p class="text-sm text-gray-500 mb-1">Nombre</p>
-                        <p class="text-gray-800">
-                            <a href="{{ nivel.planta.get_absolute_url }}" class="text-primary-600 hover:text-primary-800">
-                                {{ nivel.planta.nombre }}
-                            </a>
-                        </p>
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-500 mb-1">Código</p>
-                        <p class="text-gray-800">{{ nivel.planta.codigo }}</p>
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-500 mb-1">Dirección</p>
-                        <p class="text-gray-800">{{ nivel.planta.direccion|default:"No especificada" }}</p>
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-500 mb-1">Ciudad / País</p>
-                        <p class="text-gray-800">{{ nivel.planta.ciudad|default:"-" }}, {{ nivel.planta.pais }}</p>
-                    </div>
-                </div>
+        </div>
+        {% endif %}
+
+        <!-- Información general -->
+        <div class="section-card">
+            <div class="sc-header"><div class="sc-header-left"><i class="fas fa-circle-info"></i> Información General</div></div>
+            <div class="sc-body">
+                {% if nivel.descripcion %}
+                <p style="font-size:.875rem;color:var(--text-subtle);line-height:1.65;margin-bottom:1rem;">{{ nivel.descripcion }}</p>
+                {% endif %}
+                <div class="field-row"><span class="fl">Número de nivel</span><span class="fv">{{ nivel.numero_nivel }}</span></div>
+                <div class="field-row"><span class="fl">Altura</span><span class="fv {% if not nivel.altura %}empty{% endif %}">{% if nivel.altura %}{{ nivel.altura }} m{% else %}No especificada{% endif %}</span></div>
+                <div class="field-row"><span class="fl">Estado</span><span class="fv"><span class="toggle-chip {% if nivel.activo %}tc-on{% else %}tc-off{% endif %}">{% if nivel.activo %}Activo{% else %}Inactivo{% endif %}</span></span></div>
+                <div class="field-row"><span class="fl">Planta</span><span class="fv"><a href="{{ nivel.planta.get_absolute_url }}">{{ nivel.planta.nombre }}</a></span></div>
             </div>
         </div>
 
         <!-- Áreas -->
-        <div class="card">
-            <div class="card-header flex justify-between items-center">
-                <h3 class="text-lg font-semibold text-gray-800">
-                    <i class="fas fa-map-signs mr-2 text-primary-600"></i>
-                    Áreas
-                </h3>
+        <div class="section-card">
+            <div class="sc-header">
+                <div class="sc-header-left"><i class="fas fa-map-signs"></i> Áreas</div>
                 {% if perms.organizacion.add_area %}
-                <a href="{% url 'organizacion:area_create' %}?nivel={{ nivel.pk }}" class="text-sm text-primary-600 hover:text-primary-800">
-                    <i class="fas fa-plus mr-1"></i>Agregar área
+                <a href="{% url 'organizacion:area_create' %}?nivel={{ nivel.pk }}" class="act-btn" style="padding:.3rem .7rem;font-size:.78rem;">
+                    <i class="fas fa-plus"></i> Agregar
                 </a>
                 {% endif %}
             </div>
-            <div class="card-body p-0">
-                <div class="table-container">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Código</th>
-                                <th>Nombre</th>
-                                <th>Tipo</th>
-                                <th>Subáreas</th>
-                                <th>Estado</th>
-                                <th class="text-right">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for area in nivel.areas.all %}
-                            <tr>
-                                <td class="font-medium">{{ area.codigo }}</td>
-                                <td>
-                                    <a href="{{ area.get_absolute_url }}" class="text-primary-600 hover:text-primary-800">
-                                        {{ area.nombre }}
-                                    </a>
-                                </td>
-                                <td>{{ area.tipo|default:"-" }}</td>
-                                <td>{{ area.subareas.count }}</td>
-                                <td>
-                                    {% if area.activa %}
-                                    <span class="badge badge-green">Activa</span>
-                                    {% else %}
-                                    <span class="badge badge-gray">Inactiva</span>
+            <div>
+                <table class="areas-table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Nombre</th>
+                            <th>Tipo</th>
+                            <th style="text-align:center;">Subáreas</th>
+                            <th>Estado</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for area in nivel.areas.all %}
+                        <tr>
+                            <td><span class="area-code">{{ area.codigo }}</span></td>
+                            <td><a href="{{ area.get_absolute_url }}" class="area-link">{{ area.nombre }}</a></td>
+                            <td style="color:var(--text-muted);font-size:.8rem;">{{ area.tipo|default:"—" }}</td>
+                            <td style="text-align:center;color:var(--text-muted);">{{ area.subareas.count }}</td>
+                            <td>
+                                <span class="toggle-chip {% if area.activa %}tc-on{% else %}tc-off{% endif %}" style="font-size:.68rem;padding:.15rem .5rem;">
+                                    {% if area.activa %}Activa{% else %}Inactiva{% endif %}
+                                </span>
+                            </td>
+                            <td style="text-align:right;">
+                                <div style="display:flex;gap:.3rem;justify-content:flex-end;">
+                                    <a href="{{ area.get_absolute_url }}" style="width:26px;height:26px;border-radius:6px;background:rgba(255,255,255,.04);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:.72rem;text-decoration:none;transition:background .15s,color .15s;" title="Ver"><i class="fas fa-eye"></i></a>
+                                    {% if perms.organizacion.change_area %}
+                                    <a href="{% url 'organizacion:area_update' area.pk %}" style="width:26px;height:26px;border-radius:6px;background:rgba(255,255,255,.04);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:.72rem;text-decoration:none;" title="Editar"><i class="fas fa-pen"></i></a>
                                     {% endif %}
-                                </td>
-                                <td class="text-right">
-                                    <div class="flex items-center justify-end space-x-2">
-                                        <a href="{{ area.get_absolute_url }}" 
-                                           class="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50"
-                                           title="Ver detalle">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        {% if perms.organizacion.change_area %}
-                                        <a href="{% url 'organizacion:area_update' area.pk %}" 
-                                           class="text-yellow-600 hover:text-yellow-800 p-2 rounded-lg hover:bg-yellow-50"
-                                           title="Editar">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        {% endif %}
-                                    </div>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="6" class="text-center py-4 text-gray-500">No hay áreas registradas en este nivel</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" style="text-align:center;padding:1.5rem;color:var(--text-muted);font-size:.85rem;">Sin áreas registradas.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    <!-- Sidebar -->
-    <div class="space-y-6">
-        <!-- Plano -->
-        {% if nivel.plano %}
-        <div class="card">
-            <div class="card-body p-0">
-                <img src="{{ nivel.plano.url }}" alt="Plano de {{ nivel.nombre }}" class="w-full h-48 object-cover rounded-t-lg">
+    <!-- RIGHT -->
+    <div>
+        <!-- Planta info -->
+        <div class="section-card">
+            <div class="sc-header"><div class="sc-header-left"><i class="fas fa-industry"></i> Planta asociada</div></div>
+            <div class="sc-body">
+                <div class="field-row"><span class="fl">Nombre</span><span class="fv"><a href="{{ nivel.planta.get_absolute_url }}" style="color:var(--accent2);text-decoration:none;">{{ nivel.planta.nombre }}</a></span></div>
+                <div class="field-row"><span class="fl">Código</span><span class="fv">{{ nivel.planta.codigo }}</span></div>
+                <div class="field-row"><span class="fl">Ciudad</span><span class="fv">{{ nivel.planta.ciudad }}</span></div>
+                <div class="field-row"><span class="fl">País</span><span class="fv">{{ nivel.planta.pais }}</span></div>
+            </div>
+        </div>
+
+        <!-- Contact -->
+        {% if nivel.planta.telefono or nivel.planta.email %}
+        <div class="section-card">
+            <div class="sc-header"><div class="sc-header-left"><i class="fas fa-address-card"></i> Contacto planta</div></div>
+            <div class="sc-body">
+                {% if nivel.planta.telefono %}<div class="contact-item"><i class="fas fa-phone"></i>{{ nivel.planta.telefono }}</div>{% endif %}
+                {% if nivel.planta.email %}<div class="contact-item"><i class="fas fa-envelope"></i>{{ nivel.planta.email }}</div>{% endif %}
             </div>
         </div>
         {% endif %}
 
-        <!-- Estadísticas -->
-        <div class="card">
-            <div class="card-header">
-                <h3 class="text-lg font-semibold text-gray-800">
-                    <i class="fas fa-chart-bar mr-2 text-primary-600"></i>
-                    Estadísticas
-                </h3>
-            </div>
-            <div class="card-body">
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="text-center p-4 bg-blue-50 rounded-lg">
-                        <p class="text-2xl font-bold text-blue-600">{{ nivel.areas.count }}</p>
-                        <p class="text-sm text-gray-600">Total Áreas</p>
-                    </div>
-                    <div class="text-center p-4 bg-green-50 rounded-lg">
-                        <p class="text-2xl font-bold text-green-600">{{ nivel.areas.activas.count|default:"0" }}</p>
-                        <p class="text-sm text-gray-600">Activas</p>
-                    </div>
-                </div>
-                {% if nivel.altura %}
-                <div class="mt-4 p-3 bg-gray-50 rounded-lg text-center">
-                    <p class="text-sm text-gray-500">Altura del nivel</p>
-                    <p class="text-xl font-semibold text-gray-800">{{ nivel.altura }} m</p>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- Contacto de la Planta (opcional, para contexto) -->
-        <div class="card">
-            <div class="card-header">
-                <h3 class="text-lg font-semibold text-gray-800">
-                    <i class="fas fa-address-card mr-2 text-primary-600"></i>
-                    Contacto de Planta
-                </h3>
-            </div>
-            <div class="card-body">
-                <div class="space-y-3">
-                    {% if nivel.planta.telefono %}
-                    <div class="flex items-center">
-                        <i class="fas fa-phone text-gray-400 w-6"></i>
-                        <span>{{ nivel.planta.telefono }}</span>
-                    </div>
-                    {% endif %}
-                    {% if nivel.planta.email %}
-                    <div class="flex items-center">
-                        <i class="fas fa-envelope text-gray-400 w-6"></i>
-                        <span>{{ nivel.planta.email }}</span>
-                    </div>
-                    {% endif %}
-                    {% if not nivel.planta.telefono and not nivel.planta.email %}
-                    <p class="text-gray-500">No hay información de contacto</p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- Auditoría -->
-        <div class="card">
-            <div class="card-header">
-                <h3 class="text-lg font-semibold text-gray-800">
-                    <i class="fas fa-history mr-2 text-primary-600"></i>
-                    Auditoría
-                </h3>
-            </div>
-            <div class="card-body">
-                <div class="space-y-2 text-sm">
-                    <p><span class="text-gray-500">Creado:</span> {{ nivel.creado|date:"d/m/Y H:i" }}</p>
-                    <p><span class="text-gray-500">Por:</span> {{ nivel.creado_por|default:"Sistema" }}</p>
-                    <p><span class="text-gray-500">Modificado:</span> {{ nivel.modificado|date:"d/m/Y H:i" }}</p>
-                    <p><span class="text-gray-500">Por:</span> {{ nivel.modificado_por|default:"Sistema" }}</p>
-                </div>
+        <!-- Audit -->
+        <div class="section-card">
+            <div class="sc-header"><div class="sc-header-left"><i class="fas fa-clock-rotate-left"></i> Auditoría</div></div>
+            <div class="sc-body">
+                <div class="audit-row"><span class="audit-label">Creado</span><span class="audit-val">{{ nivel.creado|date:"d/m/Y H:i" }}</span></div>
+                <div class="audit-row"><span class="audit-label">Por</span><span class="audit-val">{{ nivel.creado_por|default:"Sistema" }}</span></div>
+                <div class="audit-row"><span class="audit-label">Modificado</span><span class="audit-val">{{ nivel.modificado|date:"d/m/Y H:i" }}</span></div>
+                <div class="audit-row"><span class="audit-label">Por</span><span class="audit-val">{{ nivel.modificado_por|default:"Sistema" }}</span></div>
             </div>
         </div>
     </div>
 </div>
+
 {% endblock %}

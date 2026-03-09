@@ -1,46 +1,371 @@
 {% extends 'base.html' %}
-{% load crispy_forms_tags %}
-
-{% block title %}{% if object %}Editar{% else %}Nueva{% endif %} Área - SIGAP{% endblock %}
-
-{% block page_title %}{% if object %}Editar{% else %}Nueva{% endif %} Área{% endblock %}
+{% block title %}{% if object %}Editar {{ object.nombre }}{% else %}Nueva Área{% endif %} - SIGAP{% endblock %}
+{% block page_title %}{% if object %}Editar Área{% else %}Nueva Área{% endif %}{% endblock %}
 
 {% block breadcrumbs %}
-<nav class="mb-4">
-    <ol class="flex items-center space-x-2 text-sm text-gray-500">
-        <li><a href="{% url 'core:dashboard' %}" class="hover:text-primary-600"><i class="fas fa-home"></i></a></li>
-        <li><i class="fas fa-chevron-right text-xs"></i></li>
-        <li><a href="{% url 'organizacion:area_list' %}" class="hover:text-primary-600">Áreas</a></li>
-        <li><i class="fas fa-chevron-right text-xs"></i></li>
-        <li class="text-gray-700">{% if object %}Editar{% else %}Nueva{% endif %}</li>
-    </ol>
+<nav class="breadcrumb">
+    <a href="{% url 'core:dashboard' %}"><i class="fas fa-house"></i> Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'organizacion:area_list' %}">Áreas</a>
+    <i class="fas fa-chevron-right"></i>
+    {% if object %}<a href="{% url 'organizacion:area_detail' object.pk %}">{{ object.nombre }}</a><i class="fas fa-chevron-right"></i><span>Editar</span>
+    {% else %}<span>Nueva</span>{% endif %}
 </nav>
 {% endblock %}
 
+{% block extra_css %}
+<style>
+.form-layout{display:grid;grid-template-columns:1fr 260px;gap:1.25rem;align-items:start;max-width:900px}
+
+.fc{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:1rem}
+.fch{padding:1rem 1.5rem;border-bottom:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;gap:.6rem}
+.fch-n{width:26px;height:26px;border-radius:50%;background:rgba(37,99,235,.2);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:#60a5fa;flex-shrink:0}
+.fch h3{font-family:'Syne',sans-serif;font-size:.9rem;font-weight:600;color:var(--text)}
+.fcb{padding:1.5rem}
+
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.g12{display:grid;grid-template-columns:1fr 2fr;gap:1rem}
+.mb{margin-bottom:1rem}
+
+.fg{display:flex;flex-direction:column;gap:.35rem}
+.fg label{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted)}
+.fg label .req{color:#f87171}
+.ferr{font-size:.75rem;color:#f87171;margin-top:.2rem}
+.fhint{font-size:.72rem;color:var(--text-muted);margin-top:.2rem}
+
+.fi,.fs,.ft{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:9px;padding:.6rem .875rem;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.875rem;outline:none;width:100%;transition:border-color .2s,background .2s,box-shadow .2s}
+.fi::placeholder,.ft::placeholder{color:rgba(107,114,128,.5)}
+.fi:focus,.fs:focus,.ft:focus{border-color:var(--accent);background:rgba(37,99,235,.05);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.fs{appearance:none;cursor:pointer;padding-right:2.25rem;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7280'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right .875rem center;background-color:rgba(255,255,255,.04)}
+.fs option{background:#1a2236}
+.ft{resize:vertical;min-height:72px}
+
+/* ── Plano upload — the highlight ── */
+.plano-upload-zone {
+    position:relative; border:2px dashed var(--border); border-radius:12px;
+    background:#080c14; overflow:hidden; cursor:pointer;
+    transition:border-color .2s, box-shadow .2s;
+    min-height:180px; display:flex; flex-direction:column;
+}
+.plano-upload-zone:hover { border-color:rgba(37,99,235,.5); box-shadow:0 4px 18px rgba(0,0,0,.4); }
+.plano-upload-zone.drag-over { border-color:var(--accent); box-shadow:0 0 0 3px rgba(37,99,235,.18); }
+
+/* Blueprint grid in drop zone */
+.puz-grid {
+    position:absolute; inset:0; z-index:0; pointer-events:none;
+    background-image:linear-gradient(rgba(37,99,235,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,.07) 1px,transparent 1px);
+    background-size:24px 24px;
+}
+.plano-upload-zone input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; z-index:2; }
+
+/* Empty state */
+.puz-empty {
+    position:relative; z-index:1;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:2rem; gap:.6rem; min-height:180px; pointer-events:none;
+}
+.puz-icon { width:52px; height:52px; border-radius:12px; background:rgba(37,99,235,.1); border:1px solid rgba(37,99,235,.2); display:flex; align-items:center; justify-content:center; font-size:1.3rem; color:#60a5fa; }
+.puz-title { font-family:'Syne',sans-serif; font-size:.9rem; font-weight:600; color:var(--text); margin-top:.25rem; }
+.puz-sub { font-size:.75rem; color:var(--text-muted); text-align:center; }
+
+/* Preview state */
+.puz-preview { display:none; position:relative; z-index:1; min-height:180px; }
+.puz-preview img { width:100%; max-height:260px; object-fit:contain; padding:8px; filter:brightness(.88) contrast(1.06); }
+.puz-preview-label {
+    position:absolute; bottom:.5rem; left:.5rem; right:.5rem;
+    background:rgba(0,0,0,.65); backdrop-filter:blur(6px);
+    border:1px solid rgba(255,255,255,.1); border-radius:8px;
+    padding:.4rem .75rem; font-size:.75rem; color:rgba(255,255,255,.7);
+    display:flex; align-items:center; justify-content:space-between;
+}
+.puz-preview-label i { color:var(--accent2); }
+.puz-remove { background:none; border:none; color:rgba(239,68,68,.7); cursor:pointer; font-size:.75rem; padding:.1rem .3rem; }
+.puz-remove:hover { color:#f87171; }
+
+/* Existing plano note */
+.existing-plano { background:rgba(37,99,235,.06); border:1px solid rgba(37,99,235,.15); border-radius:9px; padding:.6rem .875rem; font-size:.78rem; color:var(--accent2); display:flex; align-items:center; gap:.5rem; margin-bottom:.6rem; }
+.existing-plano i { flex-shrink:0; }
+
+/* Toggle */
+.ti{display:flex;flex-direction:column;gap:.5rem;padding:.875rem;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;transition:border-color .2s,background .2s}
+.ti-label{font-size:.78rem;color:var(--text-subtle);font-weight:500}
+.ti-sub{font-size:.68rem;color:var(--text-muted)}
+.ts{display:flex;align-items:center;gap:.5rem;cursor:pointer}
+.ts input{display:none}
+.ts-track{width:36px;height:20px;background:rgba(107,114,128,.25);border-radius:10px;position:relative;transition:background .2s;flex-shrink:0}
+.ts-thumb{width:14px;height:14px;background:#fff;border-radius:50%;position:absolute;top:3px;left:3px;transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+
+/* Steps sidebar */
+.steps-sidebar{position:sticky;top:1.5rem}
+.steps-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.steps-hd{padding:.875rem 1.1rem;border-bottom:1px solid var(--border);background:var(--surface2);font-family:'Syne',sans-serif;font-size:.8rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em}
+.si{display:flex;align-items:center;gap:.75rem;padding:.75rem 1.1rem;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;transition:background .15s}
+.si:last-child{border-bottom:none}
+.si:hover{background:rgba(255,255,255,.03)}
+.si-num{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;flex-shrink:0;background:rgba(255,255,255,.06);color:var(--text-muted);border:1px solid var(--border);transition:all .2s}
+.si.active .si-num{background:rgba(37,99,235,.2);color:#60a5fa;border-color:rgba(37,99,235,.4)}
+.si-name{font-size:.82rem;color:var(--text-muted);transition:color .2s}
+.si.active .si-name{color:var(--text);font-weight:500}
+
+/* Submit bar */
+.sub-bar{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem;background:var(--surface);border:1px solid var(--border);border-radius:14px;position:sticky;bottom:1rem;z-index:10}
+.sub-bar .left{font-size:.82rem;color:var(--text-muted);display:flex;align-items:center;gap:.4rem}
+.sub-bar .right{display:flex;gap:.6rem}
+.btn-cancel{display:inline-flex;align-items:center;gap:.4rem;padding:.55rem 1.1rem;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text-subtle);font-size:.875rem;text-decoration:none;transition:background .15s,color .15s}
+.btn-cancel:hover{background:rgba(255,255,255,.08);color:var(--text)}
+
+@media(max-width:720px){.form-layout{grid-template-columns:1fr}.steps-sidebar{display:none}.g2{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="max-w-4xl mx-auto">
-    <div class="card">
-        <div class="card-header">
-            <h2 class="text-xl font-semibold text-gray-800">
-                {% if object %}
-                <i class="fas fa-edit mr-2 text-primary-600"></i>Editar Área
-                {% else %}
-                <i class="fas fa-plus mr-2 text-primary-600"></i>Nueva Área
-                {% endif %}
-            </h2>
-        </div>
-        <div class="card-body">
-            {% crispy form %}
+<form method="post" enctype="multipart/form-data" novalidate>
+{% csrf_token %}
+<div class="form-layout">
+  <div>
+
+    <!-- § 1 Identificación -->
+    <div class="fc" id="sec-id">
+        <div class="fch"><div class="fch-n">1</div><h3>Identificación</h3></div>
+        <div class="fcb">
+            <div class="g12 mb">
+                <div class="fg">
+                    <label>Código <span class="req">*</span></label>
+                    {{ form.codigo }}
+                    {% if form.codigo.errors %}<p class="ferr">{{ form.codigo.errors.0 }}</p>{% endif %}
+                </div>
+                <div class="fg">
+                    <label>Nombre <span class="req">*</span></label>
+                    {{ form.nombre }}
+                    {% if form.nombre.errors %}<p class="ferr">{{ form.nombre.errors.0 }}</p>{% endif %}
+                </div>
+            </div>
+            <div class="fg">
+                <label>Descripción</label>
+                {{ form.descripcion }}
+            </div>
         </div>
     </div>
+
+    <!-- § 2 Ubicación -->
+    <div class="fc" id="sec-ubic">
+        <div class="fch"><div class="fch-n">2</div><h3>Ubicación</h3></div>
+        <div class="fcb">
+            <div class="g2 mb">
+                <div class="fg">
+                    <label>Planta <span class="req">*</span></label>
+                    <select name="planta" id="id_planta" class="fs" onchange="loadNiveles(this.value)">
+                        <option value="">Seleccionar planta…</option>
+                        {% for p in plantas %}
+                        <option value="{{ p.id }}" {% if form.instance.nivel.planta_id == p.id or request.GET.planta == p.id|stringformat:"s" %}selected{% endif %}>{{ p.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="fg">
+                    <label>Nivel <span class="req">*</span></label>
+                    {{ form.nivel }}
+                    {% if form.nivel.errors %}<p class="ferr">{{ form.nivel.errors.0 }}</p>{% endif %}
+                    <span class="fhint">Seleccione primero la planta</span>
+                </div>
+            </div>
+            <div class="fg">
+                <label>Tipo de área</label>
+                {{ form.tipo_area }}
+            </div>
+        </div>
+    </div>
+
+    <!-- § 3 Supervisor -->
+    <div class="fc" id="sec-sup">
+        <div class="fch"><div class="fch-n">3</div><h3>Supervisor</h3></div>
+        <div class="fcb">
+            <div class="fg">
+                <label>Supervisor</label>
+                {{ form.supervisor }}
+                <span class="fhint">Persona responsable de esta área</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- § 4 Plano — la estrella -->
+    <div class="fc" id="sec-plano">
+        <div class="fch"><div class="fch-n">4</div><h3>Plano del área</h3></div>
+        <div class="fcb">
+            {% if object and object.plano %}
+            <div class="existing-plano">
+                <i class="fas fa-map"></i>
+                <span>Plano actual: <strong>{{ object.plano.name|default:"plano cargado" }}</strong> — sube uno nuevo para reemplazarlo</span>
+            </div>
+            {% endif %}
+            <div class="plano-upload-zone" id="puz"
+                 ondragover="event.preventDefault();this.classList.add('drag-over')"
+                 ondragleave="this.classList.remove('drag-over')"
+                 ondrop="handleDrop(event)">
+                <div class="puz-grid"></div>
+                {{ form.plano }}
+
+                <!-- Empty state (hidden when preview active) -->
+                <div class="puz-empty" id="puz-empty">
+                    <div class="puz-icon"><i class="fas fa-drafting-compass"></i></div>
+                    <div class="puz-title">Arrastra el plano aquí</div>
+                    <div class="puz-sub">o haz clic para seleccionar un archivo<br><span style="opacity:.6;">PNG, JPG, PDF · Max 10 MB</span></div>
+                </div>
+
+                <!-- Preview (hidden when no file) -->
+                <div class="puz-preview" id="puz-preview">
+                    <img id="puz-img" src="" alt="">
+                    <div class="puz-preview-label">
+                        <span><i class="fas fa-map"></i> <span id="puz-fname"></span></span>
+                        <button type="button" class="puz-remove" onclick="clearPlano(event)"><i class="fas fa-xmark"></i> Quitar</button>
+                    </div>
+                </div>
+            </div>
+            {% if object and object.plano %}
+            <div style="margin-top:.6rem;display:flex;align-items:center;gap:.5rem;">
+                <input type="checkbox" name="plano-clear" id="plano-clear" style="width:14px;height:14px;accent-color:var(--accent);">
+                <label for="plano-clear" style="font-size:.78rem;color:var(--text-muted);cursor:pointer;">Eliminar plano actual sin reemplazar</label>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- § 5 Estado -->
+    <div class="fc" id="sec-estado">
+        <div class="fch"><div class="fch-n">5</div><h3>Estado</h3></div>
+        <div class="fcb">
+            <div class="ti" id="ti-activa">
+                <label class="ts" for="{{ form.activa.id_for_label }}">
+                    {{ form.activa }}
+                    <div class="ts-track"><div class="ts-thumb"></div></div>
+                </label>
+                <div class="ti-label">Área activa</div>
+                <div class="ti-sub">El área está en operación y disponible para asignar activos y subáreas</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="sub-bar">
+        <div class="left"><i class="fas fa-circle-info"></i>
+            {% if object %}Editando <strong>{{ object.nombre }}</strong>{% else %}Nueva área{% endif %}
+        </div>
+        <div class="right">
+            <a href="{% if object %}{% url 'organizacion:area_detail' object.pk %}{% else %}{% url 'organizacion:area_list' %}{% endif %}" class="btn-cancel">
+                <i class="fas fa-xmark"></i> Cancelar
+            </a>
+            <button type="submit" class="btn-primary">
+                <i class="fas fa-floppy-disk"></i>
+                {% if object %}Guardar cambios{% else %}Crear área{% endif %}
+            </button>
+        </div>
+    </div>
+  </div>
+
+  <!-- Sidebar steps -->
+  <div class="steps-sidebar">
+    <div class="steps-card">
+        <div class="steps-hd">Secciones</div>
+        <div class="si active" onclick="goTo('sec-id')"><div class="si-num">1</div><div class="si-name">Identificación</div></div>
+        <div class="si" onclick="goTo('sec-ubic')"><div class="si-num">2</div><div class="si-name">Ubicación</div></div>
+        <div class="si" onclick="goTo('sec-sup')"><div class="si-num">3</div><div class="si-name">Supervisor</div></div>
+        <div class="si" onclick="goTo('sec-plano')"><div class="si-num">4</div><div class="si-name">Plano</div></div>
+        <div class="si" onclick="goTo('sec-estado')"><div class="si-num">5</div><div class="si-name">Estado</div></div>
+    </div>
+  </div>
 </div>
+</form>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    // Preview del plano
-    document.getElementById('id_plano')?.addEventListener('change', function() {
-        previewImage(this, 'plano-preview');
+// Style form inputs
+document.querySelectorAll('input[type=text],input[type=number],input[type=email]').forEach(e=>e.classList.add('fi'));
+document.querySelectorAll('select').forEach(e=>{if(!e.name.includes('plano'))e.classList.add('fs')});
+document.querySelectorAll('textarea').forEach(e=>e.classList.add('ft'));
+
+// Plano file input handler
+const planoInput = document.querySelector('input[type=file][name=plano]');
+if(planoInput){
+    planoInput.addEventListener('change',function(){
+        if(this.files[0]) showPreview(this.files[0]);
     });
+}
+
+function showPreview(file){
+    document.getElementById('puz-empty').style.display='none';
+    document.getElementById('puz-preview').style.display='block';
+    document.getElementById('puz-fname').textContent=file.name;
+    if(file.type.startsWith('image/')){
+        const r=new FileReader();
+        r.onload=e=>{document.getElementById('puz-img').src=e.target.result;};
+        r.readAsDataURL(file);
+    } else {
+        document.getElementById('puz-img').src='';
+        document.getElementById('puz-img').alt=file.name;
+    }
+    document.getElementById('puz').classList.remove('drag-over');
+}
+
+function handleDrop(e){
+    e.preventDefault();
+    document.getElementById('puz').classList.remove('drag-over');
+    const file=e.dataTransfer.files[0];
+    if(file){
+        const dt=new DataTransfer();dt.items.add(file);
+        planoInput.files=dt.files;
+        showPreview(file);
+    }
+}
+
+function clearPlano(e){
+    e.preventDefault(); e.stopPropagation();
+    planoInput.value='';
+    document.getElementById('puz-empty').style.display='flex';
+    document.getElementById('puz-preview').style.display='none';
+}
+
+// Toggles
+document.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    cb.style.cssText='position:absolute;opacity:0;width:0;height:0';
+    const track=cb.closest('.ts')?.querySelector('.ts-track');
+    const thumb=track?.querySelector('.ts-thumb');
+    const item=cb.closest('.ti');
+    const sync=()=>{
+        if(!track)return;
+        track.style.background=cb.checked?'var(--accent)':'rgba(107,114,128,.25)';
+        if(thumb)thumb.style.left=cb.checked?'19px':'3px';
+        if(item){item.style.borderColor=cb.checked?'rgba(37,99,235,.35)':'';item.style.background=cb.checked?'rgba(37,99,235,.06)':'';}
+    };
+    sync(); cb.addEventListener('change',sync);
+});
+
+// Scroll + active step
+function goTo(id){document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'});}
+const secs=['sec-id','sec-ubic','sec-sup','sec-plano','sec-estado'];
+const steps=document.querySelectorAll('.si');
+const obs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+        if(e.isIntersecting){
+            const i=secs.indexOf(e.target.id);
+            steps.forEach((s,j)=>s.classList.toggle('active',i===j));
+        }
+    });
+},{threshold:.35});
+secs.forEach(id=>{const el=document.getElementById(id);if(el)obs.observe(el);});
+
+// AJAX niveles by planta
+function loadNiveles(plantaId){
+    const sel=document.querySelector('[name=nivel]');
+    if(!sel)return;
+    if(!plantaId){sel.innerHTML='<option value="">Seleccionar nivel…</option>';return;}
+    fetch(`/organizacion/ajax/niveles/?planta=${plantaId}`)
+        .then(r=>r.json()).then(data=>{
+            sel.innerHTML='<option value="">Seleccionar nivel…</option>';
+            (data.niveles||[]).forEach(n=>{
+                const o=document.createElement('option');
+                o.value=n.id; o.textContent=n.nombre;
+                sel.appendChild(o);
+            });
+        });
+}
 </script>
 {% endblock %}

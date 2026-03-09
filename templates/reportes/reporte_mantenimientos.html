@@ -1,0 +1,284 @@
+{% extends 'base.html' %}
+
+{% block title %}Reporte de Mantenimientos · SIGAP{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb">
+    <a href="">Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'reportes:index' %}">Reportes</a>
+    <i class="fas fa-chevron-right"></i>
+    <span>Mantenimientos</span>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.rep-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;
+}
+.rep-title {
+    font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 700;
+    color: var(--text); display: flex; align-items: center; gap: .6rem;
+}
+.rep-title i { color: var(--accent2); }
+
+/* Stats */
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: .85rem;
+    margin-bottom: 1.5rem;
+}
+.stat-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 11px; padding: .9rem 1.1rem;
+    position: relative; overflow: hidden;
+}
+.stat-box::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+}
+.stat-box.s-blue::before   { background: var(--accent); }
+.stat-box.s-cyan::before   { background: var(--accent2); }
+.stat-box.s-green::before  { background: #22c55e; }
+.stat-box.s-orange::before { background: #f59e0b; }
+.stat-box.s-purple::before { background: #8b5cf6; }
+
+.stat-num { font-family: 'Syne', sans-serif; font-size: 1.5rem; font-weight: 700; color: var(--text); line-height: 1; }
+.stat-lbl { font-size: .7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .07em; margin-top: 4px; }
+
+/* Filters */
+.filter-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 1rem 1.25rem; margin-bottom: 1.25rem;
+    display: flex; flex-wrap: wrap; gap: .75rem; align-items: flex-end;
+}
+.fg { display: flex; flex-direction: column; gap: .25rem; flex: 1; min-width: 130px; }
+.fg label { font-size: .68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; }
+.fi {
+    background: var(--bg); border: 1px solid var(--border2); color: var(--text);
+    border-radius: 7px; padding: .4rem .75rem; font-size: .83rem;
+    font-family: 'DM Sans', sans-serif; outline: none; transition: border-color .2s;
+    height: 34px; width: 100%;
+}
+.fi:focus { border-color: var(--accent); }
+
+/* Layout */
+.rep-layout {
+    display: grid; grid-template-columns: 1fr 260px; gap: 1.25rem; align-items: start;
+}
+@media (max-width: 960px) { .rep-layout { grid-template-columns: 1fr; } }
+
+/* Distribution */
+.dist-section { display: flex; flex-direction: column; gap: 1rem; }
+.dist-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.dist-card-header {
+    padding: .75rem 1rem; background: var(--surface2); border-bottom: 1px solid var(--border);
+    font-family: 'Syne', sans-serif; font-size: .78rem; font-weight: 700;
+    color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em;
+    display: flex; align-items: center; gap: .4rem;
+}
+.dist-card-header i { color: var(--accent2); }
+.dist-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .55rem 1rem; border-bottom: 1px solid var(--border);
+    font-size: .82rem; gap: .75rem;
+}
+.dist-item:last-child { border-bottom: none; }
+.dist-item-name { color: var(--text-subtle); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dist-bar-wrap { flex: 1; max-width: 70px; height: 4px; background: var(--surface2); border-radius: 9999px; }
+.dist-bar { height: 4px; border-radius: 9999px; min-width: 4px; }
+.dist-count { font-family: 'Syne', sans-serif; font-size: .82rem; font-weight: 700; color: var(--text); flex-shrink: 0; min-width: 24px; text-align: right; }
+
+/* Priority dot */
+.prio-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; vertical-align: middle; flex-shrink: 0; }
+.prio-dot.BAJA    { background: #4ade80; }
+.prio-dot.MEDIA   { background: #60a5fa; }
+.prio-dot.ALTA    { background: #fb923c; }
+.prio-dot.URGENTE { background: #f87171; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="rep-header">
+    <div>
+        <div class="rep-title"><i class="fas fa-screwdriver-wrench"></i> Reporte de Mantenimientos</div>
+        <div style="font-size:.8rem;color:var(--text-muted);margin-top:.3rem;">
+            Período: <strong style="color:var(--text);">{{ filtros.fecha_desde }}</strong>
+            al <strong style="color:var(--text);">{{ filtros.fecha_hasta }}</strong>
+        </div>
+    </div>
+    <a href="{% url 'reportes:exportar_mantenimientos' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}"
+       class="btn-primary" style="padding:.4rem 1rem;font-size:.82rem;">
+        <i class="fas fa-file-excel"></i> Exportar Excel
+    </a>
+</div>
+
+<!-- Stats -->
+<div class="stats-row">
+    <div class="stat-box s-blue">
+        <div class="stat-num">{{ stats.total }}</div>
+        <div class="stat-lbl">Total</div>
+    </div>
+    <div class="stat-box s-cyan">
+        <div class="stat-num">{{ stats.por_tipo|length }}</div>
+        <div class="stat-lbl">Tipos</div>
+    </div>
+    <div class="stat-box s-green">
+        <div class="stat-num" style="color:#4ade80;">
+            {{ stats.costo_total|floatformat:0 }}
+        </div>
+        <div class="stat-lbl">Costo total (BOB)</div>
+    </div>
+    <div class="stat-box s-orange">
+        <div class="stat-num" style="color:#fcd34d;">
+            {{ stats.tiempo_total|floatformat:1 }}h
+        </div>
+        <div class="stat-lbl">Tiempo total</div>
+    </div>
+</div>
+
+<!-- Filters -->
+<form method="get" class="filter-card">
+    <div class="fg">
+        <label>Desde</label>
+        <input type="date" name="fecha_desde" value="{{ filtros.fecha_desde }}" class="fi">
+    </div>
+    <div class="fg">
+        <label>Hasta</label>
+        <input type="date" name="fecha_hasta" value="{{ filtros.fecha_hasta }}" class="fi">
+    </div>
+    <div class="fg">
+        <label>Tipo</label>
+        <select name="tipo" class="fi">
+            <option value="">Todos</option>
+            {% for val, label in tipos %}
+            <option value="{{ val }}" {% if filtros.tipo == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="fg">
+        <label>Estado</label>
+        <select name="estado" class="fi">
+            <option value="">Todos</option>
+            {% for val, label in estados %}
+            <option value="{{ val }}" {% if filtros.estado == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div style="display:flex;gap:.4rem;align-items:flex-end;">
+        <button type="submit" class="btn-primary" style="height:34px;padding:0 1rem;font-size:.82rem;">
+            <i class="fas fa-filter"></i> Filtrar
+        </button>
+        {% if filtros.tipo or filtros.estado %}
+        <a href="{% url 'reportes:reporte_mantenimientos' %}" class="btn-icon" title="Limpiar" style="width:34px;height:34px;">
+            <i class="fas fa-xmark"></i>
+        </a>
+        {% endif %}
+    </div>
+</form>
+
+<!-- Layout -->
+<div class="rep-layout">
+
+    <!-- Table -->
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fas fa-table"></i> Mantenimientos ({{ stats.total }}{% if stats.total > 100 %}, mostrando 100{% endif %})</h3>
+        </div>
+        <div class="table-container card-body p-0">
+            {% if mantenimientos %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Activo</th>
+                        <th>Tipo</th>
+                        <th>Fecha</th>
+                        <th>Estado</th>
+                        <th>Prioridad</th>
+                        <th>Costo</th>
+                        <th>Tiempo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in mantenimientos %}
+                    <tr>
+                        <td style="font-family:'Syne',sans-serif;font-size:.78rem;color:var(--accent2);">
+                            <a href="{{ m.get_absolute_url }}" style="color:var(--accent2);text-decoration:none;">
+                                {{ m.codigo|default:"—" }}
+                            </a>
+                        </td>
+                        <td class="font-medium">{{ m.activo.nombre }}</td>
+                        <td><span class="badge badge-blue" style="font-size:.65rem;">{{ m.get_tipo_display }}</span></td>
+                        <td style="font-size:.8rem;color:var(--text-subtle);white-space:nowrap;">{{ m.fecha|date:"d M Y" }}</td>
+                        <td><span class="badge badge-{{ m.get_estado_color }}" style="font-size:.65rem;">{{ m.get_estado_display }}</span></td>
+                        <td>
+                            <span class="prio-dot {{ m.prioridad }}"></span>
+                            <span style="font-size:.8rem;color:var(--text-subtle);">{{ m.get_prioridad_display }}</span>
+                        </td>
+                        <td style="font-family:'Syne',sans-serif;font-size:.8rem;color:#4ade80;">
+                            {% if m.costo_total %}{{ m.costo_total|floatformat:0 }}{% else %}—{% endif %}
+                        </td>
+                        <td style="font-size:.8rem;color:var(--text-subtle);">
+                            {% if m.tiempo_real %}{{ m.tiempo_real }}h{% else %}—{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div style="text-align:center;padding:3rem;color:var(--text-muted);">
+                <i class="fas fa-screwdriver-wrench" style="font-size:2rem;opacity:.25;display:block;margin-bottom:.75rem;"></i>
+                <p style="font-size:.88rem;">Sin mantenimientos para el período seleccionado.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Distributions -->
+    <div class="dist-section">
+
+        <!-- Por tipo -->
+        <div class="dist-card">
+            <div class="dist-card-header"><i class="fas fa-wrench"></i> Por tipo</div>
+            {% for item in stats.por_tipo %}
+            {% with max_val=stats.por_tipo.0.cantidad %}
+            <div class="dist-item">
+                <span class="dist-item-name">{{ item.tipo }}</span>
+                <div class="dist-bar-wrap">
+                    <div class="dist-bar" style="width:{% widthratio item.cantidad max_val 100 %}%;background:var(--accent);"></div>
+                </div>
+                <span class="dist-count">{{ item.cantidad }}</span>
+            </div>
+            {% endwith %}
+            {% empty %}
+            <div style="padding:.75rem 1rem;font-size:.8rem;color:var(--text-muted);">Sin datos</div>
+            {% endfor %}
+        </div>
+
+        <!-- Por estado -->
+        <div class="dist-card">
+            <div class="dist-card-header"><i class="fas fa-circle-half-stroke"></i> Por estado</div>
+            {% for item in stats.por_estado %}
+            {% with max_val=stats.por_estado.0.cantidad %}
+            <div class="dist-item">
+                <span class="dist-item-name">{{ item.estado }}</span>
+                <div class="dist-bar-wrap">
+                    <div class="dist-bar" style="width:{% widthratio item.cantidad max_val 100 %}%;background:var(--accent2);"></div>
+                </div>
+                <span class="dist-count">{{ item.cantidad }}</span>
+            </div>
+            {% endwith %}
+            {% empty %}
+            <div style="padding:.75rem 1rem;font-size:.8rem;color:var(--text-muted);">Sin datos</div>
+            {% endfor %}
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,447 @@
+{% extends 'base.html' %}
+
+{% block title %}Auditoría · SIGAP{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb">
+    <a href="">Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <span>Auditoría</span>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Hero ── */
+.audit-hero {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.4rem 1.75rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+.audit-hero::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #8b5cf6, var(--accent), var(--accent2));
+}
+.audit-hero-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+}
+.audit-hero-title i { color: #a78bfa; }
+.audit-hero-sub { font-size: .82rem; color: var(--text-muted); margin-top: .25rem; }
+.audit-hero-meta {
+    display: flex;
+    gap: 1.25rem;
+    flex-shrink: 0;
+}
+.audit-meta-item {
+    text-align: center;
+}
+.audit-meta-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+}
+.audit-meta-lbl {
+    font-size: .68rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    margin-top: 3px;
+}
+
+/* ── Filter bar ── */
+.filter-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: .9rem 1.1rem;
+    margin-bottom: 1.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .65rem;
+    align-items: flex-end;
+}
+.fg { display: flex; flex-direction: column; gap: .22rem; flex: 1; min-width: 130px; }
+.fg label { font-size: .67rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; }
+.fi {
+    background: var(--bg); border: 1px solid var(--border2);
+    color: var(--text); border-radius: 7px; padding: .4rem .75rem;
+    font-size: .83rem; font-family: 'DM Sans', sans-serif; outline: none;
+    transition: border-color .2s; height: 34px; width: 100%;
+}
+.fi:focus { border-color: #8b5cf6; box-shadow: 0 0 0 3px rgba(139,92,246,.1); }
+.fi::placeholder { color: var(--text-muted); }
+.fi-date { max-width: 150px; }
+.filter-actions { display: flex; gap: .4rem; align-items: flex-end; margin-left: auto; }
+
+/* ── Table tweaks ── */
+.op-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .2rem .65rem;
+    border-radius: 9999px;
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+.op-CREAR    { background: rgba(34,197,94,.12);  color: #4ade80; border: 1px solid rgba(34,197,94,.25); }
+.op-EDITAR   { background: rgba(37,99,235,.12);  color: #60a5fa; border: 1px solid rgba(37,99,235,.25); }
+.op-ELIMINAR { background: rgba(239,68,68,.12);  color: #f87171; border: 1px solid rgba(239,68,68,.25); }
+.op-VER      { background: rgba(107,114,128,.12);color: #9ca3af; border: 1px solid rgba(107,114,128,.25); }
+.op-default  { background: rgba(139,92,246,.12); color: #c4b5fd; border: 1px solid rgba(139,92,246,.25); }
+
+.modelo-tag {
+    display: inline-block;
+    padding: .18rem .55rem;
+    border-radius: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    font-size: .72rem;
+    color: var(--text-subtle);
+    font-family: 'Syne', sans-serif;
+    letter-spacing: .03em;
+}
+
+.user-cell {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+}
+.user-avatar {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #8b5cf6, var(--accent));
+    display: flex; align-items: center; justify-content: center;
+    font-size: .68rem;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    text-transform: uppercase;
+}
+.user-name { font-size: .82rem; color: var(--text-subtle); }
+
+.object-id {
+    font-family: 'Syne', sans-serif;
+    font-size: .72rem;
+    color: var(--text-muted);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: .15rem .45rem;
+    border-radius: 5px;
+}
+
+.fecha-cell { font-size: .78rem; color: var(--text-subtle); white-space: nowrap; }
+.fecha-cell span { display: block; font-size: .68rem; color: var(--text-muted); margin-top: 1px; }
+
+/* ── Detail toggle ── */
+.detail-btn {
+    width: 26px; height: 26px;
+    border-radius: 6px;
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text-muted);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: .7rem;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+}
+.detail-btn:hover { background: #8b5cf6; color: #fff; border-color: #8b5cf6; }
+
+.detail-row td {
+    padding: 0 !important;
+    background: var(--bg) !important;
+}
+.detail-row.hidden { display: none; }
+.detail-content {
+    padding: .85rem 1.25rem;
+    border-top: 1px solid var(--border);
+}
+.diff-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+@media (max-width: 640px) { .diff-grid { grid-template-columns: 1fr; } }
+.diff-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: .75rem 1rem;
+    font-size: .78rem;
+}
+.diff-box-title {
+    font-size: .65rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    margin-bottom: .5rem;
+    font-weight: 700;
+}
+.diff-box.antes .diff-box-title { color: #f87171; }
+.diff-box.despues .diff-box-title { color: #4ade80; }
+.diff-box pre {
+    font-size: .74rem;
+    color: var(--text-subtle);
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin: 0;
+    font-family: 'Courier New', monospace;
+    max-height: 160px;
+    overflow-y: auto;
+}
+
+/* ── Pagination ── */
+.pagination-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .75rem 1.1rem; border-top: 1px solid var(--border);
+    font-size: .78rem; color: var(--text-muted); flex-wrap: wrap; gap: .5rem;
+}
+.page-links { display: flex; gap: .25rem; }
+.page-links a, .page-links span {
+    padding: .28rem .6rem; border-radius: 6px; border: 1px solid var(--border);
+    color: var(--text-subtle); text-decoration: none; font-size: .78rem; transition: background .15s;
+}
+.page-links a:hover { background: var(--surface2); color: var(--text); }
+.page-links span.current { background: #8b5cf6; color: #fff; border-color: #8b5cf6; }
+
+/* ── Empty ── */
+.empty-state { text-align: center; padding: 3.5rem 2rem; color: var(--text-muted); }
+.empty-state i { font-size: 2.5rem; opacity: .2; display: block; margin-bottom: .75rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Hero -->
+<div class="audit-hero">
+    <div>
+        <div class="audit-hero-title">
+            <i class="fas fa-shield-halved"></i> Historial de Auditoría
+        </div>
+        <div class="audit-hero-sub">Registro de todas las operaciones realizadas en el sistema por usuarios.</div>
+    </div>
+    <div class="audit-hero-meta">
+        <div class="audit-meta-item">
+            <div class="audit-meta-num">{{ page_obj.paginator.count }}</div>
+            <div class="audit-meta-lbl">Total registros</div>
+        </div>
+        <div class="audit-meta-item" style="border-left:1px solid var(--border);padding-left:1.25rem;">
+            <div class="audit-meta-num">{{ modelos|length }}</div>
+            <div class="audit-meta-lbl">Modelos</div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<form method="get" class="filter-card">
+
+    <div class="fg">
+        <label>Operación</label>
+        <select name="tipo" class="fi">
+            <option value="">Todas</option>
+            {% for val, label in tipos_operacion %}
+            <option value="{{ val }}" {% if request.GET.tipo == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="fg">
+        <label>Modelo</label>
+        <select name="modelo" class="fi">
+            <option value="">Todos</option>
+            {% for m in modelos %}
+            <option value="{{ m }}" {% if request.GET.modelo == m %}selected{% endif %}>{{ m }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="fg">
+        <label>Usuario</label>
+        <input type="text" name="usuario" value="{{ request.GET.usuario }}"
+               placeholder="Nombre de usuario…" class="fi">
+    </div>
+
+    <div class="fg fi-date">
+        <label>Desde</label>
+        <input type="date" name="fecha_desde" value="{{ request.GET.fecha_desde }}" class="fi">
+    </div>
+
+    <div class="fg fi-date">
+        <label>Hasta</label>
+        <input type="date" name="fecha_hasta" value="{{ request.GET.fecha_hasta }}" class="fi">
+    </div>
+
+    <div class="filter-actions">
+        <button type="submit" class="btn-primary" style="height:34px;padding:0 1rem;font-size:.82rem;">
+            <i class="fas fa-filter"></i> Filtrar
+        </button>
+        {% if request.GET.tipo or request.GET.modelo or request.GET.usuario or request.GET.fecha_desde or request.GET.fecha_hasta %}
+        <a href="{% url 'core:auditoria_list' %}"
+           style="width:34px;height:34px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text-subtle);display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;text-decoration:none;transition:background .15s;"
+           title="Limpiar filtros">
+            <i class="fas fa-xmark"></i>
+        </a>
+        {% endif %}
+    </div>
+
+</form>
+
+<!-- Table Card -->
+<div class="card">
+    <div class="card-header">
+        <h3><i class="fas fa-clock-rotate-left"></i> Registros de actividad</h3>
+        <span style="font-size:.75rem;color:var(--text-muted);">
+            Superusuarios únicamente
+            <i class="fas fa-lock" style="margin-left:.35rem;color:#a78bfa;"></i>
+        </span>
+    </div>
+
+    <div class="table-container card-body p-0">
+        {% if cambios %}
+        <table class="data-table" id="auditTable">
+            <thead>
+                <tr>
+                    <th style="width:36px;"></th>
+                    <th>Operación</th>
+                    <th>Modelo</th>
+                    <th>Objeto</th>
+                    <th>Usuario</th>
+                    <th>Fecha y hora</th>
+                    <th>IP</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cambio in cambios %}
+                <!-- Main row -->
+                <tr id="row-{{ cambio.pk }}">
+                    <td>
+                        {% if cambio.datos_anteriores or cambio.datos_nuevos %}
+                        <button class="detail-btn" onclick="toggleDetail({{ cambio.pk }})" title="Ver cambios">
+                            <i class="fas fa-chevron-right" id="icon-{{ cambio.pk }}"></i>
+                        </button>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="op-badge op-{{ cambio.tipo_operacion|default:'default' }}">
+                            <i class="fas {% if cambio.tipo_operacion == 'CREAR' %}fa-plus{% elif cambio.tipo_operacion == 'EDITAR' %}fa-pencil{% elif cambio.tipo_operacion == 'ELIMINAR' %}fa-trash{% elif cambio.tipo_operacion == 'VER' %}fa-eye{% else %}fa-bolt{% endif %}"></i>
+                            {{ cambio.get_tipo_operacion_display|default:cambio.tipo_operacion }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="modelo-tag">{{ cambio.modelo }}</span>
+                    </td>
+                    <td>
+                        <div style="display:flex;flex-direction:column;gap:2px;">
+                            <span style="font-size:.82rem;color:var(--text-subtle);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ cambio.objeto_repr|default:'' }}">
+                                {{ cambio.objeto_repr|default:"—" }}
+                            </span>
+                            {% if cambio.objeto_id %}
+                            <span class="object-id">ID: {{ cambio.objeto_id }}</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="user-cell">
+                            <div class="user-avatar">
+                                {{ cambio.usuario.username|slice:":2" }}
+                            </div>
+                            <span class="user-name">{{ cambio.usuario.username|default:"Sistema" }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="fecha-cell">
+                            {{ cambio.fecha_hora|date:"d M Y" }}
+                            <span>{{ cambio.fecha_hora|date:"H:i:s" }}</span>
+                        </div>
+                    </td>
+                    <td style="font-size:.75rem;color:var(--text-muted);font-family:monospace;">
+                        {{ cambio.ip_address|default:"—" }}
+                    </td>
+                </tr>
+
+                <!-- Detail row -->
+                {% if cambio.datos_anteriores or cambio.datos_nuevos %}
+                <tr class="detail-row hidden" id="detail-{{ cambio.pk }}">
+                    <td colspan="7">
+                        <div class="detail-content">
+                            <div class="diff-grid">
+                                {% if cambio.datos_anteriores %}
+                                <div class="diff-box antes">
+                                    <div class="diff-box-title"><i class="fas fa-circle-minus"></i> Antes</div>
+                                    <pre>{{ cambio.datos_anteriores|default:"—" }}</pre>
+                                </div>
+                                {% endif %}
+                                {% if cambio.datos_nuevos %}
+                                <div class="diff-box despues">
+                                    <div class="diff-box-title"><i class="fas fa-circle-plus"></i> Después</div>
+                                    <pre>{{ cambio.datos_nuevos|default:"—" }}</pre>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endif %}
+
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="pagination-bar">
+            <span>{{ page_obj.start_index }}–{{ page_obj.end_index }} de {{ page_obj.paginator.count }} registros</span>
+            <div class="page-links">
+                {% if page_obj.has_previous %}
+                <a href="?page=1{% if query_params %}&{{ query_params }}{% endif %}">«</a>
+                <a href="?page={{ page_obj.previous_page_number }}{% if query_params %}&{{ query_params }}{% endif %}">‹</a>
+                {% endif %}
+                <span class="current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if query_params %}&{{ query_params }}{% endif %}">›</a>
+                <a href="?page={{ page_obj.paginator.num_pages }}{% if query_params %}&{{ query_params }}{% endif %}">»</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-shield-halved"></i>
+            <p>No se encontraron registros de auditoría{% if request.GET.tipo or request.GET.usuario %} con los filtros aplicados{% endif %}.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleDetail(pk) {
+    const detail = document.getElementById('detail-' + pk);
+    const icon   = document.getElementById('icon-' + pk);
+    const hidden = detail.classList.toggle('hidden');
+    icon.style.transform = hidden ? '' : 'rotate(90deg)';
+    icon.style.transition = 'transform .2s';
+    icon.style.color = hidden ? '' : '#a78bfa';
+}
+</script>
+{% endblock %}

@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+{% block title %}Eliminar {{ responsable.nombre_completo }} - SIGAP{% endblock %}
+{% block page_title %}Eliminar Responsable{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb">
+    <a href="{% url 'core:dashboard' %}"><i class="fas fa-house"></i> Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'organizacion:responsable_list' %}">Responsables</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'organizacion:responsable_detail' responsable.pk %}">{{ responsable.nombre_completo }}</a>
+    <i class="fas fa-chevron-right"></i>
+    <span style="color:#f87171;">Eliminar</span>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.del-wrap{max-width:560px;margin:1.5rem auto}
+
+/* Main card */
+.del-card{background:var(--surface);border:1px solid rgba(239,68,68,.25);border-radius:16px;overflow:hidden}
+
+/* Person strip at top — shows who we're deleting */
+.person-strip{
+    display:flex;align-items:center;gap:1rem;padding:1.25rem 1.5rem;
+    border-bottom:1px solid var(--border);background:var(--surface2);
+    position:relative;overflow:hidden;
+}
+/* Subtle tipo color tint on left */
+.person-strip::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px}
+.ps-interno    ::before, .ps-strip-interno    {background:linear-gradient(180deg,#1d4ed8,#60a5fa)}
+.ps-externo    ::before, .ps-strip-externo    {background:linear-gradient(180deg,#6d28d9,#a78bfa)}
+.ps-contratista::before, .ps-strip-contratista{background:linear-gradient(180deg,#b45309,#fcd34d)}
+.person-strip::before{
+    {% with tl=responsable.tipo|lower %}
+    {% if tl == 'interno' %}background:linear-gradient(180deg,#1d4ed8,#60a5fa);
+    {% elif tl == 'externo' %}background:linear-gradient(180deg,#6d28d9,#a78bfa);
+    {% else %}background:linear-gradient(180deg,#b45309,#fcd34d);
+    {% endif %}
+    {% endwith %}
+}
+.ps-avatar{width:52px;height:52px;border-radius:12px;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:1.3rem;
+    {% with tl=responsable.tipo|lower %}
+    {% if tl == 'interno' %}background:rgba(29,78,216,.15);border:1px solid rgba(29,78,216,.3);color:#60a5fa;
+    {% elif tl == 'externo' %}background:rgba(109,40,217,.15);border:1px solid rgba(109,40,217,.3);color:#a78bfa;
+    {% else %}background:rgba(180,83,9,.15);border:1px solid rgba(180,83,9,.3);color:#fcd34d;
+    {% endif %}
+    {% endwith %}
+}
+.ps-avatar img{width:100%;height:100%;object-fit:cover}
+.ps-info{}
+.ps-code{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--accent2)}
+.ps-name{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700;color:var(--text)}
+.ps-sub{font-size:.75rem;color:var(--text-muted);margin-top:.1rem;display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
+.ps-chip{display:inline-flex;align-items:center;gap:.28rem;padding:.12rem .5rem;border-radius:9999px;font-size:.67rem;font-weight:600}
+.ps-chip i{font-size:.5rem}
+.ch-interno    {background:rgba(29,78,216,.1);color:#60a5fa;border:1px solid rgba(29,78,216,.22)}
+.ch-externo    {background:rgba(109,40,217,.1);color:#a78bfa;border:1px solid rgba(109,40,217,.22)}
+.ch-contratista{background:rgba(180,83,9,.1);color:#fcd34d;border:1px solid rgba(180,83,9,.22)}
+
+/* Warning section */
+.del-body{padding:1.5rem}
+
+.danger-icon{width:60px;height:60px;border-radius:50%;background:rgba(239,68,68,.1);border:2px solid rgba(239,68,68,.3);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;animation:shake .5s ease}
+.danger-icon i{font-size:1.6rem;color:#f87171}
+.del-title{text-align:center;font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700;color:var(--text);margin-bottom:.4rem}
+.del-msg{text-align:center;font-size:.875rem;color:var(--text-muted);line-height:1.6;margin-bottom:1.25rem}
+
+/* Impact list */
+.impact{margin-bottom:1.25rem}
+.impact-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:.6rem;display:flex;align-items:center;gap:.4rem}
+.impact-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+.ic{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:9px;padding:.65rem .875rem;display:flex;align-items:center;gap:.6rem}
+.ic-n{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700}
+.ic-l{font-size:.72rem;color:var(--text-muted)}
+.ic i{font-size:.85rem;flex-shrink:0}
+.has-data .ic-n{color:#f87171}
+.has-data{border-color:rgba(239,68,68,.2);background:rgba(239,68,68,.04)}
+
+/* Warn boxes */
+.warn{display:flex;gap:.75rem;padding:.875rem 1rem;border-radius:9px;margin-bottom:1.25rem;font-size:.82rem;line-height:1.55}
+.warn i{flex-shrink:0;margin-top:.1rem}
+.warn-red{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#fca5a5}
+.warn-yellow{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);color:#fde68a}
+
+/* Actions */
+.del-actions{display:flex;gap:.75rem;justify-content:flex-end;flex-wrap:wrap}
+.btn-del{display:inline-flex;align-items:center;gap:.4rem;padding:.65rem 1.35rem;background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;font-family:'Syne',sans-serif;font-size:.9rem;font-weight:600;border-radius:9px;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(220,38,38,.35);transition:transform .15s,box-shadow .2s}
+.btn-del:hover{transform:translateY(-1px);box-shadow:0 6px 22px rgba(220,38,38,.5)}
+.btn-back{display:inline-flex;align-items:center;gap:.4rem;padding:.65rem 1.25rem;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:9px;color:var(--text-subtle);font-size:.9rem;text-decoration:none;transition:background .15s,color .15s}
+.btn-back:hover{background:rgba(255,255,255,.08);color:var(--text)}
+
+@keyframes shake{0%,100%{transform:rotate(0)}20%{transform:rotate(-8deg)}40%{transform:rotate(8deg)}60%{transform:rotate(-4deg)}80%{transform:rotate(4deg)}}
+</style>
+{% endblock %}
+
+{% block content %}
+{% with tl=responsable.tipo|lower activos=activos_asignados|default:0 equipos=equipos_asignados|default:0 %}
+<div class="del-wrap">
+<div class="del-card">
+
+    <!-- Person identity strip -->
+    <div class="person-strip">
+        <div class="ps-avatar">
+            {% if responsable.foto %}<img src="{{ responsable.foto.url }}" alt="{{ responsable.nombre_completo }}">
+            {% else %}<i class="fas fa-user-tie"></i>{% endif %}
+        </div>
+        <div class="ps-info">
+            <div class="ps-code">{{ responsable.codigo }}</div>
+            <div class="ps-name">{{ responsable.nombre_completo }}</div>
+            <div class="ps-sub">
+                <span class="ps-chip ch-{{ tl }}">
+                    <i class="fas {% if tl == 'interno' %}fa-building{% elif tl == 'externo' %}fa-handshake{% else %}fa-hard-hat{% endif %}"></i>
+                    {{ responsable.get_tipo_display }}
+                </span>
+                {% if responsable.puesto %}· {{ responsable.puesto }}{% endif %}
+                {% if responsable.departamento %}· {{ responsable.departamento }}{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Body -->
+    <div class="del-body">
+        <div class="danger-icon"><i class="fas fa-user-minus"></i></div>
+        <h2 class="del-title">¿Eliminar este responsable?</h2>
+        <p class="del-msg">Esta acción es <strong>permanente e irreversible</strong>. Se eliminará todo el registro de <strong>{{ responsable.nombre_completo }}</strong> del sistema.</p>
+
+        <!-- Impact grid -->
+        {% if activos > 0 or equipos > 0 %}
+        <div class="impact">
+            <div class="impact-title"><i class="fas fa-triangle-exclamation" style="color:#f59e0b;"></i> Elementos que se verán afectados</div>
+            <div class="impact-grid">
+                <div class="ic {% if activos > 0 %}has-data{% endif %}">
+                    <i class="fas fa-boxes-stacked" style="color:{% if activos > 0 %}#f87171{% else %}var(--text-muted){% endif %};"></i>
+                    <div>
+                        <div class="ic-n">{{ activos }}</div>
+                        <div class="ic-l">Activo{{ activos|pluralize:"s" }} asignado{{ activos|pluralize:"s" }}</div>
+                    </div>
+                </div>
+                <div class="ic {% if equipos > 0 %}has-data{% endif %}">
+                    <i class="fas fa-screwdriver-wrench" style="color:{% if equipos > 0 %}#f87171{% else %}var(--text-muted){% endif %};"></i>
+                    <div>
+                        <div class="ic-n">{{ equipos }}</div>
+                        <div class="ic-l">Equipo{{ equipos|pluralize:"s" }} funcional{{ equipos|pluralize:"es" }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="warn warn-red">
+            <i class="fas fa-circle-xmark"></i>
+            <span>
+                Este responsable tiene asignaciones activas.
+                {% if activos > 0 %}<strong>{{ activos }} activo{{ activos|pluralize:"s" }}</strong>{% if equipos > 0 %} y {% endif %}{% endif %}
+                {% if equipos > 0 %}<strong>{{ equipos }} equipo{{ equipos|pluralize:"s" }} funcional{{ equipos|pluralize:"es" }}</strong>{% endif %}
+                perderán su responsable asignado. Considera reasignarlos antes de eliminar.
+            </span>
+        </div>
+        {% else %}
+        <div class="warn warn-yellow">
+            <i class="fas fa-triangle-exclamation"></i>
+            <span>Este responsable no tiene activos ni equipos asignados. Puede eliminarse de forma segura, pero la acción sigue siendo <strong>irreversible</strong>.</span>
+        </div>
+        {% endif %}
+
+        <div class="del-actions">
+            <a href="{% url 'organizacion:responsable_detail' responsable.pk %}" class="btn-back">
+                <i class="fas fa-arrow-left"></i> Cancelar
+            </a>
+            <form method="post" style="display:contents;">
+                {% csrf_token %}
+                <button type="submit" class="btn-del">
+                    <i class="fas fa-user-minus"></i>
+                    {% if activos > 0 or equipos > 0 %}Eliminar de todas formas{% else %}Sí, eliminar{% endif %}
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+</div>
+{% endwith %}
+{% endblock %}

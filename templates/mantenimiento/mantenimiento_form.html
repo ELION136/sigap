@@ -1,0 +1,446 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ page_title }} · SIGAP{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb">
+    <a href="">Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'mantenimiento:mantenimiento_list' %}">Mantenimientos</a>
+    <i class="fas fa-chevron-right"></i>
+    <span>{{ page_title }}</span>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Form layout ── */
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 1.25rem;
+    align-items: start;
+}
+@media (max-width: 900px) {
+    .form-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Fieldset accordion ── */
+.form-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+.form-section-header {
+    padding: .85rem 1.25rem;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+    transition: background .15s;
+}
+.form-section-header:hover { background: #1e2a3a; }
+.form-section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: .85rem;
+    font-weight: 600;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+.form-section-title i { color: var(--accent2); font-size: .8rem; }
+.form-section-body {
+    padding: 1.25rem;
+}
+.form-section-body.collapsed { display: none; }
+.toggle-icon { color: var(--text-muted); font-size: .75rem; transition: transform .2s; }
+.toggle-icon.open { transform: rotate(180deg); }
+
+/* ── Django form fields styling ── */
+.form-section-body .form-group { margin-bottom: 1rem; }
+.form-section-body label {
+    display: block;
+    font-size: .78rem;
+    font-weight: 500;
+    color: var(--text-subtle);
+    margin-bottom: .35rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+}
+.form-section-body input[type=text],
+.form-section-body input[type=date],
+.form-section-body input[type=number],
+.form-section-body input[type=file],
+.form-section-body select,
+.form-section-body textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    border-radius: 8px;
+    padding: .5rem .85rem;
+    font-size: .875rem;
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+    -webkit-appearance: none;
+}
+.form-section-body input:focus,
+.form-section-body select:focus,
+.form-section-body textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+}
+.form-section-body input::placeholder,
+.form-section-body textarea::placeholder { color: var(--text-muted); }
+.form-section-body select option { background: var(--surface); }
+.form-section-body .helptext {
+    font-size: .73rem;
+    color: var(--text-muted);
+    margin-top: .25rem;
+    display: block;
+}
+.form-section-body .errorlist {
+    list-style: none;
+    padding: 0;
+    margin-top: .3rem;
+}
+.form-section-body .errorlist li {
+    font-size: .78rem;
+    color: #f87171;
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+}
+.form-section-body .errorlist li::before { content: '⚠'; }
+
+/* 2-col grid inside section */
+.field-row { display: grid; gap: .85rem; }
+.field-row.cols-2 { grid-template-columns: 1fr 1fr; }
+.field-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+@media (max-width: 640px) {
+    .field-row.cols-2,
+    .field-row.cols-3 { grid-template-columns: 1fr; }
+}
+
+/* ── Sidebar helper ── */
+.form-sidebar { display: flex; flex-direction: column; gap: 1rem; }
+.tip-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem 1.1rem;
+}
+.tip-box .tip-title {
+    font-family: 'Syne', sans-serif;
+    font-size: .78rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    margin-bottom: .65rem;
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+}
+.tip-box .tip-title i { color: var(--accent2); }
+.tip-item {
+    display: flex;
+    align-items: flex-start;
+    gap: .5rem;
+    margin-bottom: .5rem;
+    font-size: .82rem;
+    color: var(--text-subtle);
+}
+.tip-item i { color: var(--accent2); margin-top: 2px; font-size: .72rem; flex-shrink: 0; }
+
+/* ── Submit bar ── */
+.submit-bar {
+    position: sticky;
+    bottom: 0;
+    background: rgba(11,15,25,.9);
+    backdrop-filter: blur(8px);
+    border-top: 1px solid var(--border);
+    padding: .85rem 0;
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: .75rem;
+    z-index: 10;
+}
+.btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .5rem 1.1rem;
+    background: var(--surface2);
+    color: var(--text-subtle);
+    font-family: 'Syne', sans-serif;
+    font-size: .875rem;
+    font-weight: 600;
+    border-radius: 8px;
+    border: 1px solid var(--border2);
+    cursor: pointer;
+    text-decoration: none;
+    transition: background .15s, color .15s;
+}
+.btn-secondary:hover { background: var(--surface); color: var(--text); }
+
+/* required star */
+.req { color: #f87171; margin-left: 2px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="form-grid">
+
+        <!-- ─── Main ─── -->
+        <div>
+
+            <!-- Información general (always open) -->
+            <div class="form-section">
+                <div class="form-section-header" onclick="toggleSection(this)">
+                    <div class="form-section-title"><i class="fas fa-circle-info"></i> Información General</div>
+                    <i class="fas fa-chevron-down toggle-icon open"></i>
+                </div>
+                <div class="form-section-body">
+                    <div class="field-row cols-2">
+                        <div class="form-group">
+                            <label>Activo <span class="req">*</span></label>
+                            {{ form.activo }}
+                            {% if form.activo.errors %}<ul class="errorlist">{% for e in form.activo.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                        </div>
+                        <div class="form-group">
+                            <label>Tipo <span class="req">*</span></label>
+                            {{ form.tipo }}
+                        </div>
+                    </div>
+                    <div class="field-row cols-3">
+                        <div class="form-group">
+                            <label>Código</label>
+                            {{ form.codigo }}
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha programada <span class="req">*</span></label>
+                            {{ form.fecha }}
+                        </div>
+                        <div class="form-group">
+                            <label>Estado</label>
+                            {{ form.estado }}
+                        </div>
+                    </div>
+                    <div class="form-group" style="max-width:200px;">
+                        <label>Prioridad</label>
+                        {{ form.prioridad }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Descripción -->
+            <div class="form-section">
+                <div class="form-section-header" onclick="toggleSection(this)">
+                    <div class="form-section-title"><i class="fas fa-file-lines"></i> Descripción del Trabajo</div>
+                    <i class="fas fa-chevron-down toggle-icon open"></i>
+                </div>
+                <div class="form-section-body">
+                    <div class="form-group">
+                        <label>Descripción <span class="req">*</span></label>
+                        {{ form.descripcion }}
+                        <span class="helptext">Detalle qué se debe hacer en este mantenimiento.</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Trabajo realizado</label>
+                        {{ form.trabajo_realizado }}
+                        <span class="helptext">Completar una vez ejecutado el mantenimiento.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Personal (collapsed) -->
+            <div class="form-section">
+                <div class="form-section-header" onclick="toggleSection(this)">
+                    <div class="form-section-title"><i class="fas fa-users"></i> Personal</div>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="form-section-body collapsed">
+                    <div class="field-row cols-2">
+                        <div class="form-group">
+                            <label>Solicitado por</label>
+                            {{ form.solicitado_por }}
+                        </div>
+                        <div class="form-group">
+                            <label>Realizado por</label>
+                            {{ form.realizado_por }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Costos (collapsed) -->
+            <div class="form-section">
+                <div class="form-section-header" onclick="toggleSection(this)">
+                    <div class="form-section-title"><i class="fas fa-dollar-sign"></i> Costos</div>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="form-section-body collapsed">
+                    <div class="field-row cols-3">
+                        <div class="form-group">
+                            <label>Mano de obra</label>
+                            {{ form.costo_mano_obra }}
+                        </div>
+                        <div class="form-group">
+                            <label>Repuestos</label>
+                            {{ form.costo_repuestos }}
+                        </div>
+                        <div class="form-group">
+                            <label>Moneda</label>
+                            {{ form.moneda }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tiempo (collapsed) -->
+            <div class="form-section">
+                <div class="form-section-header" onclick="toggleSection(this)">
+                    <div class="form-section-title"><i class="fas fa-stopwatch"></i> Tiempo</div>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="form-section-body collapsed">
+                    <div class="field-row cols-3">
+                        <div class="form-group">
+                            <label>Tiempo estimado (h)</label>
+                            {{ form.tiempo_estimado }}
+                        </div>
+                        <div class="form-group">
+                            <label>Tiempo real (h)</label>
+                            {{ form.tiempo_real }}
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha realización</label>
+                            {{ form.fecha_realizacion }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resultado (collapsed) -->
+            <div class="form-section">
+                <div class="form-section-header" onclick="toggleSection(this)">
+                    <div class="form-section-title"><i class="fas fa-flag-checkered"></i> Resultado</div>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="form-section-body collapsed">
+                    <div class="field-row cols-2">
+                        <div class="form-group">
+                            <label>Resultado</label>
+                            {{ form.resultado }}
+                        </div>
+                        <div class="form-group">
+                            <label>Próximo mantenimiento</label>
+                            {{ form.proximo_mantenimiento }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Documentación (collapsed) -->
+            <div class="form-section">
+                <div class="form-section-header" onclick="toggleSection(this)">
+                    <div class="form-section-title"><i class="fas fa-paperclip"></i> Documentación</div>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="form-section-body collapsed">
+                    <div class="field-row cols-2">
+                        <div class="form-group">
+                            <label>Evidencia fotográfica</label>
+                            {{ form.evidencia_fotografica }}
+                        </div>
+                        <div class="form-group">
+                            <label>Documento adjunto</label>
+                            {{ form.documento }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notas (collapsed) -->
+            <div class="form-section">
+                <div class="form-section-header" onclick="toggleSection(this)">
+                    <div class="form-section-title"><i class="fas fa-note-sticky"></i> Notas</div>
+                    <i class="fas fa-chevron-down toggle-icon"></i>
+                </div>
+                <div class="form-section-body collapsed">
+                    <div class="form-group">
+                        <label>Observaciones</label>
+                        {{ form.observaciones }}
+                    </div>
+                    <div class="form-group">
+                        <label>Recomendaciones</label>
+                        {{ form.recomendaciones }}
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /main -->
+
+        <!-- ─── Sidebar ─── -->
+        <div class="form-sidebar">
+            <div class="tip-box">
+                <div class="tip-title"><i class="fas fa-lightbulb"></i> Guía rápida</div>
+                <div class="tip-item"><i class="fas fa-circle-arrow-right"></i> Los campos con <span style="color:#f87171;margin:0 3px;">*</span> son obligatorios.</div>
+                <div class="tip-item"><i class="fas fa-circle-arrow-right"></i> El código se genera automáticamente si lo dejas vacío.</div>
+                <div class="tip-item"><i class="fas fa-circle-arrow-right"></i> El costo total se calcula al guardar.</div>
+                <div class="tip-item"><i class="fas fa-circle-arrow-right"></i> Al completar el mantenimiento, se actualizará la fecha en el activo.</div>
+            </div>
+
+            {% if action == 'editar' %}
+            <div class="alert-bar danger">
+                <i class="fas fa-triangle-exclamation" style="margin-top:2px;"></i>
+                <div>Estás editando un registro existente. Los cambios son permanentes.</div>
+            </div>
+            {% endif %}
+
+            <div class="tip-box">
+                <div class="tip-title"><i class="fas fa-list-check"></i> Secciones</div>
+                <div class="tip-item"><i class="fas fa-lock-open"></i> General y Descripción: abiertas por defecto.</div>
+                <div class="tip-item"><i class="fas fa-chevron-down"></i> Las demás secciones son opcionales. Haz clic para expandirlas.</div>
+            </div>
+        </div>
+
+    </div><!-- /form-grid -->
+
+    <!-- Submit bar -->
+    <div class="submit-bar">
+        <a href="{% url 'mantenimiento:mantenimiento_list' %}" class="btn-secondary">
+            <i class="fas fa-xmark"></i> Cancelar
+        </a>
+        <button type="submit" class="btn-primary">
+            <i class="fas fa-floppy-disk"></i>
+            {% if action == 'editar' %}Guardar cambios{% else %}Registrar mantenimiento{% endif %}
+        </button>
+    </div>
+
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleSection(header) {
+    const body = header.nextElementSibling;
+    const icon = header.querySelector('.toggle-icon');
+    body.classList.toggle('collapsed');
+    icon.classList.toggle('open');
+}
+</script>
+{% endblock %}

@@ -1,46 +1,275 @@
 {% extends 'base.html' %}
-{% load crispy_forms_tags %}
-
-{% block title %}{% if object %}Editar{% else %}Nueva{% endif %} Nivel - SIGAP{% endblock %}
-
-{% block page_title %}{% if object %}Editar{% else %}Nueva{% endif %} Nivel{% endblock %}
+{% block title %}{% if object %}Editar {{ object.nombre }}{% else %}Nuevo Nivel{% endif %} - SIGAP{% endblock %}
+{% block page_title %}{% if object %}Editar Nivel{% else %}Nuevo Nivel{% endif %}{% endblock %}
 
 {% block breadcrumbs %}
-<nav class="mb-4">
-    <ol class="flex items-center space-x-2 text-sm text-gray-500">
-        <li><a href="{% url 'core:dashboard' %}" class="hover:text-primary-600"><i class="fas fa-home"></i></a></li>
-        <li><i class="fas fa-chevron-right text-xs"></i></li>
-        <li><a href="{% url 'organizacion:nivel_list' %}" class="hover:text-primary-600">Niveles</a></li>
-        <li><i class="fas fa-chevron-right text-xs"></i></li>
-        <li class="text-gray-700">{% if object %}Editar{% else %}Nuevo{% endif %}</li>
-    </ol>
+<nav class="breadcrumb">
+    <a href="{% url 'core:dashboard' %}"><i class="fas fa-house"></i> Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'organizacion:nivel_list' %}">Niveles</a>
+    <i class="fas fa-chevron-right"></i>
+    {% if object %}
+    <a href="{% url 'organizacion:nivel_detail' object.pk %}">{{ object.nombre }}</a>
+    <i class="fas fa-chevron-right"></i><span>Editar</span>
+    {% else %}<span>Nuevo</span>{% endif %}
 </nav>
 {% endblock %}
 
+{% block extra_css %}
+<style>
+    .form-layout { display:grid; grid-template-columns:1fr 260px; gap:1.25rem; align-items:start; max-width:880px; }
+
+    .form-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; margin-bottom:1rem; }
+    .fch { padding:1rem 1.5rem; border-bottom:1px solid var(--border); background:var(--surface2); display:flex; align-items:center; gap:.6rem; }
+    .fch-num { width:26px; height:26px; border-radius:50%; background:rgba(37,99,235,.2); display:flex; align-items:center; justify-content:center; font-size:.72rem; font-weight:700; color:#60a5fa; flex-shrink:0; }
+    .fch h3 { font-family:'Syne',sans-serif; font-size:.9rem; font-weight:600; color:var(--text); }
+    .fcb { padding:1.5rem; }
+
+    .fg-2 { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+    .fg-1-2 { display:grid; grid-template-columns:1fr 2fr; gap:1rem; }
+    .gap-b { margin-bottom:1rem; }
+
+    .field-group { display:flex; flex-direction:column; gap:.35rem; }
+    .field-group label { font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--text-muted); }
+    .field-group label .req { color:#f87171; }
+    .field-error { font-size:.75rem; color:#f87171; margin-top:.2rem; }
+    .field-hint  { font-size:.72rem; color:var(--text-muted); margin-top:.2rem; }
+
+    .f-input,.f-select,.f-textarea {
+        background:rgba(255,255,255,.04); border:1px solid var(--border); border-radius:9px;
+        padding:.6rem .875rem; color:var(--text); font-family:'DM Sans',sans-serif;
+        font-size:.875rem; outline:none; width:100%;
+        transition:border-color .2s,background .2s,box-shadow .2s;
+    }
+    .f-input::placeholder,.f-textarea::placeholder { color:rgba(107,114,128,.5); }
+    .f-input:focus,.f-select:focus,.f-textarea:focus { border-color:var(--accent); background:rgba(37,99,235,.05); box-shadow:0 0 0 3px rgba(37,99,235,.12); }
+    .f-select { appearance:none; cursor:pointer; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7280'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right .875rem center; background-color:rgba(255,255,255,.04); padding-right:2.25rem; }
+    .f-select option { background:#1a2236; }
+    .f-textarea { resize:vertical; min-height:75px; }
+
+    /* Number input with +/- */
+    .num-wrap { display:flex; align-items:center; }
+    .num-wrap .f-input { border-radius:0; border-left:none; border-right:none; text-align:center; }
+    .num-btn { width:38px; height:38px; background:rgba(255,255,255,.04); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--text-muted); cursor:pointer; font-size:.9rem; transition:background .15s,color .15s; user-select:none; flex-shrink:0; }
+    .num-btn:first-child { border-radius:9px 0 0 9px; }
+    .num-btn:last-child  { border-radius:0 9px 9px 0; }
+    .num-btn:hover { background:rgba(255,255,255,.08); color:var(--text); }
+
+    /* File input */
+    .file-wrap { position:relative; }
+    .file-wrap input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; }
+    .file-label { display:flex; align-items:center; gap:.6rem; padding:.6rem .875rem; background:rgba(255,255,255,.04); border:1px dashed var(--border); border-radius:9px; cursor:pointer; font-size:.875rem; color:var(--text-muted); transition:border-color .2s,background .2s,color .2s; }
+    .file-label:hover { border-color:var(--accent); background:rgba(37,99,235,.05); color:var(--text); }
+    .file-label i { color:var(--accent2); }
+    #plano-preview { max-height:150px; width:100%; object-fit:cover; border-radius:9px; margin-top:.5rem; display:none; border:1px solid var(--border); }
+
+    /* Toggle */
+    .toggle-item { display:flex; flex-direction:column; gap:.5rem; padding:1rem; background:rgba(255,255,255,.03); border:1px solid var(--border); border-radius:10px; transition:border-color .2s,background .2s; }
+    .toggle-label { font-size:.78rem; color:var(--text-subtle); font-weight:500; }
+    .toggle-sub   { font-size:.68rem; color:var(--text-muted); }
+    .toggle-switch { display:flex; align-items:center; gap:.5rem; cursor:pointer; }
+    .toggle-switch input { display:none; }
+    .ts-track { width:36px; height:20px; background:rgba(107,114,128,.25); border-radius:10px; position:relative; transition:background .2s; flex-shrink:0; }
+    .ts-thumb { width:14px; height:14px; background:#fff; border-radius:50%; position:absolute; top:3px; left:3px; transition:left .2s; box-shadow:0 1px 4px rgba(0,0,0,.3); }
+
+    /* Steps sidebar */
+    .steps-sidebar { position:sticky; top:1.5rem; }
+    .steps-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+    .steps-header { padding:.875rem 1.1rem; border-bottom:1px solid var(--border); background:var(--surface2); font-family:'Syne',sans-serif; font-size:.8rem; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.08em; }
+    .step-item { display:flex; align-items:center; gap:.75rem; padding:.75rem 1.1rem; border-bottom:1px solid rgba(255,255,255,.04); cursor:pointer; transition:background .15s; }
+    .step-item:last-child { border-bottom:none; }
+    .step-item:hover { background:rgba(255,255,255,.03); }
+    .step-num { width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.72rem; font-weight:700; flex-shrink:0; background:rgba(255,255,255,.06); color:var(--text-muted); border:1px solid var(--border); transition:all .2s; }
+    .step-item.active .step-num { background:rgba(37,99,235,.2); color:#60a5fa; border-color:rgba(37,99,235,.4); }
+    .step-name { font-size:.82rem; color:var(--text-muted); transition:color .2s; }
+    .step-item.active .step-name { color:var(--text); font-weight:500; }
+
+    /* Submit */
+    .submit-bar { display:flex; align-items:center; justify-content:space-between; padding:1.1rem 1.5rem; background:var(--surface); border:1px solid var(--border); border-radius:14px; position:sticky; bottom:1rem; z-index:10; }
+    .submit-bar .left { font-size:.82rem; color:var(--text-muted); display:flex; align-items:center; gap:.4rem; }
+    .submit-bar .right { display:flex; gap:.6rem; }
+    .btn-cancel { display:inline-flex; align-items:center; gap:.4rem; padding:.55rem 1.1rem; border-radius:8px; border:1px solid var(--border); background:rgba(255,255,255,.04); color:var(--text-subtle); font-size:.875rem; text-decoration:none; transition:background .15s,color .15s; }
+    .btn-cancel:hover { background:rgba(255,255,255,.08); color:var(--text); }
+
+    @media(max-width:720px){ .form-layout{grid-template-columns:1fr} .steps-sidebar{display:none} .fg-2{grid-template-columns:1fr} }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="max-w-4xl mx-auto">
-    <div class="card">
-        <div class="card-header">
-            <h2 class="text-xl font-semibold text-gray-800">
-                {% if object %}
-                <i class="fas fa-edit mr-2 text-primary-600"></i>Editar Nivel
-                {% else %}
-                <i class="fas fa-plus mr-2 text-primary-600"></i>Nuevo Nivel
-                {% endif %}
-            </h2>
+<form method="post" enctype="multipart/form-data" novalidate>
+{% csrf_token %}
+<div class="form-layout">
+    <div>
+        <!-- § 1 · Identificación -->
+        <div class="form-card" id="sec-id">
+            <div class="fch"><div class="fch-num">1</div><h3>Identificación</h3></div>
+            <div class="fcb">
+                <div class="fg-1-2 gap-b">
+                    <div class="field-group">
+                        <label>Código <span class="req">*</span></label>
+                        {{ form.codigo }}
+                        {% if form.codigo.errors %}<p class="field-error">{{ form.codigo.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div class="field-group">
+                        <label>Nombre <span class="req">*</span></label>
+                        {{ form.nombre }}
+                        {% if form.nombre.errors %}<p class="field-error">{{ form.nombre.errors.0 }}</p>{% endif %}
+                    </div>
+                </div>
+                <div class="field-group">
+                    <label>Descripción</label>
+                    {{ form.descripcion }}
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            {% crispy form %}
+
+        <!-- § 2 · Ubicación -->
+        <div class="form-card" id="sec-ubic">
+            <div class="fch"><div class="fch-num">2</div><h3>Ubicación</h3></div>
+            <div class="fcb">
+                <div class="field-group gap-b">
+                    <label>Planta <span class="req">*</span></label>
+                    {{ form.planta }}
+                    {% if form.planta.errors %}<p class="field-error">{{ form.planta.errors.0 }}</p>{% endif %}
+                </div>
+                <div class="fg-2">
+                    <div class="field-group">
+                        <label>Número de nivel <span class="req">*</span></label>
+                        <div class="num-wrap">
+                            <div class="num-btn" onclick="stepNum(-1)">−</div>
+                            {{ form.numero_nivel }}
+                            <div class="num-btn" onclick="stepNum(1)">+</div>
+                        </div>
+                        <span class="field-hint">0 = planta baja, negativo = sótano</span>
+                        {% if form.numero_nivel.errors %}<p class="field-error">{{ form.numero_nivel.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div class="field-group">
+                        <label>Altura (metros)</label>
+                        {{ form.altura }}
+                        <span class="field-hint">Altura libre del nivel en metros</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- § 3 · Plano -->
+        <div class="form-card" id="sec-plano">
+            <div class="fch"><div class="fch-num">3</div><h3>Plano</h3></div>
+            <div class="fcb">
+                <div class="field-group">
+                    <label>Imagen del plano</label>
+                    <div class="file-wrap">
+                        {{ form.plano }}
+                        <div class="file-label">
+                            <i class="fas fa-map"></i>
+                            <span id="plano-file-name">Seleccionar plano…</span>
+                        </div>
+                    </div>
+                    {% if object and object.plano %}
+                    <img src="{{ object.plano.url }}" id="plano-preview" style="display:block;">
+                    {% else %}
+                    <img id="plano-preview">
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- § 4 · Estado -->
+        <div class="form-card" id="sec-estado">
+            <div class="fch"><div class="fch-num">4</div><h3>Estado</h3></div>
+            <div class="fcb">
+                <div class="toggle-item" id="ti-activo">
+                    <label class="toggle-switch" for="{{ form.activo.id_for_label }}">
+                        {{ form.activo }}
+                        <div class="ts-track"><div class="ts-thumb"></div></div>
+                    </label>
+                    <div class="toggle-label">Nivel activo</div>
+                    <div class="toggle-sub">El nivel está en operación y disponible para asignar activos</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="submit-bar">
+            <div class="left"><i class="fas fa-circle-info"></i>
+                {% if object %}Editando <strong>{{ object.nombre }}</strong>{% else %}Nuevo nivel{% endif %}
+            </div>
+            <div class="right">
+                <a href="{% if object %}{% url 'organizacion:nivel_detail' object.pk %}{% else %}{% url 'organizacion:nivel_list' %}{% endif %}" class="btn-cancel">
+                    <i class="fas fa-xmark"></i> Cancelar
+                </a>
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-floppy-disk"></i>
+                    {% if object %}Guardar cambios{% else %}Crear nivel{% endif %}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Steps sidebar -->
+    <div class="steps-sidebar">
+        <div class="steps-card">
+            <div class="steps-header">Secciones</div>
+            <div class="step-item active" onclick="goTo('sec-id')"><div class="step-num">1</div><div class="step-name">Identificación</div></div>
+            <div class="step-item" onclick="goTo('sec-ubic')"><div class="step-num">2</div><div class="step-name">Ubicación</div></div>
+            <div class="step-item" onclick="goTo('sec-plano')"><div class="step-num">3</div><div class="step-name">Plano</div></div>
+            <div class="step-item" onclick="goTo('sec-estado')"><div class="step-num">4</div><div class="step-name">Estado</div></div>
         </div>
     </div>
 </div>
+</form>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    // Preview del plano
-    document.getElementById('id_plano')?.addEventListener('change', function() {
-        previewImage(this, 'plano-preview');
+document.querySelectorAll('input[type=text],input[type=number]').forEach(el=>el.classList.add('f-input'));
+document.querySelectorAll('select').forEach(el=>el.classList.add('f-select'));
+document.querySelectorAll('textarea').forEach(el=>el.classList.add('f-textarea'));
+
+// +/- for numero_nivel
+function stepNum(dir){
+    const inp=document.querySelector('[name=numero_nivel]');
+    if(inp) inp.value=(parseInt(inp.value)||0)+dir;
+}
+
+// File preview
+const plano=document.querySelector('input[type=file]');
+if(plano) plano.addEventListener('change',function(){
+    document.getElementById('plano-file-name').textContent=this.files[0]?.name||'Seleccionar plano…';
+    if(this.files[0]){
+        const r=new FileReader();
+        r.onload=e=>{const i=document.getElementById('plano-preview');i.src=e.target.result;i.style.display='block';};
+        r.readAsDataURL(this.files[0]);
+    }
+});
+
+// Toggles
+document.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    cb.style.cssText='position:absolute;opacity:0;width:0;height:0';
+    const track=cb.closest('.toggle-switch')?.querySelector('.ts-track');
+    const thumb=track?.querySelector('.ts-thumb');
+    const item=cb.closest('.toggle-item');
+    const sync=()=>{
+        if(!track)return;
+        track.style.background=cb.checked?'var(--accent)':'rgba(107,114,128,.25)';
+        if(thumb)thumb.style.left=cb.checked?'19px':'3px';
+        if(item){item.style.borderColor=cb.checked?'rgba(37,99,235,.35)':'';item.style.background=cb.checked?'rgba(37,99,235,.06)':'';}
+    };
+    sync(); cb.addEventListener('change',sync);
+});
+
+function goTo(id){ document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'}); }
+
+// Active step
+const secs=['sec-id','sec-ubic','sec-plano','sec-estado'];
+const steps=document.querySelectorAll('.step-item');
+const obs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+        if(e.isIntersecting){
+            const idx=secs.indexOf(e.target.id);
+            steps.forEach((s,i)=>s.classList.toggle('active',i===idx));
+        }
     });
+},{threshold:.4});
+secs.forEach(id=>{const el=document.getElementById(id);if(el)obs.observe(el);});
 </script>
 {% endblock %}

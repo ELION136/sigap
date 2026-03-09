@@ -1,0 +1,146 @@
+<!-- ════════════════════════════════════════════════════════════
+     tipomantenimiento_list.html
+     ════════════════════════════════════════════════════════════ -->
+{% extends 'base.html' %}
+
+{% block title %}Tipos de Mantenimiento · SIGAP{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb">
+    <a href="">Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <span>Tipos de Mantenimiento</span>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.tipo-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: border-color .2s, transform .15s;
+    text-decoration: none;
+    position: relative;
+    overflow: hidden;
+}
+.tipo-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+}
+.tipo-card:hover { border-color: var(--border2); transform: translateX(3px); }
+.tipo-dot {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+.tipo-code {
+    font-family: 'Syne', sans-serif;
+    font-size: .78rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .07em;
+}
+.tipo-name {
+    font-weight: 500;
+    color: var(--text);
+    font-size: .9rem;
+}
+.tipo-count {
+    margin-left: auto;
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+.tipo-actions {
+    display: flex; gap: .3rem;
+    opacity: 0;
+    transition: opacity .15s;
+    flex-shrink: 0;
+}
+.tipo-card:hover .tipo-actions { opacity: 1; }
+
+/* color map */
+.color-green  { background: rgba(34,197,94,.15);  color: #4ade80; }
+.color-blue   { background: rgba(37,99,235,.15);  color: #60a5fa; }
+.color-yellow { background: rgba(245,158,11,.15); color: #fcd34d; }
+.color-orange { background: rgba(249,115,22,.15); color: #fb923c; }
+.color-red    { background: rgba(239,68,68,.15);  color: #f87171; }
+.color-gray   { background: rgba(107,114,128,.15);color: #9ca3af; }
+.color-purple { background: rgba(139,92,246,.15); color: #c4b5fd; }
+
+.border-green  { border-color: #4ade80; }
+.border-blue   { border-color: #60a5fa; }
+.border-yellow { border-color: #fcd34d; }
+.border-orange { border-color: #fb923c; }
+.border-red    { border-color: #f87171; }
+.border-gray   { border-color: #9ca3af; }
+.border-purple { border-color: #c4b5fd; }
+
+.tipos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: .85rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem;">
+    <form method="get" style="display:flex;gap:.5rem;">
+        <div style="position:relative;">
+            <i class="fas fa-search" style="position:absolute;left:.75rem;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:.8rem;pointer-events:none;"></i>
+            <input type="text" name="q" value="{{ search_query }}" placeholder="Buscar…"
+                   style="background:var(--surface);border:1px solid var(--border2);color:var(--text);border-radius:8px;padding:.45rem .85rem .45rem 2.1rem;font-size:.85rem;outline:none;width:220px;">
+        </div>
+        <button type="submit" class="btn-primary" style="padding:.45rem .9rem;font-size:.82rem;">Buscar</button>
+    </form>
+    <a href="{% url 'mantenimiento:tipomantenimiento_create' %}" class="btn-primary">
+        <i class="fas fa-plus"></i> Nuevo Tipo
+    </a>
+</div>
+
+{% if tipos %}
+<div class="tipos-grid">
+    {% for t in tipos %}
+    <div class="tipo-card border-{{ t.color }}">
+        <div class="tipo-dot color-{{ t.color }}">
+            <i class="fas fa-tag"></i>
+        </div>
+        <div style="min-width:0;">
+            <div class="tipo-code">{{ t.codigo }}</div>
+            <div class="tipo-name">{{ t.nombre }}</div>
+            {% if t.descripcion %}
+            <div style="font-size:.75rem;color:var(--text-muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ t.descripcion }}</div>
+            {% endif %}
+        </div>
+        <div class="tipo-count">{{ t.total_mantenimientos }}</div>
+        <div class="tipo-actions">
+            <a href="{% url 'mantenimiento:tipomantenimiento_update' t.pk %}" class="btn-icon" title="Editar"><i class="fas fa-pencil"></i></a>
+            <a href="{% url 'mantenimiento:tipomantenimiento_delete' t.pk %}" class="btn-icon danger" title="Eliminar"><i class="fas fa-trash"></i></a>
+        </div>
+        {% if not t.activo %}<span class="badge badge-gray" style="position:absolute;top:.6rem;right:.6rem;font-size:.6rem;">Inactivo</span>{% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div style="text-align:center;padding:4rem 2rem;color:var(--text-muted);">
+    <i class="fas fa-tags" style="font-size:2.5rem;opacity:.25;display:block;margin-bottom:.75rem;"></i>
+    <p>No hay tipos de mantenimiento registrados.</p>
+    <a href="{% url 'mantenimiento:tipomantenimiento_create' %}" class="btn-primary" style="margin-top:1rem;display:inline-flex;">
+        <i class="fas fa-plus"></i> Crear el primero
+    </a>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+{% block title %}Eliminar {{ area.nombre }} - SIGAP{% endblock %}
+{% block page_title %}Eliminar Área{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb">
+    <a href="{% url 'core:dashboard' %}"><i class="fas fa-house"></i> Inicio</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'organizacion:area_list' %}">Áreas</a>
+    <i class="fas fa-chevron-right"></i>
+    <a href="{% url 'organizacion:area_detail' area.pk %}">{{ area.nombre }}</a>
+    <i class="fas fa-chevron-right"></i>
+    <span style="color:#f87171;">Eliminar</span>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.del-wrap{max-width:580px;margin:2rem auto}
+.del-card{background:var(--surface);border:1px solid rgba(239,68,68,.3);border-radius:16px;overflow:hidden}
+
+/* Top: plano as backdrop */
+.del-top{position:relative;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:1.75rem 2rem 1.5rem;background:#080c14;border-bottom:1px solid var(--border)}
+
+/* Blueprint grid */
+.del-grid{position:absolute;inset:0;z-index:0;pointer-events:none;
+    background-image:linear-gradient(rgba(37,99,235,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,.06) 1px,transparent 1px);
+    background-size:22px 22px}
+
+/* Blurred plano behind */
+.del-plano-bg{position:absolute;inset:0;z-index:1;overflow:hidden}
+.del-plano-bg img{width:100%;height:100%;object-fit:cover;filter:blur(8px) brightness(.25) saturate(.5);transform:scale(1.1)}
+
+/* Red overlay */
+.del-overlay{position:absolute;inset:0;z-index:2;background:linear-gradient(to bottom,rgba(220,38,38,.08) 0%,rgba(11,15,25,.85) 60%,rgba(11,15,25,.98) 100%)}
+
+/* Content over layers */
+.del-top-content{position:relative;z-index:3;text-align:center;display:flex;flex-direction:column;align-items:center}
+
+.del-icon{width:68px;height:68px;border-radius:50%;background:rgba(239,68,68,.1);border:2px solid rgba(239,68,68,.3);display:flex;align-items:center;justify-content:center;margin-bottom:1rem;animation:shake .5s ease}
+.del-icon i{font-size:1.7rem;color:#f87171}
+
+.del-title{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;color:var(--text);margin-bottom:.4rem}
+.del-subtitle{font-size:.875rem;color:var(--text-muted);line-height:1.6}
+
+/* Plano mini preview (the area's own plano in a badge) */
+.del-plano-badge{
+    margin-top:1rem;
+    display:flex;align-items:center;gap:.875rem;
+    background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2);
+    border-radius:12px;padding:.875rem 1.1rem;
+    max-width:380px;text-align:left;
+}
+.dpb-thumb{width:80px;height:50px;border-radius:7px;background:#080c14;border:1px solid rgba(239,68,68,.2);overflow:hidden;flex-shrink:0;position:relative}
+.dpb-thumb::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(239,68,68,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(239,68,68,.08) 1px,transparent 1px);background-size:8px 8px}
+.dpb-thumb img{width:100%;height:100%;object-fit:contain;padding:3px;position:relative;z-index:1;filter:brightness(.75) saturate(.7)}
+.dpb-thumb-empty{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+.dpb-thumb-empty i{font-size:1rem;color:rgba(239,68,68,.2)}
+.dpb-info{}
+.dpb-code{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#f87171}
+.dpb-name{font-family:'Syne',sans-serif;font-size:.95rem;font-weight:600;color:var(--text)}
+.dpb-path{font-size:.72rem;color:var(--text-muted);margin-top:.15rem;display:flex;align-items:center;gap:.3rem}
+.dpb-path i{font-size:.58rem;color:rgba(239,68,68,.5)}
+
+/* Body */
+.del-body{padding:1.5rem 2rem}
+
+/* Count summary */
+.count-row{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:1rem;font-size:.82rem;color:var(--text-muted)}
+.cb-has{display:inline-flex;align-items:center;gap:.35rem;padding:.22rem .65rem;border-radius:9999px;font-size:.75rem;font-weight:600;background:rgba(239,68,68,.12);color:#f87171;border:1px solid rgba(239,68,68,.25)}
+.cb-ok{display:inline-flex;align-items:center;gap:.35rem;padding:.22rem .65rem;border-radius:9999px;font-size:.75rem;font-weight:600;background:rgba(34,197,94,.1);color:#4ade80;border:1px solid rgba(34,197,94,.2)}
+
+/* Affected list */
+.aff-list{background:rgba(239,68,68,.04);border:1px solid rgba(239,68,68,.12);border-radius:9px;margin-bottom:1rem}
+.aff-title{padding:.55rem .875rem;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#f87171;border-bottom:1px solid rgba(239,68,68,.12)}
+.aff-item{display:flex;align-items:center;gap:.5rem;padding:.4rem .875rem;border-bottom:1px solid rgba(255,255,255,.04);font-size:.82rem;color:var(--text-muted)}
+.aff-item:last-child{border-bottom:none}
+.aff-item i{font-size:.55rem;color:rgba(239,68,68,.5);flex-shrink:0}
+.aff-code{font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#f87171;width:56px;flex-shrink:0}
+.aff-more{padding:.4rem .875rem;font-size:.72rem;color:rgba(239,68,68,.55);text-align:center}
+
+/* Warn boxes */
+.warn{display:flex;gap:.75rem;padding:.875rem 1rem;border-radius:9px;margin-bottom:1.25rem;font-size:.82rem;line-height:1.55}
+.warn i{flex-shrink:0;margin-top:2px}
+.warn-red{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#fca5a5}
+.warn-yellow{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);color:#fcd34d}
+
+/* Actions */
+.del-actions{display:flex;gap:.75rem;justify-content:flex-end;flex-wrap:wrap}
+.btn-del{display:inline-flex;align-items:center;gap:.4rem;padding:.65rem 1.25rem;background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;font-family:'Syne',sans-serif;font-size:.9rem;font-weight:600;border-radius:9px;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(220,38,38,.35);transition:transform .15s,box-shadow .2s}
+.btn-del:hover{transform:translateY(-1px);box-shadow:0 6px 22px rgba(220,38,38,.5)}
+.btn-back{display:inline-flex;align-items:center;gap:.4rem;padding:.65rem 1.25rem;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:9px;color:var(--text-subtle);font-size:.9rem;text-decoration:none;transition:background .15s,color .15s}
+.btn-back:hover{background:rgba(255,255,255,.08);color:var(--text)}
+
+@keyframes shake{0%,100%{transform:rotate(0)}20%{transform:rotate(-8deg)}40%{transform:rotate(8deg)}60%{transform:rotate(-4deg)}80%{transform:rotate(4deg)}}
+</style>
+{% endblock %}
+
+{% block content %}
+{% with sub_count=area.subareas.count %}
+<div class="del-wrap">
+<div class="del-card">
+
+    <!-- Top: plano as atmospheric bg -->
+    <div class="del-top">
+        <div class="del-grid"></div>
+        {% if area.plano %}
+        <div class="del-plano-bg"><img src="{{ area.plano.url }}" alt=""></div>
+        {% endif %}
+        <div class="del-overlay"></div>
+
+        <div class="del-top-content">
+            <div class="del-icon"><i class="fas fa-trash-can"></i></div>
+            <h2 class="del-title">¿Eliminar esta área?</h2>
+            <p class="del-subtitle">Estás a punto de eliminar el área <strong>{{ area.nombre }}</strong>.<br>Esta acción es permanente e irreversible.</p>
+
+            <!-- Area identity card -->
+            <div class="del-plano-badge">
+                <div class="dpb-thumb">
+                    {% if area.plano %}
+                    <img src="{{ area.plano.url }}" alt="">
+                    {% else %}
+                    <div class="dpb-thumb-empty"><i class="fas fa-drafting-compass"></i></div>
+                    {% endif %}
+                </div>
+                <div class="dpb-info">
+                    <div class="dpb-code">{{ area.codigo }}</div>
+                    <div class="dpb-name">{{ area.nombre }}</div>
+                    <div class="dpb-path">
+                        <i class="fas fa-industry"></i>{{ area.nivel.planta.nombre }}
+                        <i class="fas fa-chevron-right"></i>
+                        <i class="fas fa-layer-group"></i>{{ area.nivel.nombre }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Body -->
+    <div class="del-body">
+
+        <div class="count-row">
+            <span>Subáreas asociadas:</span>
+            <span class="{% if sub_count > 0 %}cb-has{% else %}cb-ok{% endif %}">
+                <i class="fas {% if sub_count > 0 %}fa-triangle-exclamation{% else %}fa-circle-check{% endif %}"></i>
+                {{ sub_count }} subárea{{ sub_count|pluralize:"s" }}
+            </span>
+        </div>
+
+        {% if sub_count > 0 %}
+        <div class="aff-list">
+            <div class="aff-title"><i class="fas fa-triangle-exclamation" style="margin-right:.4rem;"></i>Subáreas que se eliminarán</div>
+            {% for sub in area.subareas.all|slice:":7" %}
+            <div class="aff-item">
+                <i class="fas fa-circle"></i>
+                <span class="aff-code">{{ sub.codigo }}</span>
+                <span>{{ sub.nombre }}</span>
+                {% if sub.responsable %}
+                <span style="margin-left:auto;font-size:.7rem;color:rgba(239,68,68,.55);"><i class="fas fa-user" style="margin-right:.2rem;"></i>{{ sub.responsable.nombre_completo }}</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+            {% if sub_count > 7 %}
+            <div class="aff-more">y {{ sub_count|add:"-7" }} subárea{{ sub_count|add:"-7"|pluralize:"s" }} más…</div>
+            {% endif %}
+        </div>
+
+        <div class="warn warn-red">
+            <i class="fas fa-circle-xmark"></i>
+            <span>Se eliminarán <strong>{{ sub_count }} subárea{{ sub_count|pluralize }}</strong> y todos los activos que tengan esta área como ubicación quedarán sin ubicación asignada. Acción <strong>irreversible</strong>.</span>
+        </div>
+
+        <div class="del-actions">
+            <a href="{% url 'organizacion:area_detail' area.pk %}" class="btn-back"><i class="fas fa-arrow-left"></i> Cancelar</a>
+            <a href="{% url 'organizacion:area_list' %}" class="btn-back"><i class="fas fa-sitemap"></i> Ver subáreas</a>
+            <form method="post" style="display:contents;">
+                {% csrf_token %}
+                <button type="submit" class="btn-del"><i class="fas fa-trash-can"></i> Eliminar de todas formas</button>
+            </form>
+        </div>
+
+        {% else %}
+
+        <div class="warn warn-yellow">
+            <i class="fas fa-triangle-exclamation"></i>
+            <span>Esta área no tiene subáreas. Se puede eliminar de forma segura, aunque los activos ubicados aquí perderán su asignación de área. Acción <strong>irreversible</strong>.</span>
+        </div>
+
+        <div class="del-actions">
+            <a href="{% url 'organizacion:area_detail' area.pk %}" class="btn-back"><i class="fas fa-arrow-left"></i> Cancelar</a>
+            <form method="post" style="display:contents;">
+                {% csrf_token %}
+                <button type="submit" class="btn-del"><i class="fas fa-trash-can"></i> Sí, eliminar área</button>
+            </form>
+        </div>
+
+        {% endif %}
+    </div>
+</div>
+</div>
+{% endwith %}
+{% endblock %}
