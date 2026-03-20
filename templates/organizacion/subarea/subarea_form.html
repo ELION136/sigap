@@ -1,291 +1,770 @@
 {% extends 'base.html' %}
-{% block title %}{% if object %}Editar {{ object.nombre }}{% else %}Nueva Subárea{% endif %} - SIGAP{% endblock %}
-{% block page_title %}{% if object %}Editar Subárea{% else %}Nueva Subárea{% endif %}{% endblock %}
+{% block title %}
+  {% if object %}Editar {{ object.nombre }}{% else %}Nueva Subárea{% endif %} - SIGAP
+{% endblock %}
+{% block page_title %}
+  {% if object %}Editar Subárea{% else %}Nueva Subárea{% endif %}
+{% endblock %}
 
 {% block breadcrumbs %}
-<nav class="breadcrumb">
-    <a href="{% url 'core:dashboard' %}"><i class="fas fa-house"></i> Inicio</a>
-    <i class="fas fa-chevron-right"></i>
-    <a href="{% url 'organizacion:subarea_list' %}">Subáreas</a>
-    <i class="fas fa-chevron-right"></i>
-    {% if object %}<a href="{% url 'organizacion:subarea_detail' object.pk %}">{{ object.nombre }}</a><i class="fas fa-chevron-right"></i><span>Editar</span>
-    {% else %}<span>Nueva</span>{% endif %}
+<nav class="breadcrumb" aria-label="breadcrumb">
+  <a href="{% url 'core:dashboard' %}"><i class="fas fa-house" aria-hidden="true"></i> Inicio</a>
+  <i class="fas fa-chevron-right" aria-hidden="true"></i>
+  <a href="{% url 'organizacion:subarea_list' %}">Subáreas</a>
+  <i class="fas fa-chevron-right" aria-hidden="true"></i>
+  {% if object %}
+    <a href="{% url 'organizacion:subarea_detail' object.pk %}">{{ object.nombre }}</a>
+    <i class="fas fa-chevron-right" aria-hidden="true"></i>
+    <span aria-current="page">Editar</span>
+  {% else %}
+    <span aria-current="page">Nueva</span>
+  {% endif %}
 </nav>
 {% endblock %}
 
 {% block extra_css %}
 <style>
-.form-layout{display:grid;grid-template-columns:1fr 260px;gap:1.25rem;align-items:start;max-width:860px}
-.fc{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:1rem}
-.fch{padding:1rem 1.5rem;border-bottom:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;gap:.6rem}
-.fch-n{width:26px;height:26px;border-radius:50%;background:rgba(37,99,235,.2);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:#60a5fa;flex-shrink:0}
-.fch h3{font-family:'Syne',sans-serif;font-size:.9rem;font-weight:600;color:var(--text)}
-.fcb{padding:1.5rem}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
-.g12{display:grid;grid-template-columns:1fr 2fr;gap:1rem}
-.mb{margin-bottom:1rem}
-.fg{display:flex;flex-direction:column;gap:.35rem}
-.fg label{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted)}
-.fg label .req{color:#f87171}
-.ferr{font-size:.75rem;color:#f87171;margin-top:.2rem}
-.fhint{font-size:.72rem;color:var(--text-muted);margin-top:.2rem}
-.fi,.fs,.ft{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:9px;padding:.6rem .875rem;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.875rem;outline:none;width:100%;transition:border-color .2s,background .2s,box-shadow .2s}
-.fi::placeholder,.ft::placeholder{color:rgba(107,114,128,.5)}
-.fi:focus,.fs:focus,.ft:focus{border-color:var(--accent);background:rgba(37,99,235,.05);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
-.fs{appearance:none;cursor:pointer;padding-right:2.25rem;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7280'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right .875rem center;background-color:rgba(255,255,255,.04)}
-.fs option{background:#1a2236}
-.ft{resize:vertical;min-height:72px}
+/* ===== VARIABLES (respetando las del tema base) ===== */
+:root {
+  --surface: #1e2538;
+  --surface2: #262f44;
+  --border: #2f3a4f;
+  --text: #e2e8f0;
+  --text-muted: #94a3b8;
+  --text-subtle: #a0aec0;
+  --accent: #3b82f6;
+  --accent2: #60a5fa;
+}
 
-/* Location cascade display */
-.loc-cascade{background:rgba(37,99,235,.04);border:1px solid rgba(37,99,235,.12);border-radius:10px;padding:1rem;margin-bottom:1rem}
-.lc-title{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--accent2);margin-bottom:.75rem;display:flex;align-items:center;gap:.4rem}
-.lc-title i{font-size:.65rem}
-.lc-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem}
-.lc-row:last-child{margin-bottom:0}
+/* ===== LAYOUT PRINCIPAL ===== */
+.form-layout {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  gap: 1.25rem;
+  align-items: start;
+  max-width: 860px;
+}
 
-/* Toggle */
-.ti{display:flex;flex-direction:column;gap:.5rem;padding:.875rem;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;transition:border-color .2s,background .2s}
-.ti-label{font-size:.78rem;color:var(--text-subtle);font-weight:500}
-.ti-sub{font-size:.68rem;color:var(--text-muted)}
-.ts{display:flex;align-items:center;gap:.5rem;cursor:pointer}
-.ts input{display:none}
-.ts-track{width:36px;height:20px;background:rgba(107,114,128,.25);border-radius:10px;position:relative;transition:background .2s;flex-shrink:0}
-.ts-thumb{width:14px;height:14px;background:#fff;border-radius:50%;position:absolute;top:3px;left:3px;transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+/* ===== TARJETAS DE SECCIÓN ===== */
+.fc {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+.fch {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.fch-n {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent2);
+  flex-shrink: 0;
+}
+.fch h3 {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.fcb {
+  padding: 1.5rem;
+}
 
-/* Steps sidebar */
-.steps-sidebar{position:sticky;top:1.5rem}
-.steps-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
-.steps-hd{padding:.875rem 1.1rem;border-bottom:1px solid var(--border);background:var(--surface2);font-family:'Syne',sans-serif;font-size:.8rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em}
-.si{display:flex;align-items:center;gap:.75rem;padding:.75rem 1.1rem;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;transition:background .15s}
-.si:last-child{border-bottom:none}
-.si:hover{background:rgba(255,255,255,.03)}
-.si-num{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;flex-shrink:0;background:rgba(255,255,255,.06);color:var(--text-muted);border:1px solid var(--border);transition:all .2s}
-.si.active .si-num{background:rgba(37,99,235,.2);color:#60a5fa;border-color:rgba(37,99,235,.4)}
-.si-name{font-size:.82rem;color:var(--text-muted);transition:color .2s}
-.si.active .si-name{color:var(--text);font-weight:500}
+/* ===== GRIDS ===== */
+.g2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+.g12 {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 1rem;
+}
+.lc-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.lc-row:last-child {
+  margin-bottom: 0;
+}
 
-/* Submit bar */
-.sub-bar{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem;background:var(--surface);border:1px solid var(--border);border-radius:14px;position:sticky;bottom:1rem;z-index:10}
-.sub-bar .left{font-size:.82rem;color:var(--text-muted);display:flex;align-items:center;gap:.4rem}
-.sub-bar .right{display:flex;gap:.6rem}
-.btn-cancel{display:inline-flex;align-items:center;gap:.4rem;padding:.55rem 1.1rem;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text-subtle);font-size:.875rem;text-decoration:none;transition:background .15s,color .15s}
-.btn-cancel:hover{background:rgba(255,255,255,.08);color:var(--text)}
+/* ===== FORMULARIOS ===== */
+.fg {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.fg label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+}
+.fg label .req {
+  color: #f87171;
+}
+.ferr {
+  font-size: 0.75rem;
+  color: #f87171;
+  margin-top: 0.2rem;
+}
+.fhint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 0.2rem;
+}
+.fi,
+.fs,
+.ft {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 0.6rem 0.875rem;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.875rem;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+.fi::placeholder,
+.ft::placeholder {
+  color: rgba(107, 114, 128, 0.5);
+}
+.fi:focus,
+.fs:focus,
+.ft:focus {
+  border-color: var(--accent);
+  background: rgba(37, 99, 235, 0.05);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+.fs {
+  appearance: none;
+  cursor: pointer;
+  padding-right: 2.25rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7280'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.875rem center;
+  background-color: rgba(255, 255, 255, 0.04);
+}
+.fs option {
+  background: #1a2236;
+}
+.ft {
+  resize: vertical;
+  min-height: 72px;
+}
 
-@media(max-width:720px){.form-layout{grid-template-columns:1fr}.steps-sidebar{display:none}.g2,.g12,.lc-row{grid-template-columns:1fr}}
+/* ===== CASCADA DE UBICACIÓN ===== */
+.loc-cascade {
+  background: rgba(37, 99, 235, 0.04);
+  border: 1px solid rgba(37, 99, 235, 0.12);
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+.lc-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent2);
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.lc-title i {
+  font-size: 0.65rem;
+}
+
+/* ===== TOGGLE SWITCH ===== */
+.ti {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.875rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  transition: border-color 0.2s, background 0.2s;
+}
+.ti-label {
+  font-size: 0.78rem;
+  color: var(--text-subtle);
+  font-weight: 500;
+}
+.ti-sub {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+.ts {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+.ts input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.ts-track {
+  width: 36px;
+  height: 20px;
+  background: rgba(107, 114, 128, 0.25);
+  border-radius: 10px;
+  position: relative;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.ts-thumb {
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border-radius: 50%;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  transition: left 0.2s;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* ===== BARRA LATERAL DE PASOS ===== */
+.steps-sidebar {
+  position: sticky;
+  top: 1.5rem;
+}
+.steps-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.steps-hd {
+  padding: 0.875rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+  font-family: 'Syne', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.si {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.si:last-child {
+  border-bottom: none;
+}
+.si:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+.si-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  transition: all 0.2s;
+}
+.si.active .si-num {
+  background: rgba(37, 99, 235, 0.2);
+  color: var(--accent2);
+  border-color: rgba(37, 99, 235, 0.4);
+}
+.si-name {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  transition: color 0.2s;
+}
+.si.active .si-name {
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* ===== BARRA DE ACCIONES INFERIOR ===== */
+.sub-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  position: sticky;
+  bottom: 1rem;
+  z-index: 10;
+}
+.sub-bar .left {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.sub-bar .right {
+  display: flex;
+  gap: 0.6rem;
+}
+.btn-cancel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1.1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-subtle);
+  font-size: 0.875rem;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+.btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 720px) {
+  .form-layout {
+    grid-template-columns: 1fr;
+  }
+  .steps-sidebar {
+    display: none;
+  }
+  .g2,
+  .g12,
+  .lc-row {
+    grid-template-columns: 1fr;
+  }
+}
 </style>
 {% endblock %}
 
 {% block content %}
 <form method="post" novalidate>
-{% csrf_token %}
-<div class="form-layout">
-  <div>
-
-    <!-- § 1 Identificación -->
-    <div class="fc" id="sec-id">
-        <div class="fch"><div class="fch-n">1</div><h3>Identificación</h3></div>
+  {% csrf_token %}
+  <div class="form-layout">
+    <!-- COLUMNA PRINCIPAL: SECCIONES DEL FORMULARIO -->
+    <div>
+      <!-- SECCIÓN 1: IDENTIFICACIÓN -->
+      <section class="fc" id="sec-id" aria-labelledby="sec-id-heading">
+        <div class="fch">
+          <div class="fch-n" aria-hidden="true">1</div>
+          <h3 id="sec-id-heading">Identificación</h3>
+        </div>
         <div class="fcb">
-            <div class="g12 mb">
-                <div class="fg">
-                    <label>Código <span class="req">*</span></label>
-                    {{ form.codigo }}
-                    {% if form.codigo.errors %}<p class="ferr">{{ form.codigo.errors.0 }}</p>{% endif %}
-                </div>
-                <div class="fg">
-                    <label>Nombre <span class="req">*</span></label>
-                    {{ form.nombre }}
-                    {% if form.nombre.errors %}<p class="ferr">{{ form.nombre.errors.0 }}</p>{% endif %}
-                </div>
+          <div class="g12 mb">
+            <div class="fg">
+              <label for="{{ form.codigo.id_for_label }}">Código <span class="req" aria-label="requerido">*</span></label>
+              {{ form.codigo }}
+              {% if form.codigo.errors %}<p class="ferr">{{ form.codigo.errors.0 }}</p>{% endif %}
             </div>
             <div class="fg">
-                <label>Descripción</label>
-                {{ form.descripcion }}
+              <label for="{{ form.nombre.id_for_label }}">Nombre <span class="req" aria-label="requerido">*</span></label>
+              {{ form.nombre }}
+              {% if form.nombre.errors %}<p class="ferr">{{ form.nombre.errors.0 }}</p>{% endif %}
             </div>
+          </div>
+          <div class="fg">
+            <label for="{{ form.descripcion.id_for_label }}">Descripción</label>
+            {{ form.descripcion }}
+          </div>
         </div>
-    </div>
+      </section>
 
-    <!-- § 2 Ubicación — cascade selects -->
-    <div class="fc" id="sec-ubic">
-        <div class="fch"><div class="fch-n">2</div><h3>Ubicación</h3></div>
+      <!-- SECCIÓN 2: UBICACIÓN (JERARQUÍA) -->
+      <section class="fc" id="sec-ubic" aria-labelledby="sec-ubic-heading">
+        <div class="fch">
+          <div class="fch-n" aria-hidden="true">2</div>
+          <h3 id="sec-ubic-heading">Ubicación</h3>
+        </div>
         <div class="fcb">
-            <div class="loc-cascade">
-                <div class="lc-title"><i class="fas fa-diagram-project"></i> Jerarquía de ubicación</div>
-                <div class="lc-row">
-                    <div class="fg">
-                        <label><i class="fas fa-industry" style="color:var(--accent2);margin-right:.3rem;font-size:.65rem;"></i>Planta</label>
-                        <select id="sel-planta" class="fs" onchange="loadNiveles(this.value)">
-                            <option value="">Seleccionar planta…</option>
-                            {% for p in plantas %}
-                            <option value="{{ p.id }}" {% if form.instance.area.nivel.planta_id == p.id %}selected{% endif %}>{{ p.nombre }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="fg">
-                        <label><i class="fas fa-layer-group" style="color:#38bdf8;margin-right:.3rem;font-size:.65rem;"></i>Nivel</label>
-                        <select id="sel-nivel" class="fs" onchange="loadAreas(this.value)">
-                            <option value="">Seleccionar nivel…</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="fg">
-                    <label>Área <span class="req">*</span></label>
-                    {{ form.area }}
-                    {% if form.area.errors %}<p class="ferr">{{ form.area.errors.0 }}</p>{% endif %}
-                    <span class="fhint">Selecciona planta y nivel primero para filtrar las áreas</span>
-                </div>
+          <div class="loc-cascade">
+            <div class="lc-title">
+              <i class="fas fa-diagram-project" aria-hidden="true"></i> Jerarquía de ubicación
             </div>
-        </div>
-    </div>
-
-    <!-- § 3 Responsable -->
-    <div class="fc" id="sec-resp">
-        <div class="fch"><div class="fch-n">3</div><h3>Responsable</h3></div>
-        <div class="fcb">
+            <div class="lc-row">
+              <div class="fg">
+                <label for="sel-planta"><i class="fas fa-industry" aria-hidden="true" style="color:var(--accent2); margin-right:0.3rem; font-size:0.65rem;"></i>Planta</label>
+                <select id="sel-planta" class="fs" aria-label="Seleccionar planta">
+                  <option value="">Seleccionar planta…</option>
+                  {% for p in plantas %}
+                    <option value="{{ p.id }}" {% if form.instance.area.nivel.planta_id == p.id %}selected{% endif %}>{{ p.nombre }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="fg">
+                <label for="sel-nivel">Nivel <span class="req" aria-label="requerido">*</span></label>
+                <select id="sel-nivel" class="fs" aria-label="Seleccionar nivel">
+                  <option value="">Seleccionar nivel…</option>
+                  {% if object and object.area.nivel %}
+                    <option value="{{ object.area.nivel.id }}" selected>{{ object.area.nivel.nombre }}</option>
+                  {% endif %}
+                </select>
+              </div>
+            </div>
             <div class="fg">
-                <label>Responsable</label>
-                {{ form.responsable }}
-                <span class="fhint">Persona encargada de esta subárea</span>
+              <label for="{{ form.area.id_for_label }}">Área <span class="req" aria-label="requerido">*</span></label>
+              {{ form.area }}
+              {% if form.area.errors %}<p class="ferr">{{ form.area.errors.0 }}</p>{% endif %}
+              <span class="fhint">Selecciona planta y nivel primero para filtrar las áreas</span>
             </div>
+          </div>
         </div>
-    </div>
+      </section>
 
-    <!-- § 4 Estado -->
-    <div class="fc" id="sec-estado">
-        <div class="fch"><div class="fch-n">4</div><h3>Estado</h3></div>
+      <!-- SECCIÓN 3: RESPONSABLE -->
+      <section class="fc" id="sec-resp" aria-labelledby="sec-resp-heading">
+        <div class="fch">
+          <div class="fch-n" aria-hidden="true">3</div>
+          <h3 id="sec-resp-heading">Responsable</h3>
+        </div>
         <div class="fcb">
-            <div class="ti" id="ti-activa">
-                <label class="ts" for="{{ form.activa.id_for_label }}">
-                    {{ form.activa }}
-                    <div class="ts-track"><div class="ts-thumb"></div></div>
-                </label>
-                <div class="ti-label">Subárea activa</div>
-                <div class="ti-sub">La subárea está en operación y disponible para asignar activos</div>
-            </div>
+          <div class="fg">
+            <label for="{{ form.responsable.id_for_label }}">Responsable</label>
+            {{ form.responsable }}
+            <span class="fhint">Persona encargada de esta subárea</span>
+          </div>
         </div>
-    </div>
+      </section>
 
-    <div class="sub-bar">
-        <div class="left"><i class="fas fa-circle-info"></i>
-            {% if object %}Editando <strong>{{ object.nombre }}</strong>{% else %}Nueva subárea{% endif %}
+      <!-- SECCIÓN 4: ESTADO -->
+      <section class="fc" id="sec-estado" aria-labelledby="sec-estado-heading">
+        <div class="fch">
+          <div class="fch-n" aria-hidden="true">4</div>
+          <h3 id="sec-estado-heading">Estado</h3>
+        </div>
+        <div class="fcb">
+          <div class="ti" id="ti-activa">
+            <label class="ts" for="{{ form.activa.id_for_label }}">
+              {{ form.activa }}
+              <span class="ts-track"><span class="ts-thumb"></span></span>
+            </label>
+            <span class="ti-label">Subárea activa</span>
+            <span class="ti-sub">La subárea está en operación y disponible para asignar activos</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- BARRA DE ACCIONES INFERIOR (STICKY) -->
+      <div class="sub-bar">
+        <div class="left">
+          <i class="fas fa-circle-info" aria-hidden="true"></i>
+          {% if object %}Editando <strong>{{ object.nombre }}</strong>{% else %}Nueva subárea{% endif %}
         </div>
         <div class="right">
-            <a href="{% if object %}{% url 'organizacion:subarea_detail' object.pk %}{% else %}{% url 'organizacion:subarea_list' %}{% endif %}" class="btn-cancel">
-                <i class="fas fa-xmark"></i> Cancelar
-            </a>
-            <button type="submit" class="btn-primary">
-                <i class="fas fa-floppy-disk"></i>
-                {% if object %}Guardar cambios{% else %}Crear subárea{% endif %}
-            </button>
+          <a href="{% if object %}{% url 'organizacion:subarea_detail' object.pk %}{% else %}{% url 'organizacion:subarea_list' %}{% endif %}" class="btn-cancel">
+            <i class="fas fa-xmark" aria-hidden="true"></i> Cancelar
+          </a>
+          <button type="submit" class="btn-primary">
+            <i class="fas fa-floppy-disk" aria-hidden="true"></i>
+            {% if object %}Guardar cambios{% else %}Crear subárea{% endif %}
+          </button>
         </div>
+      </div>
     </div>
-  </div>
 
-  <!-- Sidebar -->
-  <div class="steps-sidebar">
-    <div class="steps-card">
+    <!-- COLUMNA LATERAL: NAVEGACIÓN POR PASOS -->
+    <aside class="steps-sidebar" aria-label="Navegación rápida">
+      <div class="steps-card">
         <div class="steps-hd">Secciones</div>
-        <div class="si active" onclick="goTo('sec-id')"><div class="si-num">1</div><div class="si-name">Identificación</div></div>
-        <div class="si" onclick="goTo('sec-ubic')"><div class="si-num">2</div><div class="si-name">Ubicación</div></div>
-        <div class="si" onclick="goTo('sec-resp')"><div class="si-num">3</div><div class="si-name">Responsable</div></div>
-        <div class="si" onclick="goTo('sec-estado')"><div class="si-num">4</div><div class="si-name">Estado</div></div>
-    </div>
+        <div class="si active" data-target="sec-id" role="button" tabindex="0" aria-label="Ir a Identificación">
+          <span class="si-num" aria-hidden="true">1</span>
+          <span class="si-name">Identificación</span>
+        </div>
+        <div class="si" data-target="sec-ubic" role="button" tabindex="0" aria-label="Ir a Ubicación">
+          <span class="si-num" aria-hidden="true">2</span>
+          <span class="si-name">Ubicación</span>
+        </div>
+        <div class="si" data-target="sec-resp" role="button" tabindex="0" aria-label="Ir a Responsable">
+          <span class="si-num" aria-hidden="true">3</span>
+          <span class="si-name">Responsable</span>
+        </div>
+        <div class="si" data-target="sec-estado" role="button" tabindex="0" aria-label="Ir a Estado">
+          <span class="si-num" aria-hidden="true">4</span>
+          <span class="si-name">Estado</span>
+        </div>
+      </div>
+    </aside>
   </div>
-</div>
 </form>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-document.querySelectorAll('input[type=text],input[type=number],input[type=email]').forEach(e=>e.classList.add('fi'));
-document.querySelectorAll('select').forEach(e=>e.classList.add('fs'));
-document.querySelectorAll('textarea').forEach(e=>e.classList.add('ft'));
+(function() {
+  'use strict';
 
-// Toggles
-document.querySelectorAll('input[type=checkbox]').forEach(cb=>{
-    cb.style.cssText='position:absolute;opacity:0;width:0;height:0';
-    const track=cb.closest('.ts')?.querySelector('.ts-track');
-    const thumb=track?.querySelector('.ts-thumb');
-    const item=cb.closest('.ti');
-    const sync=()=>{
-        if(!track)return;
-        track.style.background=cb.checked?'var(--accent)':'rgba(107,114,128,.25)';
-        if(thumb)thumb.style.left=cb.checked?'19px':'3px';
-        if(item){item.style.borderColor=cb.checked?'rgba(37,99,235,.35)':'';item.style.background=cb.checked?'rgba(37,99,235,.06)':'';}
-    };
-    sync(); cb.addEventListener('change',sync);
-});
+  // ============================================
+  // 1. INICIALIZACIÓN DE ESTILOS DE INPUTS
+  // ============================================
+  function initInputStyles() {
+    // Asignar clases CSS a los campos según su tipo
+    document.querySelectorAll('input[type=text], input[type=number], input[type=email]')
+      .forEach(el => el.classList.add('fi'));
+    document.querySelectorAll('select:not([id^="sel-"])')
+      .forEach(el => el.classList.add('fs'));
+    document.querySelectorAll('textarea')
+      .forEach(el => el.classList.add('ft'));
+  }
 
-function goTo(id){document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'});}
-const secs=['sec-id','sec-ubic','sec-resp','sec-estado'];
-const steps=document.querySelectorAll('.si');
-const obs=new IntersectionObserver(entries=>{
-    entries.forEach(e=>{if(e.isIntersecting){const i=secs.indexOf(e.target.id);steps.forEach((s,j)=>s.classList.toggle('active',i===j));}});
-},{threshold:.35});
-secs.forEach(id=>{const el=document.getElementById(id);if(el)obs.observe(el);});
+  // ============================================
+  // 2. TOGGLE SWITCH PERSONALIZADO
+  // ============================================
+  function initToggleSwitches() {
+    document.querySelectorAll('input[type=checkbox]').forEach(cb => {
+      // Ocultar el checkbox nativo (ya está oculto vía CSS, pero aseguramos)
+      cb.style.cssText = 'position:absolute; opacity:0; width:0; height:0';
 
-function loadNiveles(plantaId){
-    const sel=document.getElementById('sel-nivel');
-    const selArea=document.querySelector('[name=area]');
-    sel.innerHTML='<option value="">Seleccionar nivel…</option>';
-    if(selArea)selArea.innerHTML='<option value="">Seleccionar área…</option>';
-    if(!plantaId)return;
-    fetch(`/organizacion/ajax/niveles/?planta=${plantaId}`)
-        .then(r=>r.json()).then(data=>{
-            (data.niveles||[]).forEach(n=>{
-                const o=document.createElement('option');
-                o.value=n.id; o.textContent=n.nombre;
-                sel.appendChild(o);
-            });
-        });
-}
+      const track = cb.closest('.ts')?.querySelector('.ts-track');
+      const thumb = track?.querySelector('.ts-thumb');
+      const container = cb.closest('.ti');
 
-function loadAreas(nivelId){
-    const selArea=document.querySelector('[name=area]');
-    if(!selArea)return;
-    selArea.innerHTML='<option value="">Seleccionar área…</option>';
-    if(!nivelId)return;
-    fetch(`/organizacion/ajax/areas/?nivel=${nivelId}`)
-        .then(r=>r.json()).then(data=>{
-            (data.areas||[]).forEach(a=>{
-                const o=document.createElement('option');
-                o.value=a.id; o.textContent=a.nombre;
-                selArea.appendChild(o);
-            });
-        });
-}
+      function updateToggle() {
+        if (!track) return;
+        track.style.background = cb.checked ? 'var(--accent)' : 'rgba(107,114,128,.25)';
+        if (thumb) thumb.style.left = cb.checked ? '19px' : '3px';
+        if (container) {
+          container.style.borderColor = cb.checked ? 'rgba(37,99,235,.35)' : '';
+          container.style.background = cb.checked ? 'rgba(37,99,235,.06)' : '';
+        }
+      }
 
-// Pre-populate if editing
-{% if object and object.area %}
-document.addEventListener('DOMContentLoaded',()=>{
-    const plantaId='{{ object.area.nivel.planta_id|default:"" }}';
-    const nivelId='{{ object.area.nivel_id|default:"" }}';
-    const areaId='{{ object.area_id|default:"" }}';
-    if(plantaId){
-        document.getElementById('sel-planta').value=plantaId;
-        fetch(`/organizacion/ajax/niveles/?planta=${plantaId}`)
-            .then(r=>r.json()).then(data=>{
-                const sel=document.getElementById('sel-nivel');
-                (data.niveles||[]).forEach(n=>{
-                    const o=document.createElement('option');
-                    o.value=n.id; o.textContent=n.nombre;
-                    if(n.id==nivelId)o.selected=true;
-                    sel.appendChild(o);
-                });
-                if(nivelId){
-                    return fetch(`/organizacion/ajax/areas/?nivel=${nivelId}`);
-                }
-            }).then(r=>r&&r.json()).then(data=>{
-                if(!data)return;
-                const selArea=document.querySelector('[name=area]');
-                (data.areas||[]).forEach(a=>{
-                    const o=document.createElement('option');
-                    o.value=a.id; o.textContent=a.nombre;
-                    if(a.id==areaId)o.selected=true;
-                    selArea.appendChild(o);
-                });
-            });
+      updateToggle();
+      cb.addEventListener('change', updateToggle);
+    });
+  }
+
+  // ============================================
+  // 3. NAVEGACIÓN POR SECCIONES (SIDEBAR)
+  // ============================================
+  function initSectionNavigation() {
+    const sections = ['sec-id', 'sec-ubic', 'sec-resp', 'sec-estado'];
+    const stepItems = document.querySelectorAll('.si');
+
+    // Click en items de la barra lateral
+    stepItems.forEach(item => {
+      item.addEventListener('click', () => {
+        const targetId = item.dataset.target;
+        if (targetId) {
+          document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+      // Soporte para teclado (Enter/Space)
+      item.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          const targetId = item.dataset.target;
+          if (targetId) {
+            document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }
+      });
+    });
+
+    // Intersection Observer para marcar la sección activa
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const index = sections.indexOf(entry.target.id);
+          stepItems.forEach((item, i) => {
+            item.classList.toggle('active', i === index);
+          });
+        }
+      });
+    }, { threshold: 0.35 });
+
+    sections.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+  }
+
+  // ============================================
+  // 4. CASCADA DE UBICACIÓN (AJAX)
+  // ============================================
+  function initLocationCascade() {
+    const plantaSelect = document.getElementById('sel-planta');
+    const nivelSelect = document.getElementById('sel-nivel');
+    const areaSelect = document.getElementById('id_area');
+
+    if (!plantaSelect || !nivelSelect || !areaSelect) {
+      // Si falta algún elemento, no continuamos
+      return;
     }
-});
-{% endif %}
+
+    // Al cambiar planta
+    plantaSelect.addEventListener('change', function() {
+      const plantaId = this.value;
+      loadNiveles(plantaId);
+    });
+
+    // Al cambiar nivel
+    nivelSelect.addEventListener('change', function() {
+      const nivelId = this.value;
+      loadAreas(nivelId);
+    });
+
+    // Cargar niveles (fetch)
+    function loadNiveles(plantaId) {
+      // Limpiar selects dependientes
+      nivelSelect.innerHTML = '<option value="">Cargando niveles…</option>';
+      areaSelect.innerHTML = '<option value="">Seleccionar área…</option>';
+
+      if (!plantaId) {
+        nivelSelect.innerHTML = '<option value="">Seleccionar nivel…</option>';
+        return;
+      }
+
+      fetch(`/organizacion/ajax/niveles/?planta=${plantaId}`)
+        .then(response => {
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return response.json();
+        })
+        .then(data => {
+          if (data.error) throw new Error(data.error);
+          nivelSelect.innerHTML = '<option value="">Seleccionar nivel…</option>';
+          if (data.niveles && data.niveles.length) {
+            data.niveles.forEach(n => {
+              const option = document.createElement('option');
+              option.value = n.id;
+              option.textContent = n.nombre; // "CÓDIGO - Nombre" ya formateado
+              nivelSelect.appendChild(option);
+            });
+          } else {
+            nivelSelect.innerHTML = '<option value="">No hay niveles disponibles</option>';
+          }
+        })
+        .catch(() => {
+          nivelSelect.innerHTML = '<option value="">Error al cargar niveles</option>';
+        });
+    }
+
+    // Cargar áreas (fetch)
+    function loadAreas(nivelId) {
+      areaSelect.innerHTML = '<option value="">Cargando áreas…</option>';
+
+      if (!nivelId) {
+        areaSelect.innerHTML = '<option value="">Seleccionar área…</option>';
+        return;
+      }
+
+      fetch(`/organizacion/ajax/areas/?nivel=${nivelId}`)
+        .then(response => {
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return response.json();
+        })
+        .then(data => {
+          if (data.error) throw new Error(data.error);
+          areaSelect.innerHTML = '<option value="">Seleccionar área…</option>';
+          if (data.areas && data.areas.length) {
+            data.areas.forEach(a => {
+              const option = document.createElement('option');
+              option.value = a.id;
+              option.textContent = a.nombre;
+              areaSelect.appendChild(option);
+            });
+          } else {
+            areaSelect.innerHTML = '<option value="">No hay áreas disponibles</option>';
+          }
+        })
+        .catch(() => {
+          areaSelect.innerHTML = '<option value="">Error al cargar áreas</option>';
+        });
+    }
+
+    // Precarga de datos si estamos en modo edición (Django template)
+    {% if object and object.area %}
+    (function preload() {
+      const plantaId = '{{ object.area.nivel.planta_id|default:"" }}';
+      const nivelId = '{{ object.area.nivel_id|default:"" }}';
+      const areaId = '{{ object.area_id|default:"" }}';
+
+      if (plantaId) {
+        fetch(`/organizacion/ajax/niveles/?planta=${plantaId}`)
+          .then(r => r.ok ? r.json() : Promise.reject())
+          .then(data => {
+            if (data.niveles) {
+              nivelSelect.innerHTML = '<option value="">Seleccionar nivel…</option>';
+              data.niveles.forEach(n => {
+                const option = document.createElement('option');
+                option.value = n.id;
+                option.textContent = n.nombre;
+                if (n.id == nivelId) option.selected = true;
+                nivelSelect.appendChild(option);
+              });
+
+              if (nivelId) {
+                return fetch(`/organizacion/ajax/areas/?nivel=${nivelId}`);
+              }
+            }
+          })
+          .then(response => response && response.ok ? response.json() : null)
+          .then(data => {
+            if (data && data.areas) {
+              areaSelect.innerHTML = '<option value="">Seleccionar área…</option>';
+              data.areas.forEach(a => {
+                const option = document.createElement('option');
+                option.value = a.id;
+                option.textContent = a.nombre;
+                if (a.id == areaId) option.selected = true;
+                areaSelect.appendChild(option);
+              });
+            }
+          })
+          .catch(() => {
+            // Silently fail – no mostrar errores en consola
+          });
+      }
+    })();
+    {% endif %}
+  }
+
+  // ============================================
+  // 5. INICIALIZACIÓN GENERAL
+  // ============================================
+  document.addEventListener('DOMContentLoaded', function() {
+    initInputStyles();
+    initToggleSwitches();
+    initSectionNavigation();
+    initLocationCascade();
+  });
+
+})();
 </script>
 {% endblock %}

@@ -3,6 +3,8 @@ Vistas para la app organizacion del proyecto SIGAP.
 """
 from django.shortcuts import render, get_object_or_404
 from django.urls import reverse_lazy
+from django.http import JsonResponse
+from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.views.generic import (
     ListView, DetailView, CreateView, UpdateView, DeleteView
@@ -211,21 +213,29 @@ class AreaDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
 
 
 class AreaCreateView(BaseCreateView):
-    """Vista para crear Área."""
     model = Area
     form_class = AreaForm
     template_name = 'organizacion/area/area_form.html'
     permission_required = 'organizacion.add_area'
     success_url = reverse_lazy('organizacion:area_list')
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['plantas'] = Planta.objects.filter(activa=True)
+        return context
+
 
 class AreaUpdateView(BaseUpdateView):
-    """Vista para actualizar Área."""
     model = Area
     form_class = AreaForm
     template_name = 'organizacion/area/area_form.html'
     permission_required = 'organizacion.change_area'
     success_url = reverse_lazy('organizacion:area_list')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['plantas'] = Planta.objects.filter(activa=True)
+        return context
 
 
 class AreaDeleteView(BaseDeleteView):
@@ -276,6 +286,12 @@ class SubAreaCreateView(BaseCreateView):
     permission_required = 'organizacion.add_subarea'
     success_url = reverse_lazy('organizacion:subarea_list')
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['plantas'] = Planta.objects.filter(activa=True)
+        context['areas'] = Area.objects.filter(activa=True)
+        return context
+
 
 class SubAreaUpdateView(BaseUpdateView):
     """Vista para actualizar Subárea."""
@@ -284,6 +300,12 @@ class SubAreaUpdateView(BaseUpdateView):
     template_name = 'organizacion/subarea/subarea_form.html'
     permission_required = 'organizacion.change_subarea'
     success_url = reverse_lazy('organizacion:subarea_list')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['plantas'] = Planta.objects.filter(activa=True)
+        context['areas'] = Area.objects.filter(activa=True)
+        return context
 
 
 class SubAreaDeleteView(BaseDeleteView):
@@ -355,3 +377,57 @@ class ResponsableDeleteView(BaseDeleteView):
     template_name = 'organizacion/responsable/responsable_confirm_delete.html'
     permission_required = 'organizacion.delete_responsable'
     success_url = reverse_lazy('organizacion:responsable_list')
+
+class AjaxNivelesView(LoginRequiredMixin, View):
+    """Vista AJAX para obtener niveles por planta"""
+    
+    def get(self, request):
+        planta_id = request.GET.get('planta')
+        try:
+            if planta_id and planta_id.isdigit():
+                niveles = Nivel.objects.filter(
+                    planta_id=planta_id, 
+                    activo=True
+                ).values('id', 'nombre', 'codigo').order_by('numero_nivel', 'nombre')
+                
+                # Formatear los datos para mejor visualización
+                niveles_list = []
+                for n in niveles:
+                    niveles_list.append({
+                        'id': n['id'],
+                        'nombre': f"{n['codigo']} - {n['nombre']}",
+                        'codigo': n['codigo']
+                    })
+                
+                return JsonResponse({'niveles': niveles_list})
+            return JsonResponse({'niveles': []})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+
+class AjaxAreasView(LoginRequiredMixin, View):
+    """Vista AJAX para obtener áreas por nivel"""
+    
+    def get(self, request):
+        nivel_id = request.GET.get('nivel')
+        try:
+            if nivel_id and nivel_id.isdigit():
+                areas = Area.objects.filter(
+                    nivel_id=nivel_id, 
+                    activa=True
+                ).values('id', 'nombre', 'codigo').order_by('nombre')
+                
+                # Formatear los datos para mejor visualización
+                areas_list = []
+                for a in areas:
+                    areas_list.append({
+                        'id': a['id'],
+                        'nombre': f"{a['codigo']} - {a['nombre']}",
+                        'codigo': a['codigo']
+                    })
+                
+                return JsonResponse({'areas': areas_list})
+            return JsonResponse({'areas': []})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+

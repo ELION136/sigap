@@ -4,300 +4,491 @@
 
 {% block breadcrumbs %}
 <nav class="breadcrumb">
-    <a href="{% url 'core:dashboard' %}"><i class="fas fa-house"></i> Inicio</a>
-    <i class="fas fa-chevron-right"></i>
-    <a href="{% url 'organizacion:planta_list' %}">Plantas</a>
-    <i class="fas fa-chevron-right"></i>
-    <span>Niveles</span>
+  <a href="{% url 'core:dashboard' %}"><i class="fas fa-house"></i> Inicio</a>
+  <i class="fas fa-chevron-right"></i>
+  <a href="{% url 'organizacion:planta_list' %}">Plantas</a>
+  <i class="fas fa-chevron-right"></i>
+  <span>Niveles</span>
 </nav>
 {% endblock %}
 
+
+{# ============================================================ #}
+{#  CSS                                                          #}
+{# ============================================================ #}
 {% block extra_css %}
 <style>
-    .toolbar { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; margin-bottom:1.5rem; }
-    .toolbar-left { flex:1; display:flex; gap:.5rem; }
-    .toolbar-right { display:flex; gap:.5rem; }
-    .search-wrap { position:relative; min-width:200px; max-width:300px; flex:1; }
-    .search-wrap input {
-        width:100%; background:var(--surface); border:1px solid var(--border); border-radius:9px;
-        padding:.55rem 1rem .55rem 2.4rem; color:var(--text);
-        font-family:'DM Sans',sans-serif; font-size:.875rem; outline:none;
-        transition:border-color .2s,background .2s;
-    }
-    .search-wrap input::placeholder { color:var(--text-muted); }
-    .search-wrap input:focus { border-color:var(--accent); background:rgba(37,99,235,.06); }
-    .search-wrap i { position:absolute; left:.8rem; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:.8rem; pointer-events:none; }
 
-    /* ── Plantas grid ── */
-    .plantas-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:1.25rem; }
+  /* ── Toolbar ─────────────────────────────────────────────── */
+  .toolbar { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; margin-bottom:1.75rem; }
+  .toolbar-left  { flex:1; display:flex; gap:.5rem; }
+  .toolbar-right { display:flex; gap:.5rem; }
 
-    /* ── Building card ── */
-    .building-card {
-        background:var(--surface); border:1px solid var(--border); border-radius:16px;
-        overflow:hidden; animation:fadeUp .4s ease both;
-        display:flex; flex-direction:column;
-    }
+  .search-wrap { position:relative; min-width:200px; max-width:300px; flex:1; }
+  .search-wrap input {
+    width:100%; background:var(--surface); border:1px solid var(--border);
+    border-radius:9px; padding:.55rem 1rem .55rem 2.4rem; color:var(--text);
+    font-family:'DM Sans',sans-serif; font-size:.875rem; outline:none;
+    transition:border-color .2s,background .2s;
+  }
+  .search-wrap input::placeholder { color:var(--text-muted); }
+  .search-wrap input:focus { border-color:var(--accent); background:rgba(37,99,235,.06); }
+  .search-wrap i { position:absolute; left:.8rem; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:.8rem; pointer-events:none; }
 
-    .building-header {
-        padding:1rem 1.25rem;
-        background:var(--surface2); border-bottom:1px solid var(--border);
-        display:flex; align-items:center; gap:.875rem;
-        cursor:pointer; user-select:none;
-        transition:background .15s;
-    }
-    .building-header:hover { background:rgba(255,255,255,.04); }
+  /* ── Grupo por planta ────────────────────────────────────── */
+  .plant-group { margin-bottom:2.5rem; animation:fadeUp .4s ease both; }
 
-    .building-icon {
-        width:44px; height:44px; border-radius:10px; flex-shrink:0;
-        background:rgba(37,99,235,.1); border:1px solid rgba(37,99,235,.18);
-        display:flex; align-items:center; justify-content:center;
-        font-size:1.1rem; color:#60a5fa;
-    }
-    .building-meta { flex:1; min-width:0; }
-    .building-name { font-family:'Syne',sans-serif; font-size:.95rem; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .building-sub  { font-size:.72rem; color:var(--text-muted); margin-top:.15rem; }
-    .building-count {
-        background:rgba(37,99,235,.12); color:#60a5fa;
-        border:1px solid rgba(37,99,235,.2); border-radius:9999px;
-        padding:.2rem .6rem; font-size:.72rem; font-weight:700; flex-shrink:0;
-    }
-    .building-chevron { color:var(--text-muted); font-size:.75rem; transition:transform .25s; flex-shrink:0; margin-left:.25rem; }
-    .building-card.collapsed .building-chevron { transform:rotate(-90deg); }
+  .plant-group-header {
+    display:flex; align-items:center; gap:.875rem;
+    margin-bottom:1rem; padding-bottom:.75rem;
+    border-bottom:1px solid var(--border);
+  }
+  .plant-group-icon {
+    width:38px; height:38px; border-radius:10px; flex-shrink:0;
+    background:rgba(37,99,235,.1); border:1px solid rgba(37,99,235,.2);
+    display:flex; align-items:center; justify-content:center;
+    font-size:.95rem; color:#60a5fa;
+  }
+  .plant-group-name {
+    font-family:'Syne',sans-serif; font-size:1rem; font-weight:700; color:var(--text);
+  }
+  .plant-group-sub { font-size:.73rem; color:var(--text-muted); margin-top:.1rem; }
+  .plant-group-count {
+    margin-left:auto; flex-shrink:0;
+    background:rgba(37,99,235,.1); color:#60a5fa;
+    border:1px solid rgba(37,99,235,.2); border-radius:9999px;
+    padding:.2rem .65rem; font-size:.72rem; font-weight:700;
+  }
+  .plant-group-link {
+    flex-shrink:0; font-size:.75rem; color:var(--accent2); font-weight:600;
+    text-decoration:none; display:flex; align-items:center; gap:.3rem;
+    padding:.3rem .65rem; border-radius:7px; border:1px solid rgba(37,99,235,.15);
+    transition:background .15s,color .15s;
+  }
+  .plant-group-link:hover { background:rgba(37,99,235,.1); color:var(--accent); }
 
-    /* ── Floor stack visual ── */
-    .floors-wrap { padding:.75rem 1rem 1rem; display:flex; flex-direction:column; gap:0; }
-    .building-card.collapsed .floors-wrap { display:none; }
+  /* ── Grid de tarjetas de nivel ───────────────────────────── */
+  .niveles-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));
+    gap:1.1rem;
+  }
 
-    /* The "building silhouette" left edge */
-    .floors-inner { position:relative; padding-left:2rem; }
-    .floors-inner::before {
-        content:'';
-        position:absolute; left:.8rem; top:0; bottom:1rem;
-        width:2px; background:linear-gradient(to bottom,rgba(37,99,235,.5),rgba(37,99,235,.05));
-        border-radius:2px;
-    }
+  /* ── Tarjeta de nivel ────────────────────────────────────── */
+  .nivel-card {
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:16px;
+    overflow:hidden;
+    display:flex; flex-direction:column;
+    transition:border-color .2s, transform .2s, box-shadow .2s;
+    animation:fadeUp .35s ease both;
+    text-decoration:none;
+    cursor:pointer;
+  }
+  .nivel-card:hover {
+    border-color:rgba(37,99,235,.4);
+    transform:translateY(-3px);
+    box-shadow:0 8px 28px rgba(0,0,0,.25);
+  }
 
-    .floor-item {
-        position:relative; margin-bottom:.5rem;
-        background:rgba(255,255,255,.03); border:1px solid var(--border);
-        border-radius:10px; padding:.7rem 1rem;
-        display:flex; align-items:center; gap:.875rem;
-        transition:border-color .2s,transform .15s,background .15s;
-        animation:slideIn .3s ease both;
-        text-decoration:none;
-    }
-    .floor-item:hover {
-        border-color:rgba(37,99,235,.4); transform:translateX(3px);
-        background:rgba(37,99,235,.04);
-    }
-    .floor-item:last-child { margin-bottom:0; }
+  /* ── Zona del plano ──────────────────────────────────────── */
+  .nivel-plano {
+    position:relative;
+    height:165px;
+    background:#0d1525;
+    overflow:hidden;
+  }
 
-    /* Connector dot */
-    .floor-item::before {
-        content:''; position:absolute; left:-1.33rem; top:50%; transform:translateY(-50%);
-        width:8px; height:8px; border-radius:50%;
-        background:var(--accent); box-shadow:0 0 0 3px rgba(37,99,235,.15);
-    }
+  /* Imagen del plano real */
+  .nivel-plano img {
+    width:100%; height:100%;
+    object-fit:cover;
+    transition:transform .4s, opacity .3s;
+    opacity:.85;
+  }
+  .nivel-card:hover .nivel-plano img { transform:scale(1.04); opacity:1; }
 
-    /* Floor number badge */
-    .floor-num {
-        width:32px; height:32px; border-radius:8px; flex-shrink:0;
-        display:flex; align-items:center; justify-content:center;
-        font-family:'Syne',sans-serif; font-weight:800; font-size:.8rem;
-        background:rgba(37,99,235,.1); color:#60a5fa;
-        border:1px solid rgba(37,99,235,.2);
-    }
-    .floor-num.sub-zero { background:rgba(245,158,11,.1); color:#fcd34d; border-color:rgba(245,158,11,.25); }
-    .floor-num.ground   { background:rgba(34,197,94,.1);  color:#4ade80; border-color:rgba(34,197,94,.25); }
+  /* Degradado sutil sobre la imagen */
+  .nivel-plano-overlay {
+    position:absolute; inset:0;
+    background:linear-gradient(to bottom, transparent 40%, rgba(10,15,30,.7) 100%);
+    pointer-events:none;
+  }
 
-    .floor-info { flex:1; min-width:0; }
-    .floor-code { font-size:.65rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--accent2); margin-bottom:.1rem; }
-    .floor-name { font-size:.88rem; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .floor-meta { font-size:.72rem; color:var(--text-muted); margin-top:.1rem; display:flex; gap:.6rem; }
-    .floor-meta i { font-size:.62rem; }
+  /* Placeholder cuando no hay plano */
+  .nivel-plano-placeholder {
+    width:100%; height:100%;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:.5rem;
+    background:repeating-linear-gradient(
+      45deg,
+      rgba(37,99,235,.03) 0px,
+      rgba(37,99,235,.03) 10px,
+      transparent 10px,
+      transparent 20px
+    );
+    border-bottom:1px solid var(--border);
+  }
+  .nivel-plano-placeholder i    { font-size:2.2rem; color:rgba(96,165,250,.2); }
+  .nivel-plano-placeholder span { font-size:.72rem; color:rgba(107,114,128,.4); font-weight:500; }
 
-    .floor-status { flex-shrink:0; }
-    .floor-badge { display:inline-flex; align-items:center; gap:.3rem; padding:.18rem .55rem; border-radius:9999px; font-size:.68rem; font-weight:600; }
-    .fb-on  { background:rgba(34,197,94,.12);  color:#4ade80; border:1px solid rgba(34,197,94,.2); }
-    .fb-off { background:rgba(107,114,128,.1); color:#6b7280; border:1px solid rgba(107,114,128,.15); }
+  /* Badge de número de piso — esquina superior izquierda */
+  .floor-badge-num {
+    position:absolute; top:.65rem; left:.65rem;
+    width:36px; height:36px; border-radius:9px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Syne',sans-serif; font-weight:800; font-size:.8rem;
+    backdrop-filter:blur(6px);
+    border:1px solid rgba(255,255,255,.15);
+    z-index:2;
+  }
+  .fbn-pos  { background:rgba(37,99,235,.55); color:#fff; }
+  .fbn-gnd  { background:rgba(34,197,94,.5);  color:#fff; }
+  .fbn-neg  { background:rgba(245,158,11,.5); color:#fff; }
 
-    .floor-actions { display:flex; gap:.3rem; flex-shrink:0; }
-    .act-btn-xs {
-        width:26px; height:26px; border-radius:6px;
-        background:rgba(255,255,255,.04); border:1px solid var(--border);
-        display:flex; align-items:center; justify-content:center;
-        color:var(--text-muted); font-size:.72rem; text-decoration:none;
-        transition:background .15s,color .15s,border-color .15s;
-    }
-    .act-btn-xs:hover { background:rgba(255,255,255,.08); color:var(--text); border-color:var(--border2); }
-    .act-btn-xs.danger:hover { background:rgba(239,68,68,.1); color:#f87171; border-color:rgba(239,68,68,.3); }
+  /* Badge de estado — esquina superior derecha */
+  .floor-badge-status {
+    position:absolute; top:.65rem; right:.65rem;
+    padding:.2rem .55rem; border-radius:9999px;
+    font-size:.65rem; font-weight:700;
+    backdrop-filter:blur(6px);
+    display:flex; align-items:center; gap:.3rem;
+    z-index:2;
+  }
+  .fbs-on  { background:rgba(34,197,94,.2);   color:#4ade80; border:1px solid rgba(34,197,94,.3); }
+  .fbs-off { background:rgba(107,114,128,.2); color:#9ca3af; border:1px solid rgba(107,114,128,.25); }
+  .fbs-dot { width:5px; height:5px; border-radius:50%; background:currentColor; }
 
-    /* Add floor btn */
-    .add-floor-btn {
-        display:flex; align-items:center; justify-content:center; gap:.5rem;
-        margin-top:.5rem; padding:.55rem; border-radius:9px;
-        border:1.5px dashed rgba(37,99,235,.25); color:rgba(96,165,250,.6);
-        font-size:.78rem; font-weight:500; text-decoration:none;
-        transition:border-color .2s,color .2s,background .2s;
-    }
-    .add-floor-btn:hover { border-color:rgba(37,99,235,.5); color:#60a5fa; background:rgba(37,99,235,.05); }
+  /* Botón "Ver plano completo" sobre la imagen — aparece al hacer hover */
+  .plano-view-btn {
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(10,15,40,.0);
+    transition:background .25s;
+    z-index:1;
+    text-decoration:none;
+  }
+  .plano-view-btn span {
+    background:rgba(37,99,235,.85); color:#fff;
+    padding:.4rem .9rem; border-radius:9px;
+    font-size:.75rem; font-weight:600;
+    display:flex; align-items:center; gap:.4rem;
+    opacity:0; transform:translateY(6px);
+    transition:opacity .2s, transform .2s;
+    backdrop-filter:blur(4px);
+  }
+  .nivel-card:hover .plano-view-btn { background:rgba(10,15,40,.15); }
+  .nivel-card:hover .plano-view-btn span { opacity:1; transform:none; }
 
-    /* Empty */
-    .empty-state { text-align:center; padding:4rem 2rem; color:var(--text-muted); background:var(--surface); border:1px solid var(--border); border-radius:14px; }
-    .empty-state i { font-size:3rem; opacity:.2; display:block; margin-bottom:1rem; }
+  /* ── Info de la tarjeta ──────────────────────────────────── */
+  .nivel-info {
+    padding:.875rem 1rem;
+    flex:1; display:flex; flex-direction:column; gap:.4rem;
+  }
 
-    /* Pagination */
-    .pagination { display:flex; align-items:center; justify-content:center; gap:.4rem; margin-top:1.5rem; }
-    .page-btn { min-width:34px; height:34px; border-radius:8px; padding:0 .6rem; background:var(--surface); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--text-subtle); font-size:.82rem; text-decoration:none; transition:background .15s,color .15s; }
-    .page-btn:hover { background:rgba(255,255,255,.08); color:var(--text); }
-    .page-btn.active { background:var(--accent); border-color:transparent; color:#fff; font-weight:600; }
-    .page-btn.disabled { opacity:.35; pointer-events:none; }
+  .nivel-codigo {
+    font-size:.63rem; font-weight:700;
+    text-transform:uppercase; letter-spacing:.1em; color:var(--accent2);
+  }
+  .nivel-nombre {
+    font-family:'Syne',sans-serif; font-size:.92rem; font-weight:700;
+    color:var(--text); line-height:1.25;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .nivel-desc {
+    font-size:.75rem; color:var(--text-muted); line-height:1.4;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+  }
 
-    @keyframes fadeUp  { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
-    @keyframes slideIn { from{opacity:0;transform:translateX(-6px)} to{opacity:1;transform:none} }
+  /* Métricas debajo del nombre */
+  .nivel-metrics {
+    display:flex; gap:.75rem; margin-top:.25rem; flex-wrap:wrap;
+  }
+  .nivel-metric {
+    display:flex; align-items:center; gap:.3rem;
+    font-size:.73rem; color:var(--text-muted);
+  }
+  .nivel-metric i { font-size:.6rem; color:var(--accent2); }
 
-    @media(max-width:640px){ .plantas-grid{grid-template-columns:1fr} }
+  /* ── Footer de la tarjeta ────────────────────────────────── */
+  .nivel-footer {
+    padding:.6rem 1rem;
+    border-top:1px solid var(--border);
+    background:var(--surface2);
+    display:flex; align-items:center; justify-content:flex-end; gap:.35rem;
+  }
+
+  .act-btn {
+    width:28px; height:28px; border-radius:7px;
+    background:rgba(255,255,255,.04); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center;
+    color:var(--text-muted); font-size:.72rem; text-decoration:none;
+    transition:background .15s,color .15s,border-color .15s;
+  }
+  .act-btn:hover        { background:rgba(255,255,255,.1); color:var(--text); }
+  .act-btn.danger:hover { background:rgba(239,68,68,.1); color:#f87171; border-color:rgba(239,68,68,.3); }
+
+  /* ── Empty states ────────────────────────────────────────── */
+  .group-empty {
+    padding:1.5rem; text-align:center;
+    background:rgba(255,255,255,.02); border:1px dashed var(--border);
+    border-radius:12px; color:var(--text-muted); font-size:.82rem;
+  }
+  .empty-state {
+    text-align:center; padding:4rem 2rem; color:var(--text-muted);
+    background:var(--surface); border:1px solid var(--border); border-radius:14px;
+  }
+  .empty-state i { font-size:3rem; opacity:.2; display:block; margin-bottom:1rem; }
+
+  /* ── Paginación ──────────────────────────────────────────── */
+  .pagination { display:flex; align-items:center; justify-content:center; gap:.4rem; margin-top:1.5rem; }
+  .page-btn {
+    min-width:34px; height:34px; border-radius:8px; padding:0 .6rem;
+    background:var(--surface); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center;
+    color:var(--text-subtle); font-size:.82rem; text-decoration:none;
+    transition:background .15s,color .15s;
+  }
+  .page-btn:hover    { background:rgba(255,255,255,.08); color:var(--text); }
+  .page-btn.active   { background:var(--accent); border-color:transparent; color:#fff; font-weight:600; }
+  .page-btn.disabled { opacity:.35; pointer-events:none; }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+
+  @media(max-width:640px) {
+    .niveles-grid { grid-template-columns:1fr 1fr; }
+    .plant-group-link { display:none; }
+  }
+  @media(max-width:420px) {
+    .niveles-grid { grid-template-columns:1fr; }
+  }
 </style>
 {% endblock %}
 
+
+{# ============================================================ #}
+{#  CONTENIDO                                                    #}
+{# ============================================================ #}
 {% block content %}
 
+{# ── Toolbar ── #}
 <div class="toolbar">
-    <div class="toolbar-left">
-        <form method="get" id="filterForm" style="display:contents;">
-            <div class="search-wrap">
-                <i class="fas fa-search"></i>
-                <input type="text" name="q" value="{{ search_query|default:'' }}"
-                       placeholder="Código, nombre o planta…"
-                       onchange="document.getElementById('filterForm').submit()">
-            </div>
-            {% if search_query %}
-            <a href="{% url 'organizacion:nivel_list' %}" style="display:flex;align-items:center;gap:.4rem;padding:.5rem .75rem;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text-muted);font-size:.82rem;text-decoration:none;">
-                <i class="fas fa-xmark"></i> Limpiar
-            </a>
-            {% endif %}
-        </form>
-    </div>
-    <div class="toolbar-right">
-        {% if perms.organizacion.add_nivel %}
-        <a href="{% url 'organizacion:nivel_create' %}" class="btn-primary">
-            <i class="fas fa-plus"></i> Nuevo Nivel
-        </a>
-        {% endif %}
-    </div>
+  <div class="toolbar-left">
+    <form method="get" id="filterForm" style="display:contents;">
+      <div class="search-wrap">
+        <i class="fas fa-search"></i>
+        <input type="text" name="q" value="{{ search_query|default:'' }}"
+               placeholder="Código, nombre o planta…"
+               onchange="document.getElementById('filterForm').submit()">
+      </div>
+      {% if search_query %}
+      <a href="{% url 'organizacion:nivel_list' %}"
+         style="display:flex;align-items:center;gap:.4rem;padding:.5rem .75rem;border-radius:8px;
+                border:1px solid var(--border);background:rgba(255,255,255,.04);
+                color:var(--text-muted);font-size:.82rem;text-decoration:none;">
+        <i class="fas fa-xmark"></i> Limpiar
+      </a>
+      {% endif %}
+    </form>
+  </div>
+  <div class="toolbar-right">
+    {% if perms.organizacion.add_nivel %}
+    <a href="{% url 'organizacion:nivel_create' %}" class="btn-primary">
+      <i class="fas fa-plus"></i> Nuevo Nivel
+    </a>
+    {% endif %}
+  </div>
 </div>
+
 
 {% if object_list %}
 
-{# ── Group niveles by planta ── #}
-{% regroup object_list by planta as por_planta %}
+  {% regroup object_list by planta as por_planta %}
 
-<div class="plantas-grid">
-    {% for grupo in por_planta %}
-    <div class="building-card" style="animation-delay:{{ forloop.counter0 }}0ms;" data-building="{{ grupo.grouper.pk }}">
+  {% for grupo in por_planta %}
+  <div class="plant-group" style="animation-delay:{{ forloop.counter0 }}00ms;">
 
-        <!-- Planta header (click to collapse) -->
-        <div class="building-header" onclick="toggleBuilding(this)">
-            <div class="building-icon"><i class="fas fa-industry"></i></div>
-            <div class="building-meta">
-                <div class="building-name">{{ grupo.grouper.nombre }}</div>
-                <div class="building-sub"><i class="fas fa-location-dot" style="margin-right:.3rem;font-size:.65rem;"></i>{{ grupo.grouper.ciudad }}{% if grupo.grouper.estado_provincia %}, {{ grupo.grouper.estado_provincia }}{% endif %}</div>
-            </div>
-            <span class="building-count">{{ grupo.list|length }}</span>
-            <i class="fas fa-chevron-down building-chevron"></i>
+    {# ── Encabezado del grupo (planta) ── #}
+    <div class="plant-group-header">
+      <div class="plant-group-icon">
+        <i class="fas fa-industry"></i>
+      </div>
+      <div>
+        <div class="plant-group-name">{{ grupo.grouper.nombre }}</div>
+        <div class="plant-group-sub">
+          <i class="fas fa-location-dot" style="margin-right:.25rem;font-size:.6rem;"></i>
+          {{ grupo.grouper.ciudad }}{% if grupo.grouper.estado_provincia %}, {{ grupo.grouper.estado_provincia }}{% endif %}
+          &nbsp;·&nbsp; {{ grupo.grouper.codigo }}
         </div>
-
-        <!-- Floors -->
-        <div class="floors-wrap">
-            <div class="floors-inner">
-                {% for nivel in grupo.list|dictsortreversed:"numero_nivel" %}
-                <div class="floor-item">
-                    <!-- Floor number -->
-                    <div class="floor-num {% if nivel.numero_nivel < 0 %}sub-zero{% elif nivel.numero_nivel == 0 %}ground{% endif %}">
-                        {% if nivel.numero_nivel > 0 %}+{% endif %}{{ nivel.numero_nivel }}
-                    </div>
-
-                    <!-- Info -->
-                    <div class="floor-info">
-                        <div class="floor-code">{{ nivel.codigo }}</div>
-                        <div class="floor-name">{{ nivel.nombre }}</div>
-                        <div class="floor-meta">
-                            <span><i class="fas fa-th-large"></i> {{ nivel.get_areas_count }} áreas</span>
-                            {% if nivel.altura %}<span><i class="fas fa-ruler-vertical"></i> {{ nivel.altura }} m</span>{% endif %}
-                        </div>
-                    </div>
-
-                    <!-- Status -->
-                    <div class="floor-status">
-                        <span class="floor-badge {% if nivel.activo %}fb-on{% else %}fb-off{% endif %}">
-                            <i class="fas {% if nivel.activo %}fa-circle{% else %}fa-circle-xmark{% endif %}" style="font-size:.45rem;"></i>
-                            {% if nivel.activo %}Activo{% else %}Inactivo{% endif %}
-                        </span>
-                    </div>
-
-                    <!-- Actions -->
-                    <div class="floor-actions">
-                        <a href="{% url 'organizacion:nivel_detail' nivel.pk %}" class="act-btn-xs" title="Ver"><i class="fas fa-eye"></i></a>
-                        {% if perms.organizacion.change_nivel %}
-                        <a href="{% url 'organizacion:nivel_update' nivel.pk %}" class="act-btn-xs" title="Editar"><i class="fas fa-pen"></i></a>
-                        {% endif %}
-                        {% if perms.organizacion.delete_nivel %}
-                        <a href="{% url 'organizacion:nivel_delete' nivel.pk %}" class="act-btn-xs danger" title="Eliminar"><i class="fas fa-trash"></i></a>
-                        {% endif %}
-                    </div>
-                </div>
-                {% endfor %}
-
-                {% if perms.organizacion.add_nivel %}
-                <a href="{% url 'organizacion:nivel_create' %}?planta={{ grupo.grouper.pk }}" class="add-floor-btn">
-                    <i class="fas fa-plus"></i> Agregar nivel a {{ grupo.grouper.nombre }}
-                </a>
-                {% endif %}
-            </div>
-        </div>
+      </div>
+      <span class="plant-group-count">
+        {{ grupo.list|length }} nivel{% if grupo.list|length != 1 %}es{% endif %}
+      </span>
+      <a href="{% url 'organizacion:planta_detail' grupo.grouper.pk %}" class="plant-group-link">
+        Ver planta <i class="fas fa-arrow-right"></i>
+      </a>
     </div>
-    {% endfor %}
-</div>
+
+    {# ── Grid de niveles ── #}
+    {% if grupo.list %}
+    <div class="niveles-grid">
+
+      {% for nivel in grupo.list|dictsortreversed:"numero_nivel" %}
+      <div class="nivel-card"
+           style="animation-delay:{{ forloop.counter0 }}5ms;"
+           onclick="window.location='{% url 'organizacion:nivel_detail' nivel.pk %}'">
+
+        {# ── Zona del plano ── #}
+        <div class="nivel-plano">
+
+          {% if nivel.plano %}
+            {# Plano real subido #}
+            <img src="{{ nivel.plano.url }}" alt="Plano {{ nivel.nombre }}">
+            <div class="nivel-plano-overlay"></div>
+
+            {# Botón ver plano completo — aparece al hover #}
+            <a href="{{ nivel.plano.url }}" target="_blank"
+               class="plano-view-btn"
+               onclick="event.stopPropagation()">
+              <span><i class="fas fa-expand"></i> Ver plano</span>
+            </a>
+
+          {% else %}
+            {# Sin plano — placeholder con patrón #}
+            <div class="nivel-plano-placeholder">
+              <i class="fas fa-map"></i>
+              <span>Sin plano cargado</span>
+            </div>
+          {% endif %}
+
+          {# Badge número de piso #}
+          <div class="floor-badge-num
+            {% if nivel.numero_nivel > 0 %}fbn-pos
+            {% elif nivel.numero_nivel == 0 %}fbn-gnd
+            {% else %}fbn-neg{% endif %}">
+            {% if nivel.numero_nivel > 0 %}+{% endif %}{{ nivel.numero_nivel }}
+          </div>
+
+          {# Badge estado #}
+          <div class="floor-badge-status {% if nivel.activo %}fbs-on{% else %}fbs-off{% endif %}">
+            <span class="fbs-dot"></span>
+            {% if nivel.activo %}Activo{% else %}Inactivo{% endif %}
+          </div>
+
+        </div>{# /nivel-plano #}
+
+        {# ── Info del nivel ── #}
+        <div class="nivel-info">
+          <div class="nivel-codigo">{{ nivel.codigo }}</div>
+          <div class="nivel-nombre">{{ nivel.nombre }}</div>
+          {% if nivel.descripcion %}
+          <div class="nivel-desc">{{ nivel.descripcion }}</div>
+          {% endif %}
+          <div class="nivel-metrics">
+            <span class="nivel-metric">
+              <i class="fas fa-th-large"></i>
+              {{ nivel.get_areas_count }} área{% if nivel.get_areas_count != 1 %}s{% endif %}
+            </span>
+            {% if nivel.altura %}
+            <span class="nivel-metric">
+              <i class="fas fa-ruler-vertical"></i>
+              {{ nivel.altura }} m
+            </span>
+            {% endif %}
+          </div>
+        </div>
+
+        {# ── Acciones ── #}
+        <div class="nivel-footer" onclick="event.stopPropagation()">
+          <a href="{% url 'organizacion:nivel_detail' nivel.pk %}"
+             class="act-btn" title="Ver detalle">
+            <i class="fas fa-eye"></i>
+          </a>
+          {% if perms.organizacion.change_nivel %}
+          <a href="{% url 'organizacion:nivel_update' nivel.pk %}"
+             class="act-btn" title="Editar">
+            <i class="fas fa-pen"></i>
+          </a>
+          {% endif %}
+          {% if nivel.plano %}
+          <a href="{{ nivel.plano.url }}" target="_blank"
+             class="act-btn" title="Descargar plano">
+            <i class="fas fa-download"></i>
+          </a>
+          {% endif %}
+          {% if perms.organizacion.delete_nivel %}
+          <a href="{% url 'organizacion:nivel_delete' nivel.pk %}"
+             class="act-btn danger" title="Eliminar">
+            <i class="fas fa-trash"></i>
+          </a>
+          {% endif %}
+        </div>
+
+      </div>{# /nivel-card #}
+      {% endfor %}
+
+      {# Tarjeta "Agregar nivel" al final del grid #}
+      {% if perms.organizacion.add_nivel %}
+      <a href="{% url 'organizacion:nivel_create' %}?planta={{ grupo.grouper.pk }}"
+         style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+                gap:.6rem;height:100%;min-height:220px;border-radius:16px;
+                border:1.5px dashed rgba(37,99,235,.25);color:rgba(96,165,250,.5);
+                text-decoration:none;font-size:.82rem;font-weight:500;
+                transition:border-color .2s,color .2s,background .2s;">
+        <i class="fas fa-plus" style="font-size:1.4rem;"></i>
+        Agregar nivel
+      </a>
+      {% endif %}
+
+    </div>{# /niveles-grid #}
+
+    {% else %}
+    <div class="group-empty">
+      <i class="fas fa-layer-group" style="margin-right:.4rem;opacity:.3;"></i>
+      Esta planta no tiene niveles registrados aún.
+    </div>
+    {% endif %}
+
+  </div>{# /plant-group #}
+  {% endfor %}
+
 
 {% else %}
 <div class="empty-state">
-    <i class="fas fa-layer-group"></i>
-    <p>No se encontraron niveles{% if search_query %} para "<strong>{{ search_query }}</strong>"{% endif %}.</p>
-    {% if perms.organizacion.add_nivel %}
-    <a href="{% url 'organizacion:nivel_create' %}" class="btn-primary" style="display:inline-flex;margin-top:1rem;">
-        <i class="fas fa-plus"></i> Crear primer nivel
-    </a>
-    {% endif %}
+  <i class="fas fa-layer-group"></i>
+  <p>No se encontraron niveles{% if search_query %} para "<strong>{{ search_query }}</strong>"{% endif %}.</p>
+  {% if perms.organizacion.add_nivel %}
+  <a href="{% url 'organizacion:nivel_create' %}"
+     class="btn-primary" style="display:inline-flex;margin-top:1rem;">
+    <i class="fas fa-plus"></i> Crear primer nivel
+  </a>
+  {% endif %}
 </div>
 {% endif %}
 
+
+{# ── Paginación ── #}
 {% if is_paginated %}
 <div class="pagination">
-    {% if page_obj.has_previous %}
-    <a href="?page=1{% if search_query %}&q={{ search_query }}{% endif %}" class="page-btn"><i class="fas fa-angles-left"></i></a>
-    <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}" class="page-btn"><i class="fas fa-angle-left"></i></a>
-    {% else %}
-    <span class="page-btn disabled"><i class="fas fa-angles-left"></i></span>
-    <span class="page-btn disabled"><i class="fas fa-angle-left"></i></span>
-    {% endif %}
-    <span class="page-btn active">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
-    {% if page_obj.has_next %}
-    <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}" class="page-btn"><i class="fas fa-angle-right"></i></a>
-    <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&q={{ search_query }}{% endif %}" class="page-btn"><i class="fas fa-angles-right"></i></a>
-    {% else %}
-    <span class="page-btn disabled"><i class="fas fa-angle-right"></i></span>
-    <span class="page-btn disabled"><i class="fas fa-angles-right"></i></span>
-    {% endif %}
+  {% if page_obj.has_previous %}
+  <a href="?page=1{% if search_query %}&q={{ search_query }}{% endif %}" class="page-btn"><i class="fas fa-angles-left"></i></a>
+  <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}" class="page-btn"><i class="fas fa-angle-left"></i></a>
+  {% else %}
+  <span class="page-btn disabled"><i class="fas fa-angles-left"></i></span>
+  <span class="page-btn disabled"><i class="fas fa-angle-left"></i></span>
+  {% endif %}
+
+  <span class="page-btn active">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+
+  {% if page_obj.has_next %}
+  <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}" class="page-btn"><i class="fas fa-angle-right"></i></a>
+  <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&q={{ search_query }}{% endif %}" class="page-btn"><i class="fas fa-angles-right"></i></a>
+  {% else %}
+  <span class="page-btn disabled"><i class="fas fa-angle-right"></i></span>
+  <span class="page-btn disabled"><i class="fas fa-angles-right"></i></span>
+  {% endif %}
 </div>
 {% endif %}
 
-{% endblock %}
-
-{% block extra_js %}
-<script>
-function toggleBuilding(header) {
-    const card = header.closest('.building-card');
-    card.classList.toggle('collapsed');
-}
-</script>
 {% endblock %}

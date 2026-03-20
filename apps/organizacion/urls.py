@@ -41,4 +41,7 @@ urlpatterns = [
     path('responsables/crear/', views.ResponsableCreateView.as_view(), name='responsable_create'),
     path('responsables/<int:pk>/editar/', views.ResponsableUpdateView.as_view(), name='responsable_update'),
     path('responsables/<int:pk>/eliminar/', views.ResponsableDeleteView.as_view(), name='responsable_delete'),
+
+    path('ajax/niveles/', views.AjaxNivelesView.as_view(), name='ajax_niveles'),
+    path('ajax/areas/', views.AjaxAreasView.as_view(), name='ajax_areas'),
 ]

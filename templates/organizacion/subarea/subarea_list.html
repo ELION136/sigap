@@ -212,7 +212,8 @@
             {% if subarea.responsable %}
             <div class="resp-cell">
                 <div class="resp-av"><i class="fas fa-user"></i></div>
-                <span class="resp-name">{{ subarea.responsable.nombre_completo|default:subarea.responsable.get_full_name }}</span>
+               
+                <span class="resp-name">{{ subarea.responsable.nombres }} {{ subarea.responsable.apellidos }}</span>
             </div>
             {% else %}
             <span class="resp-none">Sin responsable</span>
