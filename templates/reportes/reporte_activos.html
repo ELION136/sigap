@@ -156,10 +156,16 @@ tr:hover .row-actions { opacity: 1; }
 <!-- Header -->
 <div class="rep-header">
     <div class="rep-title"><i class="fas fa-boxes-stacked"></i> Reporte de Activos</div>
-    <a href="{% url 'reportes:exportar_activos' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}"
-       class="btn-primary" style="padding:.4rem 1rem;font-size:.82rem;">
-        <i class="fas fa-file-excel"></i> Exportar Excel
-    </a>
+    <div style="display: flex; gap: .6rem;">
+        <a href="{% url 'reportes:exportar_activos' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}"
+           class="btn-primary" style="padding:.4rem 1rem;font-size:.82rem;">
+            <i class="fas fa-file-excel"></i> Exportar Excel
+        </a>
+        <a href="{% url 'reportes:exportar_activos_pdf' %}?{{ request.GET.urlencode }}"
+           class="btn-danger" style="padding:.4rem 1rem;font-size:.82rem;">
+            <i class="fas fa-file-pdf"></i> Exportar PDF
+        </a>
+    </div>
 </div>
 
 <!-- Stats -->
